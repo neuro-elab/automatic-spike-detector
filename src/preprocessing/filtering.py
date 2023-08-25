@@ -3,8 +3,15 @@ import numpy as np
 from scipy import signal
 
 
-# create bandpass filter for 1 - 200 Hz
 def filter_signal(sfreq: int, data: np.array) -> np.array:
+    """
+    Filter the provided signal with a low-pass butterworth forward-backward filter
+    at cut-off frequency 200 Hz
+
+    :param sfreq: sample frequency of the input signal/-s
+    :param data: signal/-s to be filtered
+    :return: low-pass filtered signal at cut-off frequency 200 Hz
+    """
     # Nyquist frequency
     nyq = sfreq / 2
 
