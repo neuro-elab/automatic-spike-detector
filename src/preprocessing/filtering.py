@@ -12,7 +12,7 @@ def filter_signal(sfreq: int, data: np.array) -> np.array:
     :param data: signal/-s to be filtered
     :return: low-pass filtered zero-centered signal/-s at cut-off frequency 200 Hz
     """
-    # Nyquist frequency
+    # Nyquist frequency (i.e. half the sampling frequency)
     nyq = sfreq / 2
 
     # cut-off frequencies
