@@ -8,7 +8,7 @@ def filter_signal(sfreq: int, data: np.array) -> np.array:
     Filter the provided signal with a low-pass butterworth forward-backward filter
     at cut-off frequency 200 Hz. Additionally zero-centers the data
 
-    :param sfreq: sample frequency of the input signal/-s
+    :param sfreq: sampling frequency of the input signal/-s
     :param data: signal/-s to be filtered
     :return: low-pass filtered zero-centered signal/-s at cut-off frequency 200 Hz
     """
