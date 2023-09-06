@@ -1,6 +1,6 @@
 import multiprocessing
 from sklearn.preprocessing import normalize
-from detecting.mnf_spike_detection import parallel_nmf_consensus_clustering
+from spike_detection.mnf_spike_detection import parallel_nmf_consensus_clustering
 from preprocessing.pipeline import parallel_preprocessing
 from loader.loader import read_h5_file
 
