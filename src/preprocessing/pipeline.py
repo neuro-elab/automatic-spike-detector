@@ -13,7 +13,7 @@ from src.utils import logging_utils
 
 
 def apply_preprocessing_steps(traces: List[Trace]):
-    #TODO add documentation
+    # TODO add documentation
 
     # configure logger
     logging_utils.add_logger_with_process_name()
@@ -34,27 +34,40 @@ def apply_preprocessing_steps(traces: List[Trace]):
     traces = np.array([trace.data for trace in traces])
 
     # 1. bandpass filter
-    logger.debug(f"Bandpass filter data between {bandpass_cutoff_low} and {bandpass_cutoff_high} Hz")
+    logger.debug(
+        f"Bandpass filter data between {bandpass_cutoff_low} and {bandpass_cutoff_high} Hz"
+    )
 
     bandpass_filtered = filter_signal(
-        sfreq=data_freq, cutoff_freq_low=bandpass_cutoff_low, cutoff_freq_high=bandpass_cutoff_high, data=traces
+        sfreq=data_freq,
+        cutoff_freq_low=bandpass_cutoff_low,
+        cutoff_freq_high=bandpass_cutoff_high,
+        data=traces,
     )
 
     # 2. notch filter
     logger.debug(f"Apply notch filter at {notch_freq} Hz")
     notch_filtered = notch_filter_signal(
-        eeg_data=bandpass_filtered, notch_frequency=notch_freq, low_pass_freq=bandpass_cutoff_high, sfreq=data_freq
+        eeg_data=bandpass_filtered,
+        notch_frequency=notch_freq,
+        low_pass_freq=bandpass_cutoff_high,
+        sfreq=data_freq,
     )
 
     # 3. scaling channels
     logger.debug("Rescale filtered data")
-    scaled_data = rescale_data(data_to_be_scaled=notch_filtered, original_data=traces, sfreq=data_freq)
+    scaled_data = rescale_data(
+        data_to_be_scaled=notch_filtered, original_data=traces, sfreq=data_freq
+    )
 
     # 4. resampling data
     logger.debug(f"Resample data at sampling frequency {resampling_freq} Hz")
 
     resampled_data = resample_data(
-        data=scaled_data, channel_names=channel_names, sfreq=data_freq, resampling_freq=resampling_freq
+        data=scaled_data,
+        channel_names=channel_names,
+        sfreq=data_freq,
+        resampling_freq=resampling_freq,
     )
 
     # 5. compute line length
@@ -71,7 +84,10 @@ def parallel_preprocessing(traces: List[Trace]):
     logger.debug(f"Starting preprocessing pipeline on {n_cores} different cores")
 
     with multiprocessing.Pool(processes=n_cores) as pool:
-        preprocessed_data = pool.map(apply_preprocessing_steps, np.array_split(traces, round(len(traces)/n_cores)))
+        preprocessed_data = pool.map(
+            apply_preprocessing_steps,
+            np.array_split(traces, round(len(traces) / n_cores)),
+        )
 
     data = np.concatenate(preprocessed_data, axis=0)
     logger.debug("Preprocessing pipeline finished successfully, returning data")

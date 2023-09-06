@@ -3,8 +3,13 @@ import numpy as np
 from scipy import signal
 
 
-def filter_signal(sfreq: int, cutoff_freq_low: int, cutoff_freq_high: int, data: np.array, zero_center: bool = True) \
-        -> np.array:
+def filter_signal(
+    sfreq: int,
+    cutoff_freq_low: int,
+    cutoff_freq_high: int,
+    data: np.array,
+    zero_center: bool = True,
+) -> np.array:
     """
     Filter the provided signal with a bandpass butterworth forward-backward filter
     at specified cut-off frequencies. The order of the butterworth filter is predefined to be 2,
@@ -25,7 +30,7 @@ def filter_signal(sfreq: int, cutoff_freq_low: int, cutoff_freq_high: int, data:
     f_l = cutoff_freq_low
     f_h = cutoff_freq_high
 
-    #TODO: how should normalized freq be used with mne, if at all
+    # TODO: how should normalized freq be used with mne, if at all
 
     # Normalize frequency
     np.array([f_l, f_h]) / nyq
@@ -33,7 +38,13 @@ def filter_signal(sfreq: int, cutoff_freq_low: int, cutoff_freq_high: int, data:
     # create an iir (infinite impulse response) butterworth filter
     iir_params = dict(order=2, ftype="butter", btype="bandpass")
     iir_filter = mne.filter.create_filter(
-        data, nyq, l_freq=cutoff_freq_low, h_freq=cutoff_freq_high, method="iir", iir_params=iir_params, verbose=True
+        data,
+        nyq,
+        l_freq=cutoff_freq_low,
+        h_freq=cutoff_freq_high,
+        method="iir",
+        iir_params=iir_params,
+        verbose=True,
     )
 
     # forward-backward filter
@@ -46,7 +57,9 @@ def filter_signal(sfreq: int, cutoff_freq_low: int, cutoff_freq_high: int, data:
     return filtered_eeg
 
 
-def notch_filter_signal(eeg_data: np.array, notch_frequency: int, low_pass_freq: int, sfreq: int):
+def notch_filter_signal(
+    eeg_data: np.array, notch_frequency: int, low_pass_freq: int, sfreq: int
+):
     """
     Creates a notch-filter and runs it over the provided data
 
@@ -56,7 +69,7 @@ def notch_filter_signal(eeg_data: np.array, notch_frequency: int, low_pass_freq:
     :param sfreq: baseline frequency of the signal
     :return: filtered signal
     """
-    #TODO complete/rework documentation; check for correctness
+    # TODO complete/rework documentation; check for correctness
 
     # get harmonics of the notch frequency within low pass freq, max first 4 harmonics
     harmonics = np.arange(notch_frequency, low_pass_freq, notch_frequency)

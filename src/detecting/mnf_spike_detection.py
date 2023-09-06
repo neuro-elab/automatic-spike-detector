@@ -63,14 +63,15 @@ def calculate_cophenetic_corr(A):
         Cophenetic correlation coefficient.
     """
     # Extract the values from the lower triangle of A
-    avec = np.array([A[i, j] for i in range(A.shape[0] - 1)
-                     for j in range(i + 1, A.shape[1])])
+    avec = np.array(
+        [A[i, j] for i in range(A.shape[0] - 1) for j in range(i + 1, A.shape[1])]
+    )
 
     # Consensus entries are similarities, conversion to distances
     Y = 1 - avec
 
     # Hierarchical clustering
-    Z = linkage(Y, method='average')
+    Z = linkage(Y, method="average")
 
     # Cophenetic correlation coefficient of a hierarchical clustering
     coph = cophenet(Z, Y)[0]
@@ -83,7 +84,7 @@ def nmf_run(args):
     consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
     obj = np.zeros(n_runs)
     connectivity_matrices = []
-    lowest_obj = float('inf')
+    lowest_obj = float("inf")
     best_H = None
     best_W = None
 
@@ -115,13 +116,15 @@ def nmf_run(args):
         "Min Final Obj": lowest_obj,
         "Adjusted Rand Index": ari,
         "Cophenetic Correlation": coph,
-        "Instability index": instability
+        "Instability index": instability,
     }
 
     return metrics, consensus, connectivity_matrices, best_H, best_W
 
 
-def parallel_nmf_consensus_clustering(data_matrix, rank_range, n_runs, target_clusters=None):
+def parallel_nmf_consensus_clustering(
+    data_matrix, rank_range, n_runs, target_clusters=None
+):
     """
     Parallel NMF consensus clustering.
 
@@ -142,7 +145,7 @@ def parallel_nmf_consensus_clustering(data_matrix, rank_range, n_runs, target_cl
         3D array where each slice along the first axis is a consensus matrix for a specific rank.
     """
     # Create a directory for the experiment
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     experiment_dir = os.path.join("Experiment_" + timestamp)
     os.makedirs(experiment_dir, exist_ok=True)
 
@@ -150,15 +153,22 @@ def parallel_nmf_consensus_clustering(data_matrix, rank_range, n_runs, target_cl
     n_cores = multiprocessing.cpu_count()
 
     with multiprocessing.Pool(processes=n_cores) as pool:
-        results = pool.map(nmf_run, [(data_matrix, rank, n_runs, target_clusters) for rank in
-                                     range(rank_range[0], rank_range[1] + 1)])
+        results = pool.map(
+            nmf_run,
+            [
+                (data_matrix, rank, n_runs, target_clusters)
+                for rank in range(rank_range[0], rank_range[1] + 1)
+            ],
+        )
 
     # Create the M matrix
     n = data_matrix.shape[0]
     k_range = rank_range[1] - rank_range[0] + 1
     M = np.zeros((k_range, n, n))
 
-    for idx, (metrics, consensus, connectivity_matrices, best_H, best_W) in enumerate(results):
+    for idx, (metrics, consensus, connectivity_matrices, best_H, best_W) in enumerate(
+        results
+    ):
         # Saving consensus matrix to M
         M[idx] = consensus
 
@@ -172,7 +182,9 @@ def parallel_nmf_consensus_clustering(data_matrix, rank_range, n_runs, target_cl
 
         # Saving connectivity matrices
         for idx, matrix in enumerate(connectivity_matrices):
-            connectivity_path = os.path.join(connectivity_dir, f"connectivity_{idx + 1}.csv")
+            connectivity_path = os.path.join(
+                connectivity_dir, f"connectivity_{idx + 1}.csv"
+            )
             np.savetxt(connectivity_path, matrix, delimiter=",")
 
         # Saving consensus matrix
@@ -191,16 +203,18 @@ def parallel_nmf_consensus_clustering(data_matrix, rank_range, n_runs, target_cl
 
     # Extend the metrics data frame
     metrics_df = pd.DataFrame([res[0] for res in results])
-    metrics_df['C'] = C
-    metrics_df['delta_k (AUC)'] = delta_k
-    metrics_df['delta_y (KL-div)'] = delta_y
+    metrics_df["C"] = C
+    metrics_df["delta_k (AUC)"] = delta_k
+    metrics_df["delta_y (KL-div)"] = delta_y
     print(f"Optimal k = {k_opt}")
 
     # Saving metrics as CSV
     metrics_path = os.path.join(experiment_dir, "metrics.csv")
     metrics_df.to_csv(metrics_path, index=False)
 
-    return experiment_dir  # return the directory where results are saved and the M matrix
+    return (
+        experiment_dir  # return the directory where results are saved and the M matrix
+    )
 
 
 # Return the modified functions for use

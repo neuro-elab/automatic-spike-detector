@@ -1,14 +1,13 @@
-
 import h5py
 import numpy as np
 from h5py import AttributeManager
 
 from src.domain.Trace import Trace
 
-FILEPATH = '../../../../Data/'
+FILEPATH = "../../../../Data/"
 FILENAME = "Sz2.h5"
-TRACES = 'traces'
-RAW_DATA = 'raw'
+TRACES = "traces"
+RAW_DATA = "raw"
 
 
 def create_trace(label: str, dataset: h5py.Dataset, attributes: AttributeManager):
@@ -20,16 +19,18 @@ def create_trace(label: str, dataset: h5py.Dataset, attributes: AttributeManager
     :param attributes: set of attributes of a recording
     :return: Trace object representing a recording from an electrode with the corresponding label
     """
-    return Trace(label,
-                 attributes.get('duration'),
-                 attributes.get('n_samples'),
-                 attributes.get('processing'),
-                 dataset.attrs.get('sfreq'),
-                 dataset.attrs.get('unit'),
-                 attributes.get('start_date'),
-                 attributes.get('start_time'),
-                 attributes.get('start_timestamp'),
-                 dataset[:].astype(np.float64))
+    return Trace(
+        label,
+        attributes.get("duration"),
+        attributes.get("n_samples"),
+        attributes.get("processing"),
+        dataset.attrs.get("sfreq"),
+        dataset.attrs.get("unit"),
+        attributes.get("start_date"),
+        attributes.get("start_time"),
+        attributes.get("start_timestamp"),
+        dataset[:].astype(np.float64),
+    )
 
 
 def read_h5_file(path):
@@ -48,10 +49,13 @@ def read_h5_file(path):
     # will later on be on the level of individual traces (recordings)
     attributes = raw_traces.attrs
 
-    return [create_trace(label, raw_traces.get(label), attributes) for label in raw_traces.keys()]
+    return [
+        create_trace(label, raw_traces.get(label), attributes)
+        for label in raw_traces.keys()
+    ]
 
 
-#start = time.time()
-#datasets = read_h5_file(FILEPATH + FILENAME)
-#size = len(datasets)
-#print(f'elapsed time: {(time.time() - start)/1000} seconds')
+# start = time.time()
+# datasets = read_h5_file(FILEPATH + FILENAME)
+# size = len(datasets)
+# print(f'elapsed time: {(time.time() - start)/1000} seconds')

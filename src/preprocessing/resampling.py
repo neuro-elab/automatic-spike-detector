@@ -4,7 +4,9 @@ from charset_normalizer.md import List
 from mne.io import RawArray
 
 
-def resample_data(data: np.array, channel_names: List[str], sfreq: int, resampling_freq: int) -> np.array:
+def resample_data(
+    data: np.array, channel_names: List[str], sfreq: int, resampling_freq: int
+) -> np.array:
     """
     Resamples the data with the desired frequency
 

@@ -4,7 +4,7 @@ from detecting.mnf_spike_detection import parallel_nmf_consensus_clustering
 from preprocessing.pipeline import parallel_preprocessing
 from loader.loader import read_h5_file
 
-FILEPATH = '../../../Data/'
+FILEPATH = "../../../Data/"
 FILENAME = "Sz2.h5"
 
 if __name__ == "__main__":
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
 
     # Load and process your data here (remove load_iris() this is just an example)
-    #data = load_iris()
+    # data = load_iris()
     X = preprocessed
 
     # If your data set has labels and you want to see if NMF can reproduce them in
@@ -37,7 +37,9 @@ if __name__ == "__main__":
     runs_per_rank = 100
 
     # Run the NMF consensus clustering
-    experiment_dir = parallel_nmf_consensus_clustering(data_matrix, (k_min, k_max), runs_per_rank, target_clusters=labels)
+    experiment_dir = parallel_nmf_consensus_clustering(
+        data_matrix, (k_min, k_max), runs_per_rank, target_clusters=labels
+    )
 
     # Print a confirmation that the results have been saved in the appropriate directory
     print(f"Results saved in directory: {experiment_dir}")
