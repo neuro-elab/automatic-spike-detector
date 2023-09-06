@@ -78,6 +78,8 @@ def apply_preprocessing_steps(traces: List[Trace]):
 
 
 def parallel_preprocessing(traces: List[Trace]):
+    # TODO: add documentation
+
     # Using all available cores
     n_cores = multiprocessing.cpu_count()
 
