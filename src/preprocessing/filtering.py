@@ -25,14 +25,15 @@ def filter_signal(sfreq: int, cutoff_freq_low: int, cutoff_freq_high: int, data:
     f_l = cutoff_freq_low
     f_h = cutoff_freq_high
 
+    #TODO: how should normalized freq be used with mne, if at all
+
     # Normalize frequency
-    norm_freq = np.array(f_l, f_h) / nyq
+    np.array([f_l, f_h]) / nyq
 
     # create an iir (infinite impulse response) butterworth filter
-    iir_params = dict(order=2, ftype="butter")
+    iir_params = dict(order=2, ftype="butter", btype="bandpass")
     iir_filter = mne.filter.create_filter(
-        data, nyq, l_freq=norm_freq[0], h_freq=norm_freq[1], method="iir", iir_params=iir_params, btype="bandpass",
-        verbose=True
+        data, nyq, l_freq=cutoff_freq_low, h_freq=cutoff_freq_high, method="iir", iir_params=iir_params, verbose=True
     )
 
     # forward-backward filter
@@ -55,21 +56,12 @@ def notch_filter_signal(eeg_data: np.array, notch_frequency: int, low_pass_freq:
     :param sfreq: baseline frequency of the signal
     :return: filtered signal
     """
-    #TODO complete/rework documentation; check for correctness; probably look for mne equivalences
-    R = 1
-    r = 0.985
+    #TODO complete/rework documentation; check for correctness
 
     # get harmonics of the notch frequency within low pass freq, max first 4 harmonics
     harmonics = np.arange(notch_frequency, low_pass_freq, notch_frequency)
     harmonics = harmonics[:4] if harmonics.size > 4 else harmonics
 
-    for idx in range(harmonics.size):
-        # filter params
-        normalized_freq = 2*np.pi*harmonics[idx]/sfreq
-        b = np.array([1, -2*R*np.cos(normalized_freq), R*R])
-        a = np.array([1, -2*r*np.cos(normalized_freq), r*r])
-
-        # forward-backward filter
-        eeg_data = signal.filtfilt(b, a, eeg_data)
+    eeg_data = mne.filter.notch_filter(x=eeg_data, Fs=sfreq, freqs=harmonics)
 
     return eeg_data

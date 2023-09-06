@@ -33,10 +33,10 @@ def rescale_data(data_to_be_scaled: np.array, original_data: np.array, sfreq: in
     # calculate scaling parameter as the mean of the channel divided by 20
     scaling_param = np.mean(channel_means) / 20
 
-    # normalize channel means by by its own mean
+    # normalize channel means by dividing by its own mean
     normalized_channel_means = channel_means / np.mean(channel_means)
 
     # scale and normalize data
-    scaled_data = scaling_param * data_to_be_scaled / normalized_channel_means
+    scaled_data = scaling_param * data_to_be_scaled / normalized_channel_means[:, np.newaxis]
 
     return scaled_data

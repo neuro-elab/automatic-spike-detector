@@ -1,4 +1,3 @@
-import time
 
 import h5py
 import numpy as np
@@ -30,7 +29,7 @@ def create_trace(label: str, dataset: h5py.Dataset, attributes: AttributeManager
                  attributes.get('start_date'),
                  attributes.get('start_time'),
                  attributes.get('start_timestamp'),
-                 dataset[:])
+                 dataset[:].astype(np.float64))
 
 
 def read_h5_file(path):
@@ -52,7 +51,7 @@ def read_h5_file(path):
     return [create_trace(label, raw_traces.get(label), attributes) for label in raw_traces.keys()]
 
 
-start = time.time()
-datasets = read_h5_file(FILEPATH + FILENAME)
-size = len(datasets)
-print(f'elapsed time: {(time.time() - start)/1000} seconds')
+#start = time.time()
+#datasets = read_h5_file(FILEPATH + FILENAME)
+#size = len(datasets)
+#print(f'elapsed time: {(time.time() - start)/1000} seconds')
