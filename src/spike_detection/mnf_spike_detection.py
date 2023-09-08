@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import nimfa
+from loguru import logger
 from sklearn.metrics import adjusted_rand_score
 from scipy.cluster.hierarchy import linkage, cophenet
 from scipy.special import rel_entr
@@ -89,16 +90,22 @@ def nmf_run(args):
     best_W = None
 
     for n in range(n_runs):
+        logger.debug(f"Rank {rank}, Run {n + 1}/{n_runs}: Initialize NMF-object")
         nmf = nimfa.Nmf(data_matrix.T, rank=rank, seed="random_vcol", max_iter=10)
+        logger.debug(f"Rank {rank}, Run {n + 1}/{n_runs}: Perform matrix factorization")
         fit = nmf()
+        logger.debug(f"Rank {rank}, Run {n + 1}/{n_runs}: Get CONNECTIVITY")
         connectivity = fit.fit.connectivity()
         connectivity_matrices.append(connectivity)
         consensus += connectivity
         obj[n] = fit.fit.final_obj
         if obj[n] < lowest_obj:
+            logger.debug(
+                f"Rank {rank}, Run {n+1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
+            )
             lowest_obj = obj[n]
-            best_H = fit.coef()
-            best_W = fit.basis()
+            best_H = fit.fit.coef()
+            best_W = fit.fit.basis()
 
     consensus /= n_runs
     coph = calculate_cophenetic_corr(consensus)
@@ -118,6 +125,8 @@ def nmf_run(args):
         "Cophenetic Correlation": coph,
         "Instability index": instability,
     }
+
+    logger.debug(f"Rank {rank}: Finished {n_runs} runs of NMF")
 
     return metrics, consensus, connectivity_matrices, best_H, best_W
 
@@ -151,6 +160,10 @@ def parallel_nmf_consensus_clustering(
 
     # Using all available cores
     n_cores = multiprocessing.cpu_count()
+
+    logger.debug(
+        f"Running NMF on {n_cores} cores for ranks {range(rank_range[0], rank_range[1] + 1)} and {n_runs} runs each"
+    )
 
     with multiprocessing.Pool(processes=n_cores) as pool:
         results = pool.map(
@@ -206,7 +219,10 @@ def parallel_nmf_consensus_clustering(
     metrics_df["C"] = C
     metrics_df["delta_k (AUC)"] = delta_k
     metrics_df["delta_y (KL-div)"] = delta_y
-    print(f"Optimal k = {k_opt}")
+
+    logger.debug(
+        f"Calculated statistics:\n    - C = {C}\n     - delta_k (AUC) = {delta_k}\n     - delta_y (KL-div) = {delta_y}\n      - optimal k = {k_opt}"
+    )
 
     # Saving metrics as CSV
     metrics_path = os.path.join(experiment_dir, "metrics.csv")

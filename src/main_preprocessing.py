@@ -3,7 +3,7 @@ import multiprocessing
 from preprocessing.pipeline import parallel_preprocessing
 from loader.loader import read_h5_file
 
-FILEPATH = "../../../Data/"
+FILEPATH = "/home/dominik/Uni/HS2023/Thesis/Data/"
 FILENAME = "Sz2.h5"
 
 if __name__ == "__main__":

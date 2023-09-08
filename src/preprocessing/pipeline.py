@@ -9,14 +9,10 @@ from src.preprocessing.filtering import filter_signal, notch_filter_signal
 from src.preprocessing.line_length import apply_line_length
 from src.preprocessing.resampling import resample_data
 from src.preprocessing.rescaling import rescale_data
-from src.utils import logging_utils
 
 
 def apply_preprocessing_steps(traces: List[Trace]):
     # TODO add documentation
-
-    # configure logger
-    logging_utils.add_logger_with_process_name()
 
     # parameters
     notch_freq = 50
