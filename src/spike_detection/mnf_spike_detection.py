@@ -221,7 +221,7 @@ def parallel_nmf_consensus_clustering(
     metrics_df["delta_y (KL-div)"] = delta_y
 
     logger.debug(
-        f"Calculated statistics:\n"
+        f"\nCalculated statistics:\n"
         f"  - C = {C}\n"
         f"  - delta_k (AUC) = {delta_k}\n"
         f"  - delta_y (KL-div) = {delta_y}\n"
