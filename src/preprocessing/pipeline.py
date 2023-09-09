@@ -11,14 +11,14 @@ from src.preprocessing.resampling import resample_data
 from src.preprocessing.rescaling import rescale_data
 
 
-def apply_preprocessing_steps(traces: List[Trace]):
-    # TODO add documentation
-
-    # parameters
-    notch_freq = 50
-    bandpass_cutoff_low = 1
-    bandpass_cutoff_high = 200
-    resampling_freq = 500
+def apply_preprocessing_steps(
+    traces: List[Trace],
+    notch_freq: int,
+    resampling_freq: int,
+    bandpass_cutoff_low: int,
+    bandpass_cutoff_high: int,
+):
+    # TODO add documentation, clean up
 
     # channel names
     channel_names = [trace.label for trace in traces]
@@ -73,18 +73,33 @@ def apply_preprocessing_steps(traces: List[Trace]):
     return line_length_eeg
 
 
-def parallel_preprocessing(traces: List[Trace]):
+def parallel_preprocessing(
+    traces: List[Trace],
+    notch_freq: int = 50,
+    resampling_freq: int = 500,
+    bandpass_cutoff_low: int = 1,
+    bandpass_cutoff_high: int = 200,
+    n_processes: int = 4,
+):
     # TODO: add documentation
+    logger.debug(f"Starting preprocessing pipeline on {n_processes} parallel processes")
 
-    # Using all available cores
+    # Using all available cores for process pool
     n_cores = multiprocessing.cpu_count()
 
-    logger.debug(f"Starting preprocessing pipeline on {n_cores} different cores")
-
     with multiprocessing.Pool(processes=n_cores) as pool:
-        preprocessed_data = pool.map(
+        preprocessed_data = pool.starmap(
             apply_preprocessing_steps,
-            np.array_split(traces, round(len(traces) / n_cores)),
+            [
+                (
+                    data,
+                    notch_freq,
+                    resampling_freq,
+                    bandpass_cutoff_low,
+                    bandpass_cutoff_high,
+                )
+                for data in np.array_split(traces, 4)
+            ],
         )
 
     data = np.concatenate(preprocessed_data, axis=0)

@@ -1,16 +1,15 @@
 import h5py
+import mne.io
 import numpy as np
-from h5py import AttributeManager
+from loguru import logger
 
 from src.domain.Trace import Trace
 
-FILEPATH = "../../../../Data/"
-FILENAME = "Sz2.h5"
 TRACES = "traces"
 RAW_DATA = "raw"
 
 
-def create_trace(label: str, dataset: h5py.Dataset, attributes: AttributeManager):
+def create_trace(label: str, dataset: np.array, attributes: dict):
     """
     Create a Trace object from a recording of a particular electrode with corresponding label
 
@@ -21,21 +20,15 @@ def create_trace(label: str, dataset: h5py.Dataset, attributes: AttributeManager
     """
     return Trace(
         label,
-        attributes.get("duration"),
-        attributes.get("n_samples"),
-        attributes.get("processing"),
-        dataset.attrs.get("sfreq"),
-        dataset.attrs.get("unit"),
-        attributes.get("start_date"),
-        attributes.get("start_time"),
-        attributes.get("start_timestamp"),
-        dataset[:].astype(np.float64),
+        attributes.get("sfreq"),
+        attributes.get("unit"),
+        dataset[:10000].astype(np.float64),
     )
 
 
-def read_h5_file(path):
+def read_h5_file(path: str):
     """
-    Load a file in hdf5 format and transform its content to a list of Traces
+    Loads a file in hdf5 format and transform its content to a list of Traces.
 
     :param path: path to file
     :return: List of Trace objects
@@ -55,7 +48,22 @@ def read_h5_file(path):
     ]
 
 
-# start = time.time()
-# datasets = read_h5_file(FILEPATH + FILENAME)
-# size = len(datasets)
-# print(f'elapsed time: {(time.time() - start)/1000} seconds')
+def read_file(path: str):
+    # TODO: add doc
+    filename = path[path.rfind("/") + 1 :]
+    logger.debug(f"Loading file {filename}")
+    ext = path[path.rfind(".") + 1 :].lower()
+
+    if ext == "h5":
+        return read_h5_file(path)
+    elif ext == "fif" or ext == "edf":
+        file = mne.io.read_raw_fif(path) if ext == "fif" else mne.io.read_raw_edf(path)
+        raw_traces = file.get_data()
+        attributes = dict({"sfreq": file.info["sfreq"], "unit": None})
+
+        return [
+            create_trace(label, times, attributes)
+            for label, times in zip(file.ch_names, raw_traces)
+        ]
+    else:
+        raise Exception(f"Data format {ext} ist not supported by this application")

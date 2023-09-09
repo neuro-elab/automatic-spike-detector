@@ -23,6 +23,8 @@ def filter_signal(
     :param zero_center: if True, re-centers the signal/-s, defaults to True
     :return: bandpass filtered zero-centered signal/-s at cut-off frequency 200 Hz
     """
+    # TODO: remove nyq
+
     # Nyquist frequency (i.e. half the sampling frequency)
     nyq = sfreq / 2
 
@@ -39,7 +41,7 @@ def filter_signal(
     iir_params = dict(order=2, ftype="butter", btype="bandpass")
     iir_filter = mne.filter.create_filter(
         data,
-        nyq,
+        sfreq,
         l_freq=cutoff_freq_low,
         h_freq=cutoff_freq_high,
         method="iir",

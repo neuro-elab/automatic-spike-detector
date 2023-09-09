@@ -132,7 +132,7 @@ def nmf_run(args):
 
 
 def parallel_nmf_consensus_clustering(
-    data_matrix, rank_range, n_runs, target_clusters=None
+    data_matrix, rank_range, n_runs, filename, target_clusters=None
 ):
     """
     Parallel NMF consensus clustering.
@@ -155,15 +155,16 @@ def parallel_nmf_consensus_clustering(
     """
     # Create a directory for the experiment
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    experiment_dir = os.path.join("Experiment_" + timestamp)
+    experiment_dir = os.path.join(filename + "_" + timestamp)
     os.makedirs(experiment_dir, exist_ok=True)
 
-    # Using all available cores
-    n_cores = multiprocessing.cpu_count()
-
     logger.debug(
-        f"Running NMF on {n_cores} cores for ranks {range(rank_range[0], rank_range[1] + 1)} and {n_runs} runs each"
+        f"Running NMF on {len(list(range(rank_range[0], rank_range[1] + 1)))} cores for ranks "
+        f"{list(range(rank_range[0], rank_range[1] + 1))} and {n_runs} runs each"
     )
+
+    # Using all available cores for process pool
+    n_cores = multiprocessing.cpu_count()
 
     with multiprocessing.Pool(processes=n_cores) as pool:
         results = pool.map(
@@ -221,11 +222,11 @@ def parallel_nmf_consensus_clustering(
     metrics_df["delta_y (KL-div)"] = delta_y
 
     logger.debug(
-        f"\nCalculated statistics:\n"
-        f"  - C = {C}\n"
-        f"  - delta_k (AUC) = {delta_k}\n"
-        f"  - delta_y (KL-div) = {delta_y}\n"
-        f"  - optimal k = {k_opt}"
+        f"Calculated statistics:\n "
+        f"C = {C}\n "
+        f"delta_k (AUC) = {delta_k}\n "
+        f"delta_y (KL-div) = {delta_y}\n "
+        f"optimal k = {k_opt}"
     )
 
     # Saving metrics as CSV

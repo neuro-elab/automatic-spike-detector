@@ -51,8 +51,9 @@ def apply_line_length(eeg_data: np.array, sfreq: int):
         eeg_cuboid = np.empty((eeg_interval.shape[0], eeg_interval.shape[1], w_eff))
         for j in range(w_eff):
             # TODO check whether we need j-1 or simply j in the nan part
-            eeg_cuboid[:, :j, j] = np.nan
-            eeg_cuboid[:, j:, j] = eeg_interval[:, j:]
+            eeg_cuboid[:, :, j] = np.concatenate(
+                (eeg_interval[:, j:], np.zeros((nr_channels, j))), axis=1
+            )
 
         # perform line length computations
         line_length_interval = np.nansum(np.abs(np.diff(eeg_cuboid, 1, 2)), 2)
