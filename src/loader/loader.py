@@ -22,7 +22,7 @@ def create_trace(label: str, dataset: np.array, attributes: dict):
         label,
         attributes.get("sfreq"),
         attributes.get("unit"),
-        dataset[:10000].astype(np.float64),
+        dataset[:].astype(np.float64),
     )
 
 

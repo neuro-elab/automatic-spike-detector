@@ -17,7 +17,9 @@ if __name__ == "__main__":
 
     file: str = parser.parse_args().file
     path_to_file = file[: file.rfind("/")]
-    filename_for_saving = file[file.rfind("/") + 1 :].replace(".", "_")
+    filename_for_saving = (
+        file[file.rfind("/") + 1 :].replace(".", "_").replace(" ", "_")
+    )
 
     # Configure logger
     logging_utils.add_logger_with_process_name()
