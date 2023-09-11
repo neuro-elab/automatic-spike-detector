@@ -32,5 +32,6 @@ def plot_consensus_matrices(folder: str):
 
     fig.suptitle(folder[folder.rfind("/") + 1 :])
     fig.subplots_adjust(hspace=0.3)
+    fig.colorbar(mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlGn"]), ax=ax, shrink=0.6)
 
     plt.savefig(folder + "/consensus_matrices.pdf", bbox_inches="tight")
