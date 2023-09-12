@@ -84,28 +84,23 @@ def nmf_run(args):
     data_matrix, rank, n_runs, target_clusters = args
     consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
     obj = np.zeros(n_runs)
-    connectivity_matrices = []
     lowest_obj = float("inf")
     best_H = None
     best_W = None
 
     for n in range(n_runs):
-        logger.debug(f"Rank {rank}, Run {n + 1}/{n_runs}: Initialize NMF-object")
         nmf = nimfa.Nmf(data_matrix.T, rank=rank, seed="random_vcol", max_iter=10)
         logger.debug(f"Rank {rank}, Run {n + 1}/{n_runs}: Perform matrix factorization")
         fit = nmf()
-        logger.debug(f"Rank {rank}, Run {n + 1}/{n_runs}: Get CONNECTIVITY")
-        connectivity = fit.fit.connectivity()
-        connectivity_matrices.append(connectivity)
-        consensus += connectivity
+        consensus += fit.fit.connectivity()
         obj[n] = fit.fit.final_obj
         if obj[n] < lowest_obj:
             logger.debug(
                 f"Rank {rank}, Run {n+1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
             )
             lowest_obj = obj[n]
-            best_H = fit.fit.coef()
-            best_W = fit.fit.basis()
+            best_W = fit.fit.coef().T
+            best_H = fit.fit.basis().T
 
     consensus /= n_runs
     coph = calculate_cophenetic_corr(consensus)
@@ -128,7 +123,7 @@ def nmf_run(args):
 
     logger.debug(f"Rank {rank}: Finished {n_runs} runs of NMF")
 
-    return metrics, consensus, connectivity_matrices, best_H, best_W
+    return metrics, consensus, best_H, best_W
 
 
 def parallel_nmf_consensus_clustering(
@@ -163,7 +158,7 @@ def parallel_nmf_consensus_clustering(
         f"{list(range(rank_range[0], rank_range[1] + 1))} and {n_runs} runs each"
     )
 
-    # Using all available cores for process pool
+    # Using all available cores for process pool, currently only one process per rank is used
     n_cores = multiprocessing.cpu_count()
 
     with multiprocessing.Pool(processes=n_cores) as pool:
@@ -180,9 +175,7 @@ def parallel_nmf_consensus_clustering(
     k_range = rank_range[1] - rank_range[0] + 1
     M = np.zeros((k_range, n, n))
 
-    for idx, (metrics, consensus, connectivity_matrices, best_H, best_W) in enumerate(
-        results
-    ):
+    for idx, (metrics, consensus, best_H, best_W) in enumerate(results):
         # Saving consensus matrix to M
         M[idx] = consensus
 
@@ -190,16 +183,6 @@ def parallel_nmf_consensus_clustering(
         rank = rank_range[0] + idx
         rank_dir = os.path.join(experiment_dir, f"k={rank}")
         os.makedirs(rank_dir, exist_ok=True)
-
-        connectivity_dir = os.path.join(rank_dir, "connectivity_matrices")
-        os.makedirs(connectivity_dir, exist_ok=True)
-
-        # Saving connectivity matrices
-        for idx, matrix in enumerate(connectivity_matrices):
-            connectivity_path = os.path.join(
-                connectivity_dir, f"connectivity_{idx + 1}.csv"
-            )
-            np.savetxt(connectivity_path, matrix, delimiter=",")
 
         # Saving consensus matrix
         consensus_path = os.path.join(rank_dir, "consensus_matrix.csv")

@@ -1,5 +1,6 @@
 import multiprocessing
 import argparse
+import time
 
 from loguru import logger
 from sklearn.preprocessing import normalize
@@ -25,10 +26,16 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Load data
+    start = time.time()
     data = read_file(file)
+    end = time.time()
+    logger.debug(f"Finished loading data in {end - start} seconds")
 
     # Apply preprocessing steps, runs parallelized on several cores if available
+    start = time.time()
     X = parallel_preprocessing(data)
+    end = time.time()
+    logger.debug(f"Finished preprocessing in {end - start} seconds")
 
     multiprocessing.freeze_support()
 
@@ -53,6 +60,7 @@ if __name__ == "__main__":
     runs_per_rank = 100
 
     # Run the NMF consensus clustering
+    start = time.time()
     experiment_dir = parallel_nmf_consensus_clustering(
         data_matrix,
         (k_min, k_max),
@@ -60,6 +68,8 @@ if __name__ == "__main__":
         filename_for_saving,
         target_clusters=labels,
     )
+    end = time.time()
+    logger.debug(f"Finished nmf in {end - start} seconds")
 
     # Print a confirmation that the results have been saved in the appropriate directory
     logger.debug(f"Results saved in directory: {experiment_dir}")

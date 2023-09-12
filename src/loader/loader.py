@@ -2,11 +2,83 @@ import h5py
 import mne.io
 import numpy as np
 from loguru import logger
+from mne.io.edf.edf import RawEDF
 
 from src.domain.Trace import Trace
 
 TRACES = "traces"
 RAW_DATA = "raw"
+# TODO: remove patient labels
+LABELS_EL010 = [
+    "Hip21",
+    "Hip22",
+    "Hip23",
+    "Hip24",
+    "Hip25",
+    "Hip26",
+    "Hip27",
+    "Hip28",
+    "Hip29",
+    "Hip210",
+    "Temp1",
+    "Temp2",
+    "Temp3",
+    "Temp4",
+    "Temp5",
+    "Temp6",
+    "Temp7",
+    "Temp8",
+    "Temp9",
+    "Temp10",
+    "FrOr1",
+    "FrOr2",
+    "FrOr3",
+    "FrOr4",
+    "FrOr5",
+    "FrOr6",
+    "FrOr7",
+    "FrOr8",
+    "FrOr9",
+    "FrOr10",
+    "FrOr11",
+    "FrOr12",
+    "In An1",
+    "In An2",
+    "In An3",
+    "In An4",
+    "In An5",
+    "In An6",
+    "In An7",
+    "In An8",
+    "In An9",
+    "In An10",
+    "In An11",
+    "In An12",
+    "InPo1",
+    "InPo2",
+    "InPo3",
+    "InPo4",
+    "InPo5",
+    "InPo6",
+    "InPo7",
+    "InPo8",
+    "InPo9",
+    "InPo10",
+    "InPo11",
+    "InPo12",
+    "Hip11",
+    "Hip12",
+    "Hip13",
+    "Hip14",
+    "Hip15",
+    "Hip16",
+    "Hip17",
+    "Hip18",
+    "Hip19",
+    "Hip110",
+    "Hip111",
+    "Hip112",
+]
 
 
 def create_trace(label: str, dataset: np.array, attributes: dict):
@@ -22,7 +94,7 @@ def create_trace(label: str, dataset: np.array, attributes: dict):
         label,
         attributes.get("sfreq"),
         attributes.get("unit"),
-        dataset[:].astype(np.float64),
+        dataset[:100000].astype(np.float64),
     )
 
 
@@ -57,13 +129,15 @@ def read_file(path: str):
     if ext == "h5":
         return read_h5_file(path)
     elif ext == "fif" or ext == "edf":
-        file = mne.io.read_raw_fif(path) if ext == "fif" else mne.io.read_raw_edf(path)
-        raw_traces = file.get_data()
+        file: RawEDF = (
+            mne.io.read_raw_fif(path) if ext == "fif" else mne.io.read_raw_edf(path)
+        )
+        raw_traces = file.get_data(LABELS_EL010)
         attributes = dict({"sfreq": file.info["sfreq"], "unit": None})
 
         return [
             create_trace(label, times, attributes)
-            for label, times in zip(file.ch_names, raw_traces)
+            for label, times in zip(LABELS_EL010, raw_traces)
         ]
     else:
         raise Exception(f"Data format {ext} ist not supported by this application")
