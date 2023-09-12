@@ -50,7 +50,6 @@ def apply_line_length(eeg_data: np.array, sfreq: int):
         # where each plane is shifted by a millisecond w.r.t. the preceding plane
         eeg_cuboid = np.empty((eeg_interval.shape[0], eeg_interval.shape[1], w_eff))
         for j in range(w_eff):
-            # TODO check whether we need j-1 or simply j in the nan part
             eeg_cuboid[:, :, j] = np.concatenate(
                 (eeg_interval[:, j:], np.zeros((nr_channels, j))), axis=1
             )
@@ -71,7 +70,5 @@ def apply_line_length(eeg_data: np.array, sfreq: int):
         ),
         axis=1,
     )
-
-    # TODO: check whether downsampling for line length should be available (in Epitome only done when freq < 50 Hz)
 
     return line_length_eeg

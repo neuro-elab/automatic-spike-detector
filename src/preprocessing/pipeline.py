@@ -20,16 +20,16 @@ def apply_preprocessing_steps(
 ):
     # TODO add documentation, clean up
 
-    # channel names
+    # Channel names
     channel_names = [trace.label for trace in traces]
 
-    # frequency of data
+    # Frequency of data
     data_freq = traces[0].sfreq
 
-    # extract data from traces
+    # Extract data from traces
     traces = np.array([trace.data for trace in traces])
 
-    # 1. bandpass filter
+    # 1. Bandpass filter
     logger.debug(
         f"Bandpass filter data between {bandpass_cutoff_low} and {bandpass_cutoff_high} Hz"
     )
@@ -41,7 +41,7 @@ def apply_preprocessing_steps(
         data=traces,
     )
 
-    # 2. notch filter
+    # 2. Notch filter
     logger.debug(f"Apply notch filter at {notch_freq} Hz")
     notch_filtered = notch_filter_signal(
         eeg_data=bandpass_filtered,
@@ -50,15 +50,14 @@ def apply_preprocessing_steps(
         sfreq=data_freq,
     )
 
-    # 3. scaling channels
+    # 3. Scaling channels
     logger.debug("Rescale filtered data")
     scaled_data = rescale_data(
         data_to_be_scaled=notch_filtered, original_data=traces, sfreq=data_freq
     )
 
-    # 4. resampling data
+    # 4. Resampling data
     logger.debug(f"Resample data at sampling frequency {resampling_freq} Hz")
-
     resampled_data = resample_data(
         data=scaled_data,
         channel_names=channel_names,
@@ -66,11 +65,24 @@ def apply_preprocessing_steps(
         resampling_freq=resampling_freq,
     )
 
-    # 5. compute line length
+    # 5. Compute line length
     logger.debug("Apply line length computations")
     line_length_eeg = apply_line_length(eeg_data=resampled_data, sfreq=data_freq)
 
-    return line_length_eeg
+    # TODO: check whether downsampling for line length should be available (in Epitome only done when freq < 50 Hz)
+    # 6. Downsample to 50 hz
+    logger.debug("Resample line length at 50 Hz")
+    resampled_data = resample_data(
+        data=line_length_eeg,
+        channel_names=channel_names,
+        sfreq=data_freq,
+        resampling_freq=50,
+    )
+
+    # Resampling produced some negative values, replace by 0
+    resampled_data[resampled_data < 0] = 0
+
+    return resampled_data
 
 
 def parallel_preprocessing(
