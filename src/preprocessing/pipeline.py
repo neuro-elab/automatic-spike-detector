@@ -91,7 +91,7 @@ def parallel_preprocessing(
     resampling_freq: int = 500,
     bandpass_cutoff_low: int = 1,
     bandpass_cutoff_high: int = 200,
-    n_processes: int = 4,
+    n_processes: int = 8,
 ):
     # TODO: add documentation
     logger.debug(f"Starting preprocessing pipeline on {n_processes} parallel processes")
@@ -110,7 +110,7 @@ def parallel_preprocessing(
                     bandpass_cutoff_low,
                     bandpass_cutoff_high,
                 )
-                for data in np.array_split(traces, 4)
+                for data in np.array_split(traces, n_processes)
             ],
         )
 

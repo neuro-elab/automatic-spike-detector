@@ -4,7 +4,7 @@ import time
 
 from loguru import logger
 from sklearn.preprocessing import normalize
-from spike_detection.nmf_spike_detection import parallel_nmf_consensus_clustering
+from spike_detection.nmf import parallel_nmf_consensus_clustering
 from preprocessing.pipeline import parallel_preprocessing
 from loader.loader import read_file
 from src.utils import logging_utils
@@ -25,38 +25,40 @@ if __name__ == "__main__":
     # Configure logger
     logging_utils.add_logger_with_process_name()
 
-    # Load data
+    #####################
+    #   DATA LOADING    #
+    #####################
+
     start = time.time()
     data = read_file(file)
     end = time.time()
     logger.debug(f"Finished loading data in {end - start} seconds")
 
-    # Apply preprocessing steps, runs parallelized on several cores if available
+    #####################
+    #   PREPROCESSING   #
+    #####################
+
+    # Preprocessing steps, ran on several partitions of the data concurrently
+    # if multiprocessing is available
     start = time.time()
-    X = parallel_preprocessing(data)
+    preprocessed_data = parallel_preprocessing(data)
     end = time.time()
     logger.debug(f"Finished preprocessing in {end - start} seconds")
 
     multiprocessing.freeze_support()
 
-    # If your data set has labels, and you want to see if NMF can reproduce them in
-    # an unsupervised manner you can input them here, otherwise set to "None"
-    labels = None
+    #####################
+    #   NMF             #
+    #####################
 
-    # Here you can add any preprocessing steps but make sure your data are properly
-    # normalized or scaled for NMF (X should be non-negative)
-    data_matrix = normalize(X)
+    # Normalize for NMF (preprocessed data needs to be non-negative)
+    data_matrix = normalize(preprocessed_data)
 
-    # If you want to find the optimal k number of clusters you need to first specify
-    # a range for k. A larger range will require more computational resources
-    # If you are finding it takes too long to run on your local machine you can try running
-    # on the UBELIX cluster (see my documentation on getting set up on HPC)
+    # Specify range of ranks
     k_min = 2
-    k_max = 5
+    k_max = 10
 
-    # Lastly, you should specify the number of runs per rank.  This is important for establishing
-    # the stability of your solution per rank.  While not recursive, this process ensures that
-    # there are enough replicates to claim stability.  Default = 100
+    # How many runs of NMF to perform per rank
     runs_per_rank = 100
 
     # Run the NMF consensus clustering
@@ -66,10 +68,14 @@ if __name__ == "__main__":
         (k_min, k_max),
         runs_per_rank,
         filename_for_saving,
-        target_clusters=labels,
+        target_clusters=None,
     )
     end = time.time()
     logger.debug(f"Finished nmf in {end - start} seconds")
 
     # Print a confirmation that the results have been saved in the appropriate directory
     logger.debug(f"Results saved in directory: {experiment_dir}")
+
+    #####################
+    #   THRESHOLDING    #
+    #####################
