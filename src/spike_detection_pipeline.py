@@ -1,14 +1,18 @@
+import csv
 import multiprocessing
 import argparse
+import os
 import time
 
+import numpy as np
 from loguru import logger
+from numpy import genfromtxt
 from sklearn.preprocessing import normalize
 from spike_detection.nmf import parallel_nmf_consensus_clustering
 from preprocessing.pipeline import parallel_preprocessing
 from loader.loader import read_file
 from src.spike_detection import thresholding
-from src.spike_detection.clustering import Clusterer
+from src.spike_detection.clustering import BasisFunctionClusterer
 from src.utils import logging_utils
 
 if __name__ == "__main__":
@@ -90,4 +94,31 @@ if __name__ == "__main__":
     # CLUSTERING BS FCT #
     #####################
 
-    clusterer = Clusterer(data_matrix)
+    # Retrieve the paths to the rank directories within the experiment folder
+    rank_dirs = [
+        experiment_dir + "/" + k_dir
+        for k_dir in os.listdir(experiment_dir)
+        if os.path.isdir(os.path.join(experiment_dir, k_dir)) and "k=" in k_dir
+    ]
+
+    filename_data_matrix = "H_best.csv"
+
+    # Initialize kmeans clustering object
+    kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
+
+    for rank_dir in rank_dirs:
+        w_matrix = genfromtxt(rank_dir + "/" + filename_data_matrix, delimiter=",")
+
+        cluster_assignments = kmeans.cluster(w_matrix)
+        cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
+
+        assignments_path = os.path.join(rank_dir, "cluster_assignments.csv")
+        with open(assignments_path, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(cluster_assignments)
+
+        logger.debug(
+            f"Clustering W for rank {rank_dir[rank_dir.rfind('=') + 1:]} "
+            f"produced the following assignments for the basis functions: "
+            f"{cluster_assignments}"
+        )
