@@ -8,6 +8,7 @@ from spike_detection.nmf import parallel_nmf_consensus_clustering
 from preprocessing.pipeline import parallel_preprocessing
 from loader.loader import read_file
 from src.spike_detection import thresholding
+from src.spike_detection.clustering import Clusterer
 from src.utils import logging_utils
 
 if __name__ == "__main__":
@@ -84,3 +85,9 @@ if __name__ == "__main__":
     spike_annotations = thresholding.parallel_thresholding(experiment_dir)
 
     logger.debug("Spike annotations saved in respecting rank folders")
+
+    #####################
+    # CLUSTERING BS FCT #
+    #####################
+
+    clusterer = Clusterer(data_matrix)

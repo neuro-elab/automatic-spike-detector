@@ -1,12 +1,13 @@
 import csv
 import multiprocessing
 import os
+from typing import List
 
 import numpy as np
 from numpy import genfromtxt
 
 
-def generate_threshold(data_matrix):
+def generate_threshold(data_matrix) -> float:
     # TODO: add doc
     # Calculate number of bins
     nr_bins = min(round(0.1 * data_matrix.shape[1]), 1000)
@@ -27,7 +28,6 @@ def generate_threshold(data_matrix):
     # Compute first differences
     first_diff = np.diff(hist_smoothed, 1)
 
-    # TODO: Epitome duplicates first dp in first diff
     # Correct for size of result array of first difference, duplicate first value
     first_diff = np.append(first_diff[0], first_diff)
 
@@ -54,7 +54,6 @@ def generate_threshold(data_matrix):
     # Second difference of hist
     second_diff = np.diff(first_diff_smoothed, 1)
 
-    # TODO: Epitome duplicates first dp in second diff, for array size
     # Correct for size of result array of differentiation, duplicate first column
     second_diff = np.append(second_diff[0], second_diff)
 
@@ -83,7 +82,8 @@ def generate_threshold(data_matrix):
     return threshold
 
 
-def annotate_spikes(k_dir: str):
+def annotate_spikes(k_dir: str) -> List[np.ndarray]:
+    # TODO: add doc
     filename_data_matrix = "H_best.csv"
     data_matrix = genfromtxt(k_dir + "/" + filename_data_matrix, delimiter=",")
 
@@ -110,7 +110,7 @@ def annotate_spikes(k_dir: str):
     return spike_annotations
 
 
-def parallel_thresholding(experiment_dir: str):
+def parallel_thresholding(experiment_dir: str) -> List[np.ndarray]:
     # TODO: add doc
     # Retrieve the paths to the rank directories within the experiment folder
     rank_dirs = [
