@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     experiment_dir: str = parser.parse_args().dir
 
-    spike_annotations = thresholding.annotate_spikes(experiment_dir + "/k=3")
+    spike_annotations = thresholding.parallel_thresholding(experiment_dir)
 
     logger.debug(
         f"Got the following spike annotations for ranks in range (2, 10): {spike_annotations}"
