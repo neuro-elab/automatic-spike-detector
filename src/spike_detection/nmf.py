@@ -1,225 +1,102 @@
-import multiprocessing
 import os
-import datetime
-import numpy as np
-import pandas as pd
+from typing import Tuple, Dict
+
 import nimfa
+import numpy as np
 from loguru import logger
-from sklearn.metrics import adjusted_rand_score
 from scipy.cluster.hierarchy import linkage, cophenet
-from scipy.special import rel_entr
 
 
-def compute_cdf(matrix, bins):
-    N = matrix.shape[0]
-    values = np.array([matrix[i, j] for i in range(N - 1) for j in range(i + 1, N)])
-    counts, _ = np.histogram(values, bins=bins, density=True)
-    cdf_vals = np.cumsum(counts) / (N * (N - 1) / 2)
-    return cdf_vals + 1e-10  # we have to add a small offset to avoid div0!
+class Nmf:
+    def __init__(self, rank_dir: str, rank: int):
+        self.rank_dir = rank_dir
+        self.rank = rank
 
+    def __calculate_cophenetic_corr(self, A: np.ndarray) -> np.ndarray:
+        """
+        Compute the cophenetic correlation coefficient for matrix A.
 
-def compute_cdf_area(cdf_vals, bin_width):
-    return np.sum(cdf_vals[:-1]) * bin_width
+        Parameters:
+        - A : numpy.ndarray
+            Input matrix.
 
-
-def compute_delta_k(areas, cdfs):
-    delta_k = np.zeros(len(areas))
-    delta_y = np.zeros(len(areas))
-    delta_k[0] = areas[0]
-    for i in range(1, len(areas)):
-        delta_k[i] = (areas[i] - areas[i - 1]) / areas[i - 1]
-        delta_y[i] = sum(rel_entr(cdfs[:, i], cdfs[:, i - 1]))
-    return delta_k, delta_y
-
-
-def calculate_statistics(M, rank_range, bins):
-    k_min, k_max = rank_range
-    bin_width = bins[1] - bins[0]
-
-    num_bins = len(bins) - 1
-    cdfs = np.zeros((num_bins, k_max - k_min + 1))
-    areas = np.zeros(k_max - k_min + 1)
-
-    for i, m in enumerate(M):
-        cdf_vals = compute_cdf(m, bins)
-        areas[i] = compute_cdf_area(cdf_vals, bin_width)
-        cdfs[:, i] = cdf_vals
-
-    delta_k, delta_y = compute_delta_k(areas, cdfs)
-    k_opt = np.argmax(delta_k) + k_min if delta_k.size > 0 else k_min
-
-    return areas, delta_k, delta_y, k_opt
-
-
-def calculate_cophenetic_corr(A):
-    """
-    Compute the cophenetic correlation coefficient for matrix A.
-
-    Parameters:
-    - A : numpy.ndarray
-        Input matrix.
-
-    Returns:
-    - float
-        Cophenetic correlation coefficient.
-    """
-    # Extract the values from the lower triangle of A
-    avec = np.array(
-        [A[i, j] for i in range(A.shape[0] - 1) for j in range(i + 1, A.shape[1])]
-    )
-
-    # Consensus entries are similarities, conversion to distances
-    Y = 1 - avec
-
-    # Hierarchical clustering
-    Z = linkage(Y, method="average")
-
-    # Cophenetic correlation coefficient of a hierarchical clustering
-    coph = cophenet(Z, Y)[0]
-
-    return coph
-
-
-def nmf_run(args):
-    data_matrix, rank, n_runs, target_clusters = args
-    consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
-    obj = np.zeros(n_runs)
-    lowest_obj = float("inf")
-    best_H = None
-    best_W = None
-
-    for n in range(n_runs):
-        nmf = nimfa.Nmf(data_matrix.T, rank=rank, seed="random_vcol", max_iter=10)
-        logger.debug(f"Rank {rank}, Run {n + 1}/{n_runs}: Perform matrix factorization")
-        fit = nmf()
-        consensus += fit.fit.connectivity()
-        obj[n] = fit.fit.final_obj
-        if obj[n] < lowest_obj:
-            logger.debug(
-                f"Rank {rank}, Run {n+1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
-            )
-            lowest_obj = obj[n]
-            best_W = fit.fit.coef().T
-            best_H = fit.fit.basis().T
-
-    consensus /= n_runs
-    coph = calculate_cophenetic_corr(consensus)
-    instability = 1 - coph
-
-    # Computing ARI if target_clusters is provided
-    ari = None
-    if target_clusters is not None:
-        clusters = np.array([np.argmax(best_H[:, i]) for i in range(best_H.shape[1])])
-        ari = adjusted_rand_score(target_clusters, clusters)
-
-    # Storing metrics
-    metrics = {
-        "Rank": rank,
-        "Min Final Obj": lowest_obj,
-        "Adjusted Rand Index": ari,
-        "Cophenetic Correlation": coph,
-        "Instability index": instability,
-    }
-
-    logger.debug(f"Rank {rank}: Finished {n_runs} runs of NMF")
-
-    return metrics, consensus, best_H, best_W
-
-
-def parallel_nmf_consensus_clustering(
-    data_matrix, rank_range, n_runs, filename, target_clusters=None
-):
-    """
-    Parallel NMF consensus clustering.
-
-    Parameters:
-    - data_matrix : numpy.ndarray
-        Data matrix.
-    - rank_range : tuple of int
-        Range of ranks, e.g., (k_min, k_max)
-    - n_runs : int
-        Number of runs for each rank.
-    - target_clusters : numpy.ndarray or None
-        Target clusters, if available.
-
-    Returns:
-    - experiment_dir : str
-        Directory where results are saved.
-    - M : numpy.ndarray
-        3D array where each slice along the first axis is a consensus matrix for a specific rank.
-    """
-    # Create a directory for the experiment
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    experiment_dir = os.path.join(filename + "_" + timestamp)
-    os.makedirs(experiment_dir, exist_ok=True)
-
-    logger.debug(
-        f"Running NMF on {len(list(range(rank_range[0], rank_range[1] + 1)))} cores for ranks "
-        f"{list(range(rank_range[0], rank_range[1] + 1))} and {n_runs} runs each"
-    )
-
-    # Using all available cores for process pool, currently only one process per rank is used
-    n_cores = multiprocessing.cpu_count()
-
-    with multiprocessing.Pool(processes=n_cores) as pool:
-        results = pool.map(
-            nmf_run,
-            [
-                (data_matrix, rank, n_runs, target_clusters)
-                for rank in range(rank_range[0], rank_range[1] + 1)
-            ],
+        Returns:
+        - float
+            Cophenetic correlation coefficient.
+        """
+        # Extract the values from the lower triangle of A
+        avec = np.array(
+            [A[i, j] for i in range(A.shape[0] - 1) for j in range(i + 1, A.shape[1])]
         )
 
-    # Create the M matrix
-    n = data_matrix.shape[0]
-    k_range = rank_range[1] - rank_range[0] + 1
-    M = np.zeros((k_range, n, n))
+        # Consensus entries are similarities, conversion to distances
+        Y = 1 - avec
 
-    for idx, (metrics, consensus, best_H, best_W) in enumerate(results):
-        # Saving consensus matrix to M
-        M[idx] = consensus
+        # Hierarchical clustering
+        Z = linkage(Y, method="average")
 
-        # Saving other results
-        rank = rank_range[0] + idx
-        rank_dir = os.path.join(experiment_dir, f"k={rank}")
-        os.makedirs(rank_dir, exist_ok=True)
+        # Cophenetic correlation coefficient of a hierarchical clustering
+        coph = cophenet(Z, Y)[0]
 
+        return coph
+
+    def __save_results(
+        self, consensus: np.ndarray, h_best: np.ndarray, w_best: np.ndarray
+    ) -> None:
         # Saving consensus matrix
-        consensus_path = os.path.join(rank_dir, "consensus_matrix.csv")
+        consensus_path = os.path.join(self.rank_dir, "consensus_matrix.csv")
         np.savetxt(consensus_path, consensus, delimiter=",")
 
         # Saving H_best and W_best matrices
-        h_best_path = os.path.join(rank_dir, "H_best.csv")
-        np.savetxt(h_best_path, best_H, delimiter=",")
+        h_best_path = os.path.join(self.rank_dir, "H_best.csv")
+        np.savetxt(h_best_path, h_best, delimiter=",")
 
-        w_best_path = os.path.join(rank_dir, "W_best.csv")
-        np.savetxt(w_best_path, best_W, delimiter=",")
+        w_best_path = os.path.join(self.rank_dir, "W_best.csv")
+        np.savetxt(w_best_path, w_best, delimiter=",")
 
-    bins = np.linspace(0, 1, 101)
-    C, delta_k, delta_y, k_opt = calculate_statistics(M, rank_range, bins)
+    def nmf_run(
+        self, preprocessed_data: np.ndarray, n_runs: int
+    ) -> Tuple[Dict, np.ndarray, np.ndarray, np.ndarray]:
+        data_matrix = preprocessed_data
+        consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
+        obj = np.zeros(n_runs)
+        lowest_obj = float("inf")
+        h_best = None
+        w_best = None
 
-    # Extend the metrics data frame
-    metrics_df = pd.DataFrame([res[0] for res in results])
-    metrics_df["C"] = C
-    metrics_df["delta_k (AUC)"] = delta_k
-    metrics_df["delta_y (KL-div)"] = delta_y
+        for n in range(n_runs):
+            nmf = nimfa.Nmf(
+                data_matrix.T, rank=self.rank, seed="random_vcol", max_iter=10
+            )
+            logger.debug(
+                f"Rank {self.rank}, Run {n + 1}/{n_runs}: Perform matrix factorization"
+            )
+            fit = nmf()
+            consensus += fit.fit.connectivity()
+            obj[n] = fit.fit.final_obj
+            if obj[n] < lowest_obj:
+                logger.debug(
+                    f"Rank {self.rank}, Run {n + 1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
+                )
+                lowest_obj = obj[n]
+                w_best = np.array(fit.fit.coef().T)
+                h_best = np.array(fit.fit.basis().T)
 
-    logger.debug(
-        f"Calculated statistics:\n "
-        f"C = {C}\n "
-        f"delta_k (AUC) = {delta_k}\n "
-        f"delta_y (KL-div) = {delta_y}\n "
-        f"optimal k = {k_opt}"
-    )
+        consensus /= n_runs
+        coph = self.__calculate_cophenetic_corr(consensus)
+        instability = 1 - coph
 
-    # Saving metrics as CSV
-    metrics_path = os.path.join(experiment_dir, "metrics.csv")
-    metrics_df.to_csv(metrics_path, index=False)
+        # Storing metrics
+        metrics = {
+            "Rank": self.rank,
+            "Min Final Obj": lowest_obj,
+            "Cophenetic Correlation": coph,
+            "Instability index": instability,
+        }
 
-    return (
-        experiment_dir  # return the directory where results are saved and the M matrix
-    )
+        # Saving results
+        self.__save_results(consensus, h_best, w_best)
 
+        logger.debug(f"Rank {self.rank}: Finished {n_runs} runs of NMF")
 
-# Return the modified functions for use
-nmf_run, parallel_nmf_consensus_clustering
+        return metrics, consensus, h_best, w_best

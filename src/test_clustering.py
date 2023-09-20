@@ -28,13 +28,19 @@ if __name__ == "__main__":
     kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
 
     for rank_dir in rank_dirs:
-        w_matrix = genfromtxt(rank_dir + "/" + filename_data_matrix, delimiter=",")
+        h_matrix = genfromtxt(rank_dir + "/H_best.csv", delimiter=",")
+        w_matrix = genfromtxt(rank_dir + "/W_best.csv", delimiter=",")
 
-        cluster_assignments = kmeans.cluster(w_matrix)
-        cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
+        sorted_w, sorted_h = kmeans.cluster_and_sort(h_matrix, w_matrix)
+
+        h_best_sorted_path = os.path.join(rank_dir, "H_best_sorted.csv")
+        np.savetxt(h_best_sorted_path, sorted_h, delimiter=",")
+
+        w_best_sorted_path = os.path.join(rank_dir, "W_best_sorted.csv")
+        np.savetxt(w_best_sorted_path, sorted_w, delimiter=",")
 
         logger.debug(
             f"Clustering W for rank {rank_dir[rank_dir.rfind('=') + 1:]} "
-            f"produced the following assignments for the basis functions: "
-            f"{cluster_assignments}"
+            f"produced the following sorted w: "
+            f"{sorted_w}"
         )

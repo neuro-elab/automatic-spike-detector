@@ -1,3 +1,5 @@
+import os
+import re
 from typing import List
 
 import matplotlib as mpl
@@ -5,119 +7,95 @@ import matplotlib.pyplot as plt
 from numpy import genfromtxt
 
 
-def plot_consensus_matrices(folder: str, labels: List[str]):
-    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+def plot_w_and_consensus_matrix(experiment_dir: str, labels: List[str]) -> None:
+    rank_dirs = get_rank_dirs_sorted(experiment_dir)
+    first_rank = int(rank_dirs[0][-1:])
 
-    # Rank 2
-    file_path = folder + "/k=2/consensus_matrix.csv"
-    consensus_matrix = genfromtxt(file_path, delimiter=",")
-    ax[0, 0].matshow(consensus_matrix, cmap=mpl.colormaps["YlGn"])
-    ax[0, 0].set_title("k = 2")
+    nr_ranks = len(rank_dirs)
 
-    # Rank 3
-    file_path = folder + "/k=3/consensus_matrix.csv"
-    consensus_matrix = genfromtxt(file_path, delimiter=",")
-    ax[0, 1].matshow(consensus_matrix, cmap=mpl.colormaps["YlGn"])
-    ax[0, 1].set_title("k = 3")
+    nr_cols = 3 if nr_ranks >= 9 else 2
+    nr_rows = int(
+        nr_ranks / nr_cols
+        if nr_ranks % nr_cols == 0
+        else (nr_ranks + nr_ranks % nr_cols) / nr_cols
+    )
 
-    # Rank 4
-    file_path = folder + "/k=4/consensus_matrix.csv"
-    consensus_matrix = genfromtxt(file_path, delimiter=",")
-    ax[1, 0].matshow(consensus_matrix, cmap=mpl.colormaps["YlGn"])
-    ax[1, 0].set_title("k = 4")
+    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(10, 10))
+    fig_consensus, ax_consensus = plt.subplots(nr_rows, nr_cols, figsize=(10, 10))
 
-    # Rank 5
-    file_path = folder + "/k=5/consensus_matrix.csv"
-    consensus_matrix = genfromtxt(file_path, delimiter=",")
-    ax[1, 1].matshow(consensus_matrix, cmap=mpl.colormaps["YlGn"])
-    ax[1, 1].set_title("k = 5")
+    nr_ranks_plotted = 0
+    for row in range(nr_rows):
+        for col in range(nr_cols):
+            if nr_ranks_plotted >= nr_ranks:
+                break
+            # PLot W matrix
+            file_path_w = rank_dirs[nr_ranks_plotted] + "/W_best.csv"
+            w_best = genfromtxt(file_path_w, delimiter=",")
+            ax_w[row, col].imshow(w_best, cmap=mpl.colormaps["YlOrRd"], aspect="auto")
+            ax_w[row, col].set_title(f"k = {nr_ranks_plotted + first_rank}")
 
-    # Add labels
-    ax[0, 0].set_xticks(range(len(labels)))
-    ax[0, 0].set_xticklabels(labels, fontsize=3, rotation=90)
-    ax[0, 0].set_yticks(range(len(labels)))
-    ax[0, 0].set_yticklabels(labels, fontsize=3)
-    ax[0, 0].tick_params(bottom=False, top=False, left=False)
+            xticks_labels = [
+                "W" + str(rank) for rank in range(nr_ranks_plotted + first_rank)
+            ]
+            ax_w[row, col].set_xticks(range(nr_ranks_plotted + first_rank))
+            ax_w[row, col].set_xticklabels(xticks_labels, fontsize=6)
+            ax_w[row, col].set_yticks(range(len(labels)))
+            ax_w[row, col].set_yticklabels(labels, fontsize=3)
+            ax_w[row, col].tick_params(bottom=False, top=False, left=False)
 
-    ax[0, 1].set_xticks(range(len(labels)))
-    ax[0, 1].set_xticklabels(labels, fontsize=3, rotation=90)
-    ax[0, 1].set_yticks(range(len(labels)))
-    ax[0, 1].set_yticklabels(labels, fontsize=3)
-    ax[0, 1].tick_params(bottom=False, top=False, left=False)
+            # Plot consensus matrix
+            file_path_consensus = rank_dirs[nr_ranks_plotted] + "/consensus_matrix.csv"
+            consensus_matrix = genfromtxt(file_path_consensus, delimiter=",")
+            ax_consensus[row, col].matshow(consensus_matrix, cmap=mpl.colormaps["YlGn"])
+            ax_consensus[row, col].set_title(f"k = {nr_ranks_plotted + first_rank}")
 
-    ax[1, 0].set_xticks(range(len(labels)))
-    ax[1, 0].set_xticklabels(labels, fontsize=3, rotation=90)
-    ax[1, 0].set_yticks(range(len(labels)))
-    ax[1, 0].set_yticklabels(labels, fontsize=3)
-    ax[1, 0].tick_params(bottom=False, top=False, left=False)
+            ax_consensus[row, col].set_xticks(range(len(labels)))
+            ax_consensus[row, col].set_xticklabels(labels, fontsize=3, rotation=90)
+            ax_consensus[row, col].set_yticks(range(len(labels)))
+            ax_consensus[row, col].set_yticklabels(labels, fontsize=3)
+            ax_consensus[row, col].tick_params(bottom=False, top=False, left=False)
 
-    ax[1, 1].set_xticks(range(len(labels)))
-    ax[1, 1].set_xticklabels(labels, fontsize=3, rotation=90)
-    ax[1, 1].set_yticks(range(len(labels)))
-    ax[1, 1].set_yticklabels(labels, fontsize=3)
-    ax[1, 1].tick_params(bottom=False, top=False, left=False)
+            nr_ranks_plotted += 1
 
-    fig.suptitle(folder[folder.rfind("/") + 1 :])
-    fig.subplots_adjust(hspace=0.3)
-    fig.colorbar(mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlGn"]), ax=ax, shrink=0.5)
+    fig_w.suptitle("W matrix - " + experiment_dir[experiment_dir.rfind("/") + 1 :])
+    fig_w.subplots_adjust(hspace=0.3)
+    fig_w.colorbar(
+        mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlOrRd"]), ax=ax_w, shrink=0.5
+    )
+    fig_w.savefig(experiment_dir + "/W_best.pdf", bbox_inches="tight")
 
-    plt.savefig(folder + "/consensus_matrices.pdf", bbox_inches="tight")
+    fig_consensus.suptitle(
+        "CONSENSUS matrix - " + experiment_dir[experiment_dir.rfind("/") + 1 :]
+    )
+    fig_consensus.subplots_adjust(hspace=0.3)
+    fig_consensus.colorbar(
+        mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlGn"]), ax=ax_w, shrink=0.5
+    )
+    fig_consensus.savefig(experiment_dir + "/consensus_matrix.pdf", bbox_inches="tight")
 
 
-def plot_W_matrix(folder: str, labels: List[str]):
-    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+def plot_h_matrix_spike_period(experiment_dir: str, labels: List[str] = None) -> None:
+    rank_dirs = get_rank_dirs_sorted(experiment_dir)
 
-    # Rank 2
-    file_path = folder + "/k=2/W_best.csv"
-    W_best = genfromtxt(file_path, delimiter=",")
-    ax[0, 0].imshow(W_best, cmap=mpl.colormaps["YlOrRd"], aspect="auto")
-    ax[0, 0].set_title("k = 2")
+    fig, ax = plt.subplots(len(rank_dirs), 1, figsize=(20, 20))
 
-    # Rank 3
-    file_path = folder + "/k=3/W_best.csv"
-    W_best = genfromtxt(file_path, delimiter=",")
-    ax[0, 1].imshow(W_best, cmap=mpl.colormaps["YlOrRd"], aspect="auto")
-    ax[0, 1].set_title("k = 3")
+    for idx in range(len(rank_dirs)):
+        file_path = rank_dirs[idx] + "/H_best.csv"
+        h_best = genfromtxt(file_path, delimiter=",")
+        ax[idx].plot(h_best[:, 9750:9900].T)
+        ax[idx].set_title("k = " + str(idx + 2))
 
-    # Rank 4
-    file_path = folder + "/k=4/W_best.csv"
-    W_best = genfromtxt(file_path, delimiter=",")
-    ax[1, 0].imshow(W_best, cmap=mpl.colormaps["YlOrRd"], aspect="auto")
-    ax[1, 0].set_title("k = 4")
+    fig.subplots_adjust(hspace=0.5)
+    fig.suptitle("H matrix - " + experiment_dir[experiment_dir.rfind("/") + 1 :])
+    plt.savefig(experiment_dir + "/H_best.pdf")
 
-    # Rank 5
-    file_path = folder + "/k=5/W_best.csv"
-    W_best = genfromtxt(file_path, delimiter=",")
-    ax[1, 1].imshow(W_best, cmap=mpl.colormaps["YlOrRd"], aspect="auto")
-    ax[1, 1].set_title("k = 5")
 
-    # Add labels
-    ax[0, 0].set_xticks(range(2))
-    ax[0, 0].set_xticklabels(["W0", "W1"], fontsize=10)
-    ax[0, 0].set_yticks(range(len(labels)))
-    ax[0, 0].set_yticklabels(labels, fontsize=3)
-    ax[0, 0].tick_params(bottom=False, top=False, left=False)
+def get_rank_dirs_sorted(experiment_dir: str) -> List[str]:
+    # Retrieve the paths to the rank directories within the experiment folder
+    rank_dirs = [
+        experiment_dir + "/" + k_dir
+        for k_dir in os.listdir(experiment_dir)
+        if os.path.isdir(os.path.join(experiment_dir, k_dir)) and "k=" in k_dir
+    ]
 
-    ax[0, 1].set_xticks(range(3))
-    ax[0, 1].set_xticklabels(["W0", "W1", "W3"], fontsize=10)
-    ax[0, 1].set_yticks(range(len(labels)))
-    ax[0, 1].set_yticklabels(labels, fontsize=3)
-    ax[0, 1].tick_params(bottom=False, top=False, left=False)
-
-    ax[1, 0].set_xticks(range(4))
-    ax[1, 0].set_xticklabels(["W0", "W1", "W3", "W4"], fontsize=10)
-    ax[1, 0].set_yticks(range(len(labels)))
-    ax[1, 0].set_yticklabels(labels, fontsize=3)
-    ax[1, 0].tick_params(bottom=False, top=False, left=False)
-
-    ax[1, 1].set_xticks(range(5))
-    ax[1, 1].set_xticklabels(["W0", "W1", "W3", "W4", "W5"], fontsize=10)
-    ax[1, 1].set_yticks(range(len(labels)))
-    ax[1, 1].set_yticklabels(labels, fontsize=3)
-    ax[1, 1].tick_params(bottom=False, top=False, left=False)
-
-    fig.suptitle(folder[folder.rfind("/") + 1 :])
-    fig.subplots_adjust(hspace=0.3)
-    fig.colorbar(mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlOrRd"]), ax=ax, shrink=0.5)
-
-    plt.savefig(folder + "/W_best.pdf", bbox_inches="tight")
+    return sorted(rank_dirs, key=lambda x: int(re.search(r"\d+$", x).group()))

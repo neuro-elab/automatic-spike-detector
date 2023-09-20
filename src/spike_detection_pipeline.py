@@ -1,18 +1,18 @@
-import csv
-import multiprocessing
 import argparse
+import datetime
+import multiprocessing
 import os
 import time
 
 import numpy as np
 from loguru import logger
 from numpy import genfromtxt
-from sklearn.preprocessing import normalize
-from spike_detection.nmf import parallel_nmf_consensus_clustering
-from preprocessing.pipeline import parallel_preprocessing
+
 from loader.loader import read_file
+from preprocessing.pipeline import parallel_preprocessing
 from src.spike_detection import thresholding
 from src.spike_detection.clustering import BasisFunctionClusterer
+from src.spike_detection.nmf_pipeline import NmfPipeline
 from src.utils import logging_utils
 
 if __name__ == "__main__":
@@ -27,6 +27,11 @@ if __name__ == "__main__":
     filename_for_saving = (
         file[file.rfind("/") + 1 :].replace(".", "_").replace(" ", "_")
     )
+
+    # Create a directory to save results
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    results_dir = os.path.join(filename_for_saving + "_" + timestamp)
+    os.makedirs(results_dir, exist_ok=True)
 
     # Configure logger
     logging_utils.add_logger_with_process_name()
@@ -54,11 +59,8 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
 
     #####################
-    #   NMF             #
+    #   NMF PIPELINE    #
     #####################
-
-    # Normalize for NMF (preprocessed data needs to be non-negative)
-    data_matrix = normalize(preprocessed_data)
 
     # Specify range of ranks
     k_min = 2
@@ -67,28 +69,17 @@ if __name__ == "__main__":
     # How many runs of NMF to perform per rank
     runs_per_rank = 100
 
-    # Run the NMF consensus clustering
+    # Initialize NMF pipeline
+    nmf_pipeline = NmfPipeline(results_dir, runs_per_rank, (k_min, k_max))
+
+    # Run NMF pipeline
     start = time.time()
-    experiment_dir = parallel_nmf_consensus_clustering(
-        data_matrix,
-        (k_min, k_max),
-        runs_per_rank,
-        filename_for_saving,
-        target_clusters=None,
-    )
+    results_dir = nmf_pipeline.parallel_processing(preprocessed_data)
     end = time.time()
     logger.debug(f"Finished nmf in {end - start} seconds")
 
     # Print a confirmation that the results have been saved in the appropriate directory
-    logger.debug(f"Results saved in directory: {experiment_dir}")
-
-    #####################
-    #   THRESHOLDING    #
-    #####################
-
-    spike_annotations = thresholding.parallel_thresholding(experiment_dir)
-
-    logger.debug("Spike annotations saved in respecting rank folders")
+    logger.debug(f"Results saved in directory: {results_dir}")
 
     #####################
     # CLUSTERING BS FCT #
@@ -96,9 +87,9 @@ if __name__ == "__main__":
 
     # Retrieve the paths to the rank directories within the experiment folder
     rank_dirs = [
-        experiment_dir + "/" + k_dir
-        for k_dir in os.listdir(experiment_dir)
-        if os.path.isdir(os.path.join(experiment_dir, k_dir)) and "k=" in k_dir
+        results_dir + "/" + k_dir
+        for k_dir in os.listdir(results_dir)
+        if os.path.isdir(os.path.join(results_dir, k_dir)) and "k=" in k_dir
     ]
 
     filename_data_matrix = "H_best.csv"
@@ -109,16 +100,26 @@ if __name__ == "__main__":
     for rank_dir in rank_dirs:
         w_matrix = genfromtxt(rank_dir + "/" + filename_data_matrix, delimiter=",")
 
-        cluster_assignments = kmeans.cluster(w_matrix)
+        cluster_assignments = kmeans.cluster_and_sort(w_matrix)
         cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
 
         assignments_path = os.path.join(rank_dir, "cluster_assignments.csv")
-        with open(assignments_path, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(cluster_assignments)
+        np.savetxt(assignments_path, cluster_assignments, delimiter=",")
 
         logger.debug(
             f"Clustering W for rank {rank_dir[rank_dir.rfind('=') + 1:]} "
             f"produced the following assignments for the basis functions: "
             f"{cluster_assignments}"
         )
+
+    #####################
+    #   THRESHOLDING    #
+    #####################
+
+    spike_annotations = thresholding.parallel_thresholding(rank_dirs)
+
+    logger.debug("Spike annotations saved in respecting rank folders")
+
+    #####################
+    #   PROJECTING      #
+    #####################
