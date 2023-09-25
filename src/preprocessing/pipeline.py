@@ -23,6 +23,8 @@ def apply_preprocessing_steps(
     # Channel names
     channel_names = [trace.label for trace in traces]
 
+    logger.debug(f"Channels processed by worker: {channel_names}")
+
     # Frequency of data
     data_freq = traces[0].sfreq
 
@@ -69,7 +71,6 @@ def apply_preprocessing_steps(
     logger.debug("Apply line length computations")
     line_length_eeg = apply_line_length(eeg_data=resampled_data, sfreq=data_freq)
 
-    # TODO: check whether downsampling for line length should be available (in Epitome only done when freq < 50 Hz)
     # 6. Downsample to 50 hz
     logger.debug("Resample line length at 50 Hz")
     resampled_data = resample_data(
@@ -89,7 +90,7 @@ def parallel_preprocessing(
     traces: List[Trace],
     notch_freq: int = 50,
     resampling_freq: int = 500,
-    bandpass_cutoff_low: int = 1,
+    bandpass_cutoff_low: int = 0.1,
     bandpass_cutoff_high: int = 200,
     n_processes: int = 8,
 ):
