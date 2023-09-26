@@ -3,12 +3,9 @@ requires = ["setuptools>=42", "wheel"]   # PEP 508 specifications.
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "asd"
+name = "automatic-spike-detection"
 version = "0.1.0"
 dynamic = ["dependencies"]
-
-[tool.setuptools.package-dir]
-packages= "automatic-spike-detection"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}

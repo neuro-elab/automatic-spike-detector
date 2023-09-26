@@ -5,8 +5,8 @@ from datetime import datetime, time, timedelta
 import numpy as np
 from numpy import genfromtxt
 
-from spikepy.utils import plotting_utils
-from spikepy.loader.loader import get_anodes_and_cathodes
+from spidet.utils import plotting_utils
+from spidet.loader.loader import get_anodes_and_cathodes
 from loguru import logger
 
 SZ_LABEL = "Sz"

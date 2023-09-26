@@ -5,7 +5,7 @@ import time
 from loguru import logger
 from numpy import genfromtxt
 
-from spikepy.spike_detection.thresholding import ThresholdGenerator
+from spidet.spike_detection.thresholding import ThresholdGenerator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
