@@ -1,9 +1,12 @@
 import argparse
 import multiprocessing
+import os
+
+import numpy as np
 
 from preprocessing.pipeline import parallel_preprocessing
 from loader.loader import read_file
-from src.utils import logging_utils
+from spidet.utils import logging_utils
 
 if __name__ == "__main__":
     # parse cli args
@@ -24,5 +27,10 @@ if __name__ == "__main__":
     data = read_file(file)
     preprocessed = parallel_preprocessing(data)
     multiprocessing.freeze_support()
+
+    os.makedirs(filename_for_saving, exist_ok=True)
+
+    data_path = os.path.join(filename_for_saving, "preprocessed.csv")
+    np.savetxt(data_path, preprocessed, delimiter=",")
 
     print("DONE preprocessing")

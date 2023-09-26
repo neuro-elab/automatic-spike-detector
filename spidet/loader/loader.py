@@ -1,10 +1,12 @@
+from typing import List, Tuple
+
 import h5py
 import mne.io
 import numpy as np
 from loguru import logger
 from mne.io.edf.edf import RawEDF
 
-from src.domain.Trace import Trace
+from spidet.domain.Trace import Trace
 
 TRACES = "traces"
 RAW_DATA = "raw"
@@ -80,8 +82,10 @@ LABELS_EL010 = [
     "Hip112",
 ]
 
+PREFIX_LEAD_GROUPS = ["Hip2", "Temp", "FrOr", "In An", "InPo", "Hip1"]
 
-def create_trace(label: str, dataset: np.array, attributes: dict):
+
+def create_trace(label: str, dataset: np.array, attributes: dict) -> Trace:
     """
     Create a Trace object from a recording of a particular electrode with corresponding label
 
@@ -94,11 +98,11 @@ def create_trace(label: str, dataset: np.array, attributes: dict):
         label,
         attributes.get("sfreq"),
         attributes.get("unit"),
-        dataset[:100000].astype(np.float64),
+        dataset.astype(np.float64),
     )
 
 
-def read_h5_file(path: str):
+def read_h5_file(path: str) -> List[Trace]:
     """
     Loads a file in hdf5 format and transform its content to a list of Traces.
 
@@ -120,7 +124,7 @@ def read_h5_file(path: str):
     ]
 
 
-def read_file(path: str):
+def read_file(path: str) -> List[Trace]:
     # TODO: add doc
     filename = path[path.rfind("/") + 1 :]
     logger.debug(f"Loading file {filename}")
@@ -129,15 +133,39 @@ def read_file(path: str):
     if ext == "h5":
         return read_h5_file(path)
     elif ext == "fif" or ext == "edf":
-        file: RawEDF = (
-            mne.io.read_raw_fif(path) if ext == "fif" else mne.io.read_raw_edf(path)
+        raw: RawEDF = (
+            mne.io.read_raw_fif(path)
+            if ext == "fif"
+            else mne.io.read_raw_edf(path, preload=True)
         )
-        raw_traces = file.get_data(LABELS_EL010)
-        attributes = dict({"sfreq": file.info["sfreq"], "unit": None})
+        raw_re_referenced = re_reference(raw)
+        raw_traces = raw_re_referenced.get_data()
+        attributes = dict({"sfreq": raw.info["sfreq"], "unit": None})
 
         return [
             create_trace(label, times, attributes)
-            for label, times in zip(LABELS_EL010, raw_traces)
+            for label, times in zip(raw_re_referenced.ch_names, raw_traces)
         ]
     else:
         raise Exception(f"Data format {ext} ist not supported by this application")
+
+
+def re_reference(raw: RawEDF) -> RawEDF:
+    anodes, cathodes = get_anodes_and_cathodes()
+    raw = mne.set_bipolar_reference(
+        raw, anode=anodes, cathode=cathodes, drop_refs=True, copy=False
+    )
+    return raw
+
+
+def get_anodes_and_cathodes() -> Tuple[List[str], List[str]]:
+    anodes, cathodes = [], []
+    for prefix in PREFIX_LEAD_GROUPS:
+        channels = list(
+            filter(lambda channel_name: channel_name.startswith(prefix), LABELS_EL010)
+        )
+        for idx in range(len(channels) - 1):
+            anodes.append(channels[idx])
+            cathodes.append(channels[idx + 1])
+
+    return anodes, cathodes
