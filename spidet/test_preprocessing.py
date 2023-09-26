@@ -4,8 +4,8 @@ import os
 
 import numpy as np
 
-from preprocessing.pipeline import parallel_preprocessing
-from loader.loader import read_file
+from preprocess.pipeline import parallel_preprocessing
+from io.loader import read_file
 from spidet.utils import logging_utils
 
 if __name__ == "__main__":
@@ -33,4 +33,4 @@ if __name__ == "__main__":
     data_path = os.path.join(filename_for_saving, "preprocessed.csv")
     np.savetxt(data_path, preprocessed, delimiter=",")
 
-    print("DONE preprocessing")
+    print("DONE preprocess")

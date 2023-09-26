@@ -1,6 +1,6 @@
 import numpy as np
 
-from spidet.preprocessing.filtering import filter_signal
+from spidet.preprocess.filtering import filter_signal
 
 
 def rescale_data(

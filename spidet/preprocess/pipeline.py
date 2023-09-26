@@ -5,10 +5,10 @@ import numpy as np
 from loguru import logger
 
 from spidet.domain.Trace import Trace
-from spidet.preprocessing.filtering import filter_signal, notch_filter_signal
-from spidet.preprocessing.line_length import apply_line_length
-from spidet.preprocessing.resampling import resample_data
-from spidet.preprocessing.rescaling import rescale_data
+from spidet.preprocess.filtering import filter_signal, notch_filter_signal
+from spidet.preprocess.line_length import apply_line_length
+from spidet.preprocess.resampling import resample_data
+from spidet.preprocess.rescaling import rescale_data
 
 
 def apply_preprocessing_steps(
@@ -95,7 +95,7 @@ def parallel_preprocessing(
     n_processes: int = 8,
 ):
     # TODO: add documentation
-    logger.debug(f"Starting preprocessing pipeline on {n_processes} parallel processes")
+    logger.debug(f"Starting preprocess pipeline on {n_processes} parallel processes")
 
     # Using all available cores for process pool
     n_cores = multiprocessing.cpu_count()

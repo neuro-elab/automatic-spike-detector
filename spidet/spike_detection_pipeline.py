@@ -8,8 +8,8 @@ import numpy as np
 from loguru import logger
 from numpy import genfromtxt
 
-from loader.loader import read_file
-from preprocessing.pipeline import parallel_preprocessing
+from io.loader import read_file
+from preprocess.pipeline import parallel_preprocessing
 from spidet.spike_detection import thresholding
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.nmf_pipeline import NmfPipeline

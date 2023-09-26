@@ -6,7 +6,7 @@ import numpy as np
 from numpy import genfromtxt
 
 from spidet.utils import plotting_utils
-from spidet.loader.loader import get_anodes_and_cathodes
+from spidet.load.data_loading import get_anodes_and_cathodes
 from loguru import logger
 
 SZ_LABEL = "Sz"
