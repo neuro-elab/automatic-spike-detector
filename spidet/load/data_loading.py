@@ -88,7 +88,7 @@ EDF = "edf"
 FIF = "fif"
 
 
-def read_file(path: str) -> List[Trace]:
+def read_file(path: str, dataset_paths: List[str] = None) -> List[Trace]:
     """
     Read EEG data from a file and return a list of Trace objects, containing the EEG data of each channel.
 
@@ -99,6 +99,8 @@ def read_file(path: str) -> List[Trace]:
     ----------
     path : str
         The file path of the EEG data file.
+    dataset_paths : List[str]
+        The absolute paths to the datasets within an HDF5 file.
 
     Returns
     -------
@@ -115,7 +117,7 @@ def read_file(path: str) -> List[Trace]:
     file_format = path[path.rfind(".") + 1 :].lower()
 
     if file_format == HDF5:
-        return read_h5_file(path)
+        return read_h5_file(path, dataset_paths)
     elif file_format in [EDF, FIF]:
         return read_edf_or_fif_file(path, file_format)
     else:
