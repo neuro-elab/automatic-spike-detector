@@ -134,8 +134,8 @@ def read_h5_file(
 ) -> List[Trace]:
     """
     Loads a file in HDF5 format and transforms its content to a list of Trace objects.
-    Provides the possibility to perform bipolar referencing for channels within a lead,
-    if the leads are passed as argument.
+    Provides the option to perform bipolar referencing for channels within a lead,
+    if the leads are provided as argument.
 
     Parameters
     ----------
@@ -144,11 +144,11 @@ def read_h5_file(
     dataset_paths : List[str]
         The absolute paths to the datasets within an HDF5 file.
     bipolar_reference: bool (default False)
-        Boolean indicating whether bipolar references between respective channels
-        should be calculated and subsequently be considered as traces
+        A boolean indicating whether bipolar references between respective channels
+        should be calculated and subsequently considered as traces
     leads: List[str] (default None)
         The leads for whose channels to perform bipolar referencing.
-        NOTE: leads cannot be None if bipolar_reference is True
+        NOTE: 'leads' cannot be None if 'bipolar_reference' is True
 
     Returns
     -------
@@ -190,8 +190,8 @@ def read_edf_or_fif_file(
 ):
     """
     Loads a file in either FIF or EDF format and transforms its content to a list of Trace objects.
-    Provides the possibility to perform bipolar referencing for channels within a lead,
-    if the leads are passed as argument.
+    Provides the option to perform bipolar referencing for channels within a lead,
+    if the leads are provided as argument.
 
     Parameters
     ----------
@@ -200,11 +200,11 @@ def read_edf_or_fif_file(
     file_format : str
         format indicating whether the file is of type FIF or EDF
     bipolar_reference: bool (default False)
-        Boolean indicating whether bipolar references between respective channels
-        should be calculated and subsequently be considered as traces
+        A boolean indicating whether bipolar references between respective channels
+        should be calculated and subsequently considered as traces
     leads: List[str] (default None)
         The leads for whose channels to perform bipolar referencing.
-        NOTE: leads cannot be None if bipolar_reference is True
+        NOTE: 'leads' cannot be None if 'bipolar_reference' is True
 
     Returns
     -------
