@@ -5,7 +5,7 @@ import numpy as np
 from loguru import logger
 from numpy import genfromtxt
 
-from src.spike_detection.clustering import BasisFunctionClusterer
+from spikepy.spike_detection.clustering import BasisFunctionClusterer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

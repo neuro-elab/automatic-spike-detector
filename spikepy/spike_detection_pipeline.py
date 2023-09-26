@@ -10,10 +10,10 @@ from numpy import genfromtxt
 
 from loader.loader import read_file
 from preprocessing.pipeline import parallel_preprocessing
-from src.spike_detection import thresholding
-from src.spike_detection.clustering import BasisFunctionClusterer
-from src.spike_detection.nmf_pipeline import NmfPipeline
-from src.utils import logging_utils
+from spikepy.spike_detection import thresholding
+from spikepy.spike_detection.clustering import BasisFunctionClusterer
+from spikepy.spike_detection.nmf_pipeline import NmfPipeline
+from spikepy.utils import logging_utils
 
 if __name__ == "__main__":
     # parse cli args

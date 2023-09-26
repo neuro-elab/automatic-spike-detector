@@ -9,10 +9,10 @@ from loguru import logger
 from scipy.special import rel_entr
 from sklearn.preprocessing import normalize
 
-from src.spike_detection.clustering import BasisFunctionClusterer
-from src.spike_detection.nmf import Nmf
-from src.spike_detection.projecting import Projector
-from src.spike_detection.thresholding import ThresholdGenerator
+from spikepy.spike_detection.clustering import BasisFunctionClusterer
+from spikepy.spike_detection.nmf import Nmf
+from spikepy.spike_detection.projecting import Projector
+from spikepy.spike_detection.thresholding import ThresholdGenerator
 
 
 class NmfPipeline:

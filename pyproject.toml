@@ -1,8 +1,14 @@
-[project]
-dynamic = ["dependencies"]
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
-
 [build-system]
 requires = ["setuptools>=42", "wheel"]   # PEP 508 specifications.
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "asd"
+version = "0.1.0"
+dynamic = ["dependencies"]
+
+[tool.setuptools.package-dir]
+packages= "automatic-spike-detection"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}

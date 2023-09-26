@@ -6,7 +6,7 @@ import numpy as np
 
 from preprocessing.pipeline import parallel_preprocessing
 from loader.loader import read_file
-from src.utils import logging_utils
+from spikepy.utils import logging_utils
 
 if __name__ == "__main__":
     # parse cli args

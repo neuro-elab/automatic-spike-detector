@@ -4,11 +4,11 @@ from typing import List
 import numpy as np
 from loguru import logger
 
-from src.domain.Trace import Trace
-from src.preprocessing.filtering import filter_signal, notch_filter_signal
-from src.preprocessing.line_length import apply_line_length
-from src.preprocessing.resampling import resample_data
-from src.preprocessing.rescaling import rescale_data
+from spikepy.domain.Trace import Trace
+from spikepy.preprocessing.filtering import filter_signal, notch_filter_signal
+from spikepy.preprocessing.line_length import apply_line_length
+from spikepy.preprocessing.resampling import resample_data
+from spikepy.preprocessing.rescaling import rescale_data
 
 
 def apply_preprocessing_steps(

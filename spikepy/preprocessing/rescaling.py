@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.preprocessing.filtering import filter_signal
+from spikepy.preprocessing.filtering import filter_signal
 
 
 def rescale_data(

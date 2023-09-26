@@ -6,7 +6,7 @@ import numpy as np
 from loguru import logger
 from mne.io.edf.edf import RawEDF
 
-from src.domain.Trace import Trace
+from spikepy.domain.Trace import Trace
 
 TRACES = "traces"
 RAW_DATA = "raw"
