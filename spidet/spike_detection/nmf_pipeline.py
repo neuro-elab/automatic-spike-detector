@@ -26,7 +26,8 @@ class NmfPipeline:
         self.nmf_runs: int = nmf_runs
         self.rank_range: Tuple[int, int] = rank_range
 
-    def __compute_cdf(self, matrix: np.ndarray, bins: np.ndarray):
+    @staticmethod
+    def __compute_cdf(matrix: np.ndarray, bins: np.ndarray):
         N = matrix.shape[0]
         values = matrix[np.triu_indices(N)]
         counts, _ = np.histogram(values, bins=bins, density=True)
@@ -65,7 +66,12 @@ class NmfPipeline:
         return areas, delta_k, delta_y, k_opt
 
     def run_nmf_pipeline(
-        self, preprocessed_data: np.ndarray, rank: int, n_runs: int, results_dir: str
+        self,
+        preprocessed_data: np.ndarray,
+        rank: int,
+        n_runs: int,
+        results_dir: str,
+        execute: bool = False,
     ):
         logging.debug(f"Starting NMF pipeline for rank {rank}")
 
@@ -85,34 +91,39 @@ class NmfPipeline:
             preprocessed_data, n_runs
         )
 
-        #####################
-        # CLUSTERING BS FCT #
-        #####################
+        if execute:
+            #####################
+            # CLUSTERING BS FCT #
+            #####################
 
-        # Initialize kmeans classifier
-        kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
+            # Initialize kmeans classifier
+            kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
 
-        # Cluster into noise / basis function and sort according to cluster assignment
-        sorted_w, sorted_h = kmeans.cluster_and_sort(h_matrix=h_best, w_matrix=w_best)
-        # TODO check if necessary: cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
+            # Cluster into noise / basis function and sort according to cluster assignment
+            sorted_w, sorted_h = kmeans.cluster_and_sort(
+                h_matrix=h_best, w_matrix=w_best
+            )
+            # TODO check if necessary: cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
 
-        #####################
-        #   THRESHOLDING    #
-        #####################
+            #####################
+            #   THRESHOLDING    #
+            #####################
 
-        threshold_generator = ThresholdGenerator(preprocessed_data, sorted_h, sfreq=50)
+            threshold_generator = ThresholdGenerator(
+                preprocessed_data, sorted_h, sfreq=50
+            )
 
-        threshold = threshold_generator.generate_threshold()
-        spike_annotations = threshold_generator.find_spikes(threshold)
+            threshold = threshold_generator.generate_threshold()
+            spike_annotations = threshold_generator.find_spikes(threshold)
 
-        #####################
-        #   PROJECTING      #
-        #####################
+            #####################
+            #   PROJECTING      #
+            #####################
 
-        projector = Projector(h_matrix=sorted_h, w_matrix=sorted_w)
-        w_projection, data_projections = projector.find_and_project_peaks(
-            preprocessed_data
-        )
+            projector = Projector(h_matrix=sorted_h, w_matrix=sorted_w)
+            w_projection, data_projections = projector.find_and_project_peaks(
+                preprocessed_data
+            )
 
         return metrics, consensus
 

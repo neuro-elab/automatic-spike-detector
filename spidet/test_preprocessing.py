@@ -2,9 +2,11 @@ import argparse
 import multiprocessing
 import os
 
+import mne
 import numpy as np
+from mne.io import RawArray
 
-from preprocess.pipeline import parallel_preprocessing
+from spidet.preprocess.preprocessing import Preprocessor
 from load.data_loading import read_file
 from spidet.utils import logging_utils
 
@@ -126,15 +128,30 @@ if __name__ == "__main__":
     # configure logger
     logging_utils.add_logger_with_process_name()
 
-    data = read_file(
-        file, DATASET_PATHS_SZ2, leads=LEAD_PREFIXES_SZ2, bipolar_reference=True
+    # Instantiate a Preprocessor instance
+    preprocessor = Preprocessor(
+        file_path=file,
+        dataset_paths=DATASET_PATHS_SZ2,
+        bipolar_reference=True,
+        leads=LEAD_PREFIXES_EL010,
     )
-    preprocessed = parallel_preprocessing(data)
+
+    # Preprocess the data
+    preprocessed = preprocessor.parallel_preprocessing()
+
+    raw = RawArray(
+        preprocessed.line_length,
+        mne.create_info(ch_names=preprocessed.channel_names, sfreq=50),
+    )
+
+    print(f"shape times: {preprocessed.times.shape}")
+    print(f"times: {preprocessed.times[0]} : {preprocessed.times[-1]}")
+
     multiprocessing.freeze_support()
 
     os.makedirs(filename_for_saving, exist_ok=True)
 
     data_path = os.path.join(filename_for_saving, "preprocessed.csv")
-    np.savetxt(data_path, preprocessed, delimiter=",")
+    np.savetxt(data_path, preprocessed.line_length, delimiter=",")
 
     print("DONE preprocess")

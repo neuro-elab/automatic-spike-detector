@@ -8,11 +8,11 @@ import numpy as np
 class Trace:
     label: str
     # duration: float
-    # n_samples: int
+    n_samples: int
     # processing: str
     sfreq: int
-    unit: str
+    # unit: str
     # start_date: date
     # start_time: time
-    # start_timestamp: float
+    start_timestamp: float
     data: np.array

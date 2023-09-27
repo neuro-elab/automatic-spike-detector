@@ -22,20 +22,22 @@ def read_file(
     leads: List[str] = None,
 ) -> List[Trace]:
     """
-    Read EEG data from a file and return a list of Trace objects, containing the EEG data of each channel.
+    Read EEG data from a file and return a list of Trace objects,
+    containing the EEG data of each channel.
 
-    Reads EEG data from a file specified by 'path'. The supported file formats
-    include '.h5', '.fif', and '.edf'.
+    Reads EEG data from a file specified by 'path'.
+    The supported file formats include '.h5', '.fif', and '.edf'.
 
     Parameters
     ----------
     path : str
         The file path of the EEG data file.
-    dataset_paths : List[str]
-        The absolute paths to the datasets within an HDF5 file.
+    dataset_paths : List[str] (default None)
+        If the file is an '.h5' file, these are the absolute paths
+        to the datasets within the file.
     bipolar_reference: bool (default False)
-        A boolean indicating whether bipolar references between respective channels
-        should be calculated and subsequently considered as traces
+        A boolean indicating whether bipolar references between respective
+        channels should be calculated and subsequently considered as traces
     leads: List[str] (default None)
         The leads for whose channels to perform bipolar referencing.
         NOTE: 'leads' cannot be None if 'bipolar_reference' is True
@@ -165,8 +167,13 @@ def read_edf_or_fif_file(
     )
     if bipolar_reference:
         raw = generate_bipolar_references(raw, leads)
-    attributes = dict({"sfreq": raw.info["sfreq"], "unit": None})
-
+    attributes = dict(
+        {
+            "n_samples": raw.n_times,
+            "start_timestamp": raw.info["meas_date"].timestamp(),
+            "sfreq": raw.info["sfreq"],
+        }
+    )
     return [
         create_trace(label, times, attributes)
         for label, times in zip(raw.ch_names, raw.get_data())
@@ -195,8 +202,9 @@ def create_trace(label: str, dataset: np.array, attributes: dict) -> Trace:
     """
     return Trace(
         label,
+        attributes.get("n_samples"),
         attributes.get("sfreq"),
-        attributes.get("unit"),
+        attributes.get("start_timestamp"),
         dataset[:].astype(np.float64),
     )
 

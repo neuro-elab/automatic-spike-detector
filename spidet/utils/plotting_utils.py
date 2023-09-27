@@ -21,7 +21,7 @@ def plot_preprocessed_data(
     display_all: bool = False,
     offset: timedelta = timedelta(),
     duration: int = 10,
-    freq: float = 12.2070312,
+    sfreq: float = 50,
     y_lim: float = None,
     seizure: int = None,
 ) -> None:
@@ -56,8 +56,8 @@ def plot_preprocessed_data(
     )
 
     # Start and end of the time period to display data for
-    start = int(freq * offset_seconds)
-    stop = preprocessed_eeg.shape[1] if display_all else start + int(freq * duration)
+    start = int(sfreq * offset_seconds)
+    stop = preprocessed_eeg.shape[1] if display_all else start + int(sfreq * duration)
 
     # Extract sub-period from preprocessed_eeg
     eeg_period = preprocessed_eeg[:, start:stop]
@@ -87,7 +87,7 @@ def plot_preprocessed_data(
         xticks = np.linspace(start=0, stop=eeg_period.shape[1], num=11)
         ticks_as_datetime = [
             (
-                start_time_recording + timedelta(seconds=offset_seconds + tick / freq)
+                start_time_recording + timedelta(seconds=offset_seconds + tick / sfreq)
             ).strftime("%T.%f")[:-4]
             for tick in xticks
         ]
@@ -230,7 +230,7 @@ def plot_h_matrix_period(
     display_all: bool = False,
     offset: timedelta = timedelta(),
     duration: int = 10,
-    freq: float = 12.2070312,
+    sfreq: float = 50,
     seizure: int = None,
     rank_labels_idx: Dict[int, Dict[int, str]] = None,
 ) -> None:
@@ -273,8 +273,8 @@ def plot_h_matrix_period(
             start = 0
             stop = h_best.shape[1]
         else:
-            start = int(freq * offset_seconds)
-            stop = start + int(freq * duration)
+            start = int(sfreq * offset_seconds)
+            stop = start + int(sfreq * duration)
 
         # Extract sub-period from H
         h_period = h_best[:, start:stop]
@@ -287,7 +287,7 @@ def plot_h_matrix_period(
         # Labels for x-axis as time of the day of the recording
         ticks_as_datetime = [
             (
-                start_time_recording + timedelta(seconds=offset_seconds + tick / freq)
+                start_time_recording + timedelta(seconds=offset_seconds + tick / sfreq)
             ).strftime("%T.%f")[:-4]
             for tick in xticks
         ]
