@@ -12,6 +12,77 @@ from numpy import genfromtxt
 PREFIX_BRAIN_REGIONS: Sequence = ["Hip2", "Temp", "FrOr", "In An", "InPo", "Hip1"]
 
 
+def plot_std_line_length(
+    experiment_dir: str,
+    std_line_length: np.ndarray,
+    start_time_recording: datetime,
+    display_all: bool = False,
+    offset: timedelta = timedelta(),
+    duration: int = 10,
+    sfreq: float = 50,
+    seizure: int = None,
+) -> None:
+    offset_seconds = int(offset.total_seconds())
+    if display_all and offset_seconds != 0:
+        logger.warning("display_all is True, ignoring any given offset and duration")
+        offset_seconds = 0
+
+    # Determine beginning of the sub-period to plot the data for
+    start_time_display_period: datetime = start_time_recording + timedelta(
+        seconds=offset_seconds
+    )
+
+    # Create file TITLE
+    period = "all" if display_all else f"{duration}s"
+    title = create_file_title(
+        exp_dir=experiment_dir,
+        data_kind="Std Line Length",
+        start_time_recording=start_time_recording,
+        start_time_display_period=start_time_display_period,
+        offset_seconds=offset_seconds,
+        period=period,
+    )
+
+    # Start and end of the time period to display data for
+    start = int(sfreq * offset_seconds)
+    stop = len(std_line_length) if display_all else start + int(sfreq * duration)
+
+    # Extract sub-period from preprocessed_eeg
+    ll_period = std_line_length[start:stop]
+
+    # Figure to plot brain regions combined in the same file
+    fig, ax = plt.subplots(1, 1, figsize=(20, 20))
+
+    # Generate xticks, label as time of the day
+    xticks = np.linspace(start=0, stop=len(ll_period), num=11)
+    ticks_as_datetime = [
+        (
+            start_time_recording + timedelta(seconds=offset_seconds + tick / sfreq)
+        ).strftime("%T.%f")[:-4]
+        for tick in xticks
+    ]
+
+    # Plot
+    ax.plot(ll_period.T)
+    ax.legend(["Std Line Length"], loc="center left")
+    ax.set_xticks(xticks, ticks_as_datetime)
+    ax.set_xlabel("Time of the day [HH:MM:SS.ff]")
+    ax.set_ylabel("Volt")
+
+    fig.suptitle(title)
+    fig.savefig(
+        os.path.join(
+            experiment_dir,
+            create_filename(
+                prefix="Std_LL",
+                offset=offset_seconds,
+                period=period,
+                seizure=seizure,
+            ),
+        )
+    )
+
+
 def plot_preprocessed_data(
     experiment_dir: str,
     preprocessed_eeg: np.ndarray,

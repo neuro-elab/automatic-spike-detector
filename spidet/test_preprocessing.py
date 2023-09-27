@@ -143,14 +143,14 @@ if __name__ == "__main__":
         mne.create_info(ch_names=preprocessed.channel_names, sfreq=50),
     )
 
-    print(f"shape times: {preprocessed.times.shape}")
-    print(f"times: {preprocessed.times[0]} : {preprocessed.times[-1]}")
-
     multiprocessing.freeze_support()
 
     os.makedirs(filename_for_saving, exist_ok=True)
 
     data_path = os.path.join(filename_for_saving, "preprocessed.csv")
     np.savetxt(data_path, preprocessed.line_length, delimiter=",")
+
+    data_path = os.path.join(filename_for_saving, "std_line_length.csv")
+    np.savetxt(data_path, preprocessed.std_line_length, delimiter=",")
 
     print("DONE preprocess")

@@ -95,8 +95,9 @@ if __name__ == "__main__":
     # Set plotting variables
     plot_h: bool = False
     plot_w: bool = False
-    plot_preprocessed: bool = True
+    plot_preprocessed: bool = False
     plot_seizures = False
+    plot_line_length = True
 
     # Set seizure params
     offset_gaps = [
@@ -139,12 +140,25 @@ if __name__ == "__main__":
     # Set params for single plotting periods
     offset = timedelta(hours=2, minutes=7)
     duration = 2 * 60
-    display_all = False
+    display_all = True
     y_lim = 1e-9
 
     # Get list of channel names
     anodes, cathodes = get_anodes_and_cathodes(LEAD_PREFIXES_EL010, LABELS_EL010)
     channel_names = [anode + "-" + cathode for anode, cathode in zip(anodes, cathodes)]
+
+    # Plot std line length
+    if plot_line_length:
+        file_path_data = os.path.join(folder, "std_line_length.csv")
+        std_line_length = genfromtxt(file_path_data, delimiter=",")
+        plotting_utils.plot_std_line_length(
+            folder,
+            std_line_length,
+            display_all=display_all,
+            start_time_recording=start_time_recording,
+            offset=offset,
+            duration=duration,
+        )
 
     # Plot W matrices
     if plot_w:
