@@ -8,12 +8,85 @@ import numpy as np
 from loguru import logger
 from numpy import genfromtxt
 
-from loader.loader import read_file
-from preprocessing.pipeline import parallel_preprocessing
+from preprocess.preprocessing import Preprocessor
 from spidet.spike_detection import thresholding
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.nmf_pipeline import NmfPipeline
 from spidet.utils import logging_utils
+
+
+LABELS_EL010 = [
+    "Hip21",
+    "Hip22",
+    "Hip23",
+    "Hip24",
+    "Hip25",
+    "Hip26",
+    "Hip27",
+    "Hip28",
+    "Hip29",
+    "Hip210",
+    "Temp1",
+    "Temp2",
+    "Temp3",
+    "Temp4",
+    "Temp5",
+    "Temp6",
+    "Temp7",
+    "Temp8",
+    "Temp9",
+    "Temp10",
+    "FrOr1",
+    "FrOr2",
+    "FrOr3",
+    "FrOr4",
+    "FrOr5",
+    "FrOr6",
+    "FrOr7",
+    "FrOr8",
+    "FrOr9",
+    "FrOr10",
+    "FrOr11",
+    "FrOr12",
+    "In An1",
+    "In An2",
+    "In An3",
+    "In An4",
+    "In An5",
+    "In An6",
+    "In An7",
+    "In An8",
+    "In An9",
+    "In An10",
+    "In An11",
+    "In An12",
+    "InPo1",
+    "InPo2",
+    "InPo3",
+    "InPo4",
+    "InPo5",
+    "InPo6",
+    "InPo7",
+    "InPo8",
+    "InPo9",
+    "InPo10",
+    "InPo11",
+    "InPo12",
+    "Hip11",
+    "Hip12",
+    "Hip13",
+    "Hip14",
+    "Hip15",
+    "Hip16",
+    "Hip17",
+    "Hip18",
+    "Hip19",
+    "Hip110",
+    "Hip111",
+    "Hip112",
+]
+
+LEAD_PREFIXES_EL010 = ["Hip2", "Temp", "FrOr", "In An", "InPo", "Hip1"]
 
 if __name__ == "__main__":
     # parse cli args
@@ -37,22 +110,21 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     #####################
-    #   DATA LOADING    #
-    #####################
-
-    start = time.time()
-    data = read_file(file)
-    end = time.time()
-    logger.debug(f"Finished loading data in {end - start} seconds")
-
-    #####################
     #   PREPROCESSING   #
     #####################
 
     # Preprocessing steps, ran on several partitions of the data concurrently
     # if multiprocessing is available
     start = time.time()
-    preprocessed_data = parallel_preprocessing(data)
+
+    # Instantiate a Preprocessor instance
+    preprocessor = Preprocessor(
+        file_path=file,
+        dataset_paths=LABELS_EL010,
+        bipolar_reference=True,
+        leads=LEAD_PREFIXES_EL010,
+    )
+    preprocessed = preprocessor.parallel_preprocessing()
     end = time.time()
     logger.debug(f"Finished preprocessing in {end - start} seconds")
 
@@ -74,51 +146,12 @@ if __name__ == "__main__":
 
     # Run NMF pipeline
     start = time.time()
-    results_dir = nmf_pipeline.parallel_processing(preprocessed_data)
+    results_dir = nmf_pipeline.parallel_processing(preprocessed.line_length)
     end = time.time()
     logger.debug(f"Finished nmf in {end - start} seconds")
 
     # Print a confirmation that the results have been saved in the appropriate directory
     logger.debug(f"Results saved in directory: {results_dir}")
-
-    #####################
-    # CLUSTERING BS FCT #
-    #####################
-
-    # Retrieve the paths to the rank directories within the experiment folder
-    rank_dirs = [
-        results_dir + "/" + k_dir
-        for k_dir in os.listdir(results_dir)
-        if os.path.isdir(os.path.join(results_dir, k_dir)) and "k=" in k_dir
-    ]
-
-    filename_data_matrix = "H_best.csv"
-
-    # Initialize kmeans clustering object
-    kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
-
-    for rank_dir in rank_dirs:
-        w_matrix = genfromtxt(rank_dir + "/" + filename_data_matrix, delimiter=",")
-
-        cluster_assignments = kmeans.cluster_and_sort(w_matrix)
-        cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
-
-        assignments_path = os.path.join(rank_dir, "cluster_assignments.csv")
-        np.savetxt(assignments_path, cluster_assignments, delimiter=",")
-
-        logger.debug(
-            f"Clustering W for rank {rank_dir[rank_dir.rfind('=') + 1:]} "
-            f"produced the following assignments for the basis functions: "
-            f"{cluster_assignments}"
-        )
-
-    #####################
-    #   THRESHOLDING    #
-    #####################
-
-    spike_annotations = thresholding.parallel_thresholding(rank_dirs)
-
-    logger.debug("Spike annotations saved in respecting rank folders")
 
     #####################
     #   PROJECTING      #
