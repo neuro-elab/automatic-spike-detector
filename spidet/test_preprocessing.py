@@ -7,7 +7,6 @@ import numpy as np
 from mne.io import RawArray
 
 from spidet.preprocess.preprocessing import Preprocessor
-from load.data_loading import read_file
 from spidet.utils import logging_utils
 
 LABELS_EL010 = [
