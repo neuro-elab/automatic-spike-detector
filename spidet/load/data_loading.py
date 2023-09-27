@@ -9,86 +9,18 @@ from mne.io import RawArray
 
 from spidet.domain.Trace import Trace
 
-# TODO: remove patient labels
-LABELS_EL010 = [
-    "Hip21",
-    "Hip22",
-    "Hip23",
-    "Hip24",
-    "Hip25",
-    "Hip26",
-    "Hip27",
-    "Hip28",
-    "Hip29",
-    "Hip210",
-    "Temp1",
-    "Temp2",
-    "Temp3",
-    "Temp4",
-    "Temp5",
-    "Temp6",
-    "Temp7",
-    "Temp8",
-    "Temp9",
-    "Temp10",
-    "FrOr1",
-    "FrOr2",
-    "FrOr3",
-    "FrOr4",
-    "FrOr5",
-    "FrOr6",
-    "FrOr7",
-    "FrOr8",
-    "FrOr9",
-    "FrOr10",
-    "FrOr11",
-    "FrOr12",
-    "In An1",
-    "In An2",
-    "In An3",
-    "In An4",
-    "In An5",
-    "In An6",
-    "In An7",
-    "In An8",
-    "In An9",
-    "In An10",
-    "In An11",
-    "In An12",
-    "InPo1",
-    "InPo2",
-    "InPo3",
-    "InPo4",
-    "InPo5",
-    "InPo6",
-    "InPo7",
-    "InPo8",
-    "InPo9",
-    "InPo10",
-    "InPo11",
-    "InPo12",
-    "Hip11",
-    "Hip12",
-    "Hip13",
-    "Hip14",
-    "Hip15",
-    "Hip16",
-    "Hip17",
-    "Hip18",
-    "Hip19",
-    "Hip110",
-    "Hip111",
-    "Hip112",
-]
-
-LEAD_PREFIXES = ["Hip2", "Temp", "FrOr", "In An", "InPo", "Hip1"]
-
+# Supported file formats
 HDF5 = "h5"
 EDF = "edf"
 FIF = "fif"
 
 
-def read_file(path: str, dataset_paths: List[str] = None) -> List[Trace]:
+def read_file(
+    path: str,
+    dataset_paths: List[str] = None,
+    bipolar_reference: bool = False,
+    leads: List[str] = None,
+) -> List[Trace]:
     """
     Read EEG data from a file and return a list of Trace objects, containing the EEG data of each channel.
 
@@ -101,6 +33,12 @@ def read_file(path: str, dataset_paths: List[str] = None) -> List[Trace]:
         The file path of the EEG data file.
     dataset_paths : List[str]
         The absolute paths to the datasets within an HDF5 file.
+    bipolar_reference: bool (default False)
+        A boolean indicating whether bipolar references between respective channels
+        should be calculated and subsequently considered as traces
+    leads: List[str] (default None)
+        The leads for whose channels to perform bipolar referencing.
+        NOTE: 'leads' cannot be None if 'bipolar_reference' is True
 
     Returns
     -------
@@ -117,9 +55,9 @@ def read_file(path: str, dataset_paths: List[str] = None) -> List[Trace]:
     file_format = path[path.rfind(".") + 1 :].lower()
 
     if file_format == HDF5:
-        return read_h5_file(path, dataset_paths)
+        return read_h5_file(path, dataset_paths, bipolar_reference, leads)
     elif file_format in [EDF, FIF]:
-        return read_edf_or_fif_file(path, file_format)
+        return read_edf_or_fif_file(path, file_format, bipolar_reference, leads)
     else:
         raise Exception(
             f"The file format {file_format} ist not supported by this application"
@@ -155,30 +93,39 @@ def read_h5_file(
     List[Trace]
         A list of Trace objects representing the content of the HDF5 file.
     """
+    if dataset_paths is None:
+        raise Exception("Paths to the dataset within the HDF5 file can not be None")
+
     h5_file = h5py.File(file_path, "r")
 
     # Extract the raw datasets from the hdf5 file
     raw_traces: List[Dataset] = [h5_file.get(path) for path in dataset_paths]
 
-    # Retrieve the channel names from the parent group of the traces
+    # Retrieve the channel names from the dataset paths
+    channel_names = [
+        channel_path[channel_path.rfind("/") + 1 :] for channel_path in dataset_paths
+    ]
+
+    # Currently attributes are on the level of the parent group of the datasets,
+    # will later on be on the level of individual datasets (recordings)
     traces_parent_group: Group = raw_traces[0].parent
-    channel_names = traces_parent_group.keys()
-
-    # Generate an instance of mne.io.RawArray from the h5 Datasets
-    # in order to generate possible bipolar references
-    raw: RawArray = RawArray(
-        np.array(raw_traces), info=mne.create_info(ch_names=channel_names)
-    )
-    if bipolar_reference:
-        raw = generate_bipolar_references(raw, leads)
-
-    # Currently attributes are on the level of the set of traces,
-    # will later on be on the level of individual traces (recordings)
     attributes = traces_parent_group.attrs
+
+    if bipolar_reference:
+        # Generate an instance of mne.io.RawArray from the h5 Datasets
+        # in order to generate bipolar references
+        raw: RawArray = RawArray(
+            np.array(raw_traces),
+            info=mne.create_info(
+                ch_names=channel_names, ch_types="eeg", sfreq=attributes.get("sfreq")
+            ),
+        )
+        raw = generate_bipolar_references(raw, leads)
+        raw_traces = raw.get_data()
 
     return [
         create_trace(label, times, attributes)
-        for label, times in zip(raw.ch_names, raw.get_data())
+        for label, times in zip(channel_names, raw_traces)
     ]
 
 
@@ -250,7 +197,7 @@ def create_trace(label: str, dataset: np.array, attributes: dict) -> Trace:
         label,
         attributes.get("sfreq"),
         attributes.get("unit"),
-        dataset.astype(np.float64),
+        dataset[:].astype(np.float64),
     )
 
 
@@ -259,18 +206,20 @@ def generate_bipolar_references(raw: RawArray, leads: List[str]) -> RawArray:
         raise Exception(
             "bipolar_reference is true but no leads were passed for whose channels to perform the referencing"
         )
-    anodes, cathodes = get_anodes_and_cathodes(leads)
+    anodes, cathodes = get_anodes_and_cathodes(leads, raw.ch_names)
     raw = mne.set_bipolar_reference(
         raw, anode=anodes, cathode=cathodes, drop_refs=True, copy=False
     )
     return raw
 
 
-def get_anodes_and_cathodes(leads: List[str]) -> Tuple[List[str], List[str]]:
+def get_anodes_and_cathodes(
+    leads: List[str], channel_names: List[str]
+) -> Tuple[List[str], List[str]]:
     anodes, cathodes = [], []
-    for prefix in LEAD_PREFIXES:
+    for prefix in leads:
         channels = list(
-            filter(lambda channel_name: channel_name.startswith(prefix), leads)
+            filter(lambda channel_name: channel_name.startswith(prefix), channel_names)
         )
         for idx in range(len(channels) - 1):
             anodes.append(channels[idx])
