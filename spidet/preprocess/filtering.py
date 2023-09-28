@@ -46,7 +46,7 @@ def filter_signal(
         h_freq=cutoff_freq_high,
         method="iir",
         iir_params=iir_params,
-        verbose=True,
+        verbose=False,
     )
 
     # forward-backward filter
@@ -77,6 +77,8 @@ def notch_filter_signal(
     harmonics = np.arange(notch_frequency, low_pass_freq, notch_frequency)
     harmonics = harmonics[:4] if harmonics.size > 4 else harmonics
 
-    eeg_data = mne.filter.notch_filter(x=eeg_data, Fs=sfreq, freqs=harmonics)
+    eeg_data = mne.filter.notch_filter(
+        x=eeg_data, Fs=sfreq, freqs=harmonics, verbose=False
+    )
 
     return eeg_data

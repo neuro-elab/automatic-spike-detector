@@ -83,9 +83,9 @@ def plot_std_line_length(
     )
 
 
-def plot_preprocessed_data(
+def plot_line_length_data(
     experiment_dir: str,
-    preprocessed_eeg: np.ndarray,
+    line_length_eeg: np.ndarray,
     channel_names: List[str],
     start_time_recording: datetime,
     prefix_brain_regions: Sequence[str] = PREFIX_BRAIN_REGIONS,
@@ -97,10 +97,10 @@ def plot_preprocessed_data(
     seizure: int = None,
 ) -> None:
     dir_path = (
-        os.path.join(experiment_dir, "plots_preprocessed_data")
+        os.path.join(experiment_dir, "plots_line_length_data")
         if seizure is None
         else os.path.join(
-            experiment_dir, "plots_preprocessed_data", f"seizure_{seizure}"
+            experiment_dir, "plots_line_length_data", f"seizure_{seizure}"
         )
     )
     os.makedirs(dir_path, exist_ok=True)
@@ -119,7 +119,7 @@ def plot_preprocessed_data(
     period = "all" if display_all else f"{duration}s"
     title = create_file_title(
         exp_dir=experiment_dir,
-        data_kind="Preprocessed EEG",
+        data_kind="LL EEG",
         start_time_recording=start_time_recording,
         start_time_display_period=start_time_display_period,
         offset_seconds=offset_seconds,
@@ -128,10 +128,10 @@ def plot_preprocessed_data(
 
     # Start and end of the time period to display data for
     start = int(sfreq * offset_seconds)
-    stop = preprocessed_eeg.shape[1] if display_all else start + int(sfreq * duration)
+    stop = line_length_eeg.shape[1] if display_all else start + int(sfreq * duration)
 
     # Extract sub-period from preprocessed_eeg
-    eeg_period = preprocessed_eeg[:, start:stop]
+    eeg_period = line_length_eeg[:, start:stop]
 
     # Figure to plot brain regions combined in the same file
     fig_comb, ax_comb = plt.subplots(len(prefix_brain_regions), 1, figsize=(20, 20))
@@ -139,7 +139,7 @@ def plot_preprocessed_data(
     for idx, prefix in enumerate(prefix_brain_regions):
         logger.debug(
             seizure_prefix(
-                f"PREPROCESSED EEG {prefix}: generate plot for start time {start_time_display_period.time()} and duration {duration} seconds",
+                f"LL EEG {prefix}: generate plot for start time {start_time_display_period.time()} and duration {duration} seconds",
                 seizure,
             )
         )
@@ -167,7 +167,7 @@ def plot_preprocessed_data(
         ax.plot(eeg_period[channels_idx_start:channels_idx_stop, :].T)
         ax.legend(channels, loc="center left")
         ax.set_xticks(xticks, ticks_as_datetime)
-        ax.set_xlabel("Time of the day")
+        ax.set_xlabel("Time of the day [HH:MM:SS.ff]")
         ax.set_ylabel("Volt")
         if y_lim is not None:
             ax.set_ylim(top=y_lim)
@@ -176,7 +176,7 @@ def plot_preprocessed_data(
         ax_comb[idx].plot(eeg_period[channels_idx_start:channels_idx_stop, :].T)
         ax_comb[idx].legend(channels, loc="center left")
         ax_comb[idx].set_xticks(xticks, ticks_as_datetime)
-        ax_comb[idx].set_xlabel("Time of the day")
+        ax_comb[idx].set_xlabel("Time of the day [HH:MM:SS.ff]")
         ax_comb[idx].set_ylabel("Volt")
 
         # Create directory for prefix if it does not already exist
@@ -197,7 +197,7 @@ def plot_preprocessed_data(
         )
 
     filename_prefix = (
-        "EEG_PP"
+        "EEG_LL"
         if prefix_brain_regions == PREFIX_BRAIN_REGIONS
         else "_".join(prefix_brain_regions)
     )
@@ -364,7 +364,7 @@ def plot_h_matrix_period(
         ]
 
         ax[idx].set_xticks(xticks, ticks_as_datetime)
-        ax[idx].set_xlabel("Time of the day")
+        ax[idx].set_xlabel("Time of the day [HH:MM:SS.ff]")
         ax[idx].set_title(f"Rank = {idx + 2}")
 
     fig.subplots_adjust(hspace=1.0)
