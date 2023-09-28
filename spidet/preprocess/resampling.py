@@ -17,5 +17,7 @@ def resample_data(
     :return: resampled data
     """
     info = mne.create_info(ch_names=channel_names, sfreq=sfreq)
-    resampled_data = RawArray(data, info=info).resample(sfreq=resampling_freq)
+    resampled_data = RawArray(data, info=info, verbose=False).resample(
+        sfreq=resampling_freq, verbose=False
+    )
     return resampled_data.get_data()

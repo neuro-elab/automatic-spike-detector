@@ -108,8 +108,7 @@ def read_h5_file(
         channel_path[channel_path.rfind("/") + 1 :] for channel_path in dataset_paths
     ]
 
-    # Currently attributes are on the level of the parent group of the datasets,
-    # will later on be on the level of individual datasets (recordings)
+    # Extract attributes from parent group
     traces_parent_group: Group = raw_traces[0].parent
     attributes = traces_parent_group.attrs
 
@@ -119,7 +118,10 @@ def read_h5_file(
         raw: RawArray = RawArray(
             np.array(raw_traces),
             info=mne.create_info(
-                ch_names=channel_names, ch_types="eeg", sfreq=attributes.get("sfreq")
+                ch_names=channel_names,
+                ch_types="eeg",
+                sfreq=attributes.get("sfreq"),
+                verbose=False,
             ),
         )
         raw = generate_bipolar_references(raw, leads)
@@ -161,9 +163,9 @@ def read_edf_or_fif_file(
         A list of Trace objects representing the content of the file.
     """
     raw: RawArray = (
-        mne.io.read_raw_fif(file_path)
+        mne.io.read_raw_fif(file_path, verbose=False)
         if file_format == FIF
-        else mne.io.read_raw_edf(file_path, preload=True)
+        else mne.io.read_raw_edf(file_path, preload=True, verbose=False)
     )
     if bipolar_reference:
         raw = generate_bipolar_references(raw, leads)
@@ -216,7 +218,7 @@ def generate_bipolar_references(raw: RawArray, leads: List[str]) -> RawArray:
         )
     anodes, cathodes = get_anodes_and_cathodes(leads, raw.ch_names)
     raw = mne.set_bipolar_reference(
-        raw, anode=anodes, cathode=cathodes, drop_refs=True, copy=False
+        raw, anode=anodes, cathode=cathodes, drop_refs=True, copy=False, verbose=False
     )
     return raw
 

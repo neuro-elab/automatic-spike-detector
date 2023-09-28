@@ -95,9 +95,9 @@ if __name__ == "__main__":
     # Set plotting variables
     plot_h: bool = False
     plot_w: bool = False
-    plot_preprocessed: bool = False
+    plot_line_length: bool = True
     plot_seizures = False
-    plot_line_length = True
+    plot_unique_line_length = True
 
     # Set seizure params
     offset_gaps = [
@@ -147,30 +147,22 @@ if __name__ == "__main__":
     anodes, cathodes = get_anodes_and_cathodes(LEAD_PREFIXES_EL010, LABELS_EL010)
     channel_names = [anode + "-" + cathode for anode, cathode in zip(anodes, cathodes)]
 
-    # Plot std line length
-    if plot_line_length:
-        file_path_data = os.path.join(folder, "std_line_length.csv")
-        std_line_length = genfromtxt(file_path_data, delimiter=",")
-        plotting_utils.plot_std_line_length(
-            folder,
-            std_line_length,
-            display_all=display_all,
-            start_time_recording=start_time_recording,
-            offset=offset,
-            duration=duration,
-        )
-
     # Plot W matrices
     if plot_w:
         plotting_utils.plot_w_and_consensus_matrix(
             folder, channel_names, rank_labels_idx
         )
 
-    # Get preprocessed eeg if necessary
-    if plot_preprocessed:
-        logger.debug("Loading preprocessed data")
-        file_path_data = os.path.join(folder, "preprocessed.csv")
-        preprocessed_eeg = genfromtxt(file_path_data, delimiter=",")
+    # Get line length eeg if necessary
+    if plot_line_length:
+        logger.debug("Loading line length data")
+        file_path_data = os.path.join(folder, "line_length.csv")
+        line_length_eeg = genfromtxt(file_path_data, delimiter=",")
+
+    # Plot std line length
+    if plot_unique_line_length:
+        file_path_data = os.path.join(folder, "std_line_length.csv")
+        std_line_length = genfromtxt(file_path_data, delimiter=",")
 
     # Get H matrices if necessary
     if plot_h:
@@ -194,12 +186,22 @@ if __name__ == "__main__":
         for seizure in seizure_start_offsets.keys():
             for dur, start_offset in zip(durations, seizure_start_offsets.get(seizure)):
                 # PLot preprocessed data
-                if plot_preprocessed:
-                    plotting_utils.plot_preprocessed_data(
+                if plot_line_length:
+                    plotting_utils.plot_line_length_data(
                         folder,
-                        preprocessed_eeg,
+                        line_length_eeg,
                         channel_names,
                         # prefix_brain_regions=["Hip1"],
+                        start_time_recording=start_time_recording,
+                        offset=start_offset,
+                        duration=dur,
+                        seizure=seizure,
+                    )
+
+                if plot_unique_line_length:
+                    plotting_utils.plot_std_line_length(
+                        folder,
+                        std_line_length,
                         start_time_recording=start_time_recording,
                         offset=start_offset,
                         duration=dur,
@@ -221,10 +223,10 @@ if __name__ == "__main__":
     # Plot only a predefined period
     else:
         # PLot preprocessed data
-        if plot_preprocessed:
-            plotting_utils.plot_preprocessed_data(
+        if plot_line_length:
+            plotting_utils.plot_line_length_data(
                 folder,
-                preprocessed_eeg,
+                line_length_eeg,
                 channel_names,
                 # prefix_brain_regions=["Hip1"],
                 start_time_recording=start_time_recording,
