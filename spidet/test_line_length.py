@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 
+from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.spike_detection.line_length import LineLength
 from spidet.utils import logging_utils
 
@@ -134,7 +135,9 @@ if __name__ == "__main__":
     )
 
     # Perform line length steps to compute unique line length
-    spike_detection_function = line_length.compute_unique_line_length()
+    spike_detection_function: SpikeDetectionFunction = (
+        line_length.compute_unique_line_length()
+    )
 
     # Perform line length steps to compute line length
     (
