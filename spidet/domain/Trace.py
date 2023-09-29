@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import date, time
 
 import numpy as np
 
@@ -8,7 +7,7 @@ import numpy as np
 class Trace:
     label: str
     # duration: float
-    n_samples: int
+    # n_samples: int
     # processing: str
     sfreq: int
     # unit: str

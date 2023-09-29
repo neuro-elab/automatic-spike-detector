@@ -2,11 +2,9 @@ import argparse
 import multiprocessing
 import os
 
-import mne
 import numpy as np
-from mne.io import RawArray
 
-from spidet.preprocess.preprocessing import Preprocessor
+from spidet.spike_detection.line_length import LineLength
 from spidet.utils import logging_utils
 
 LABELS_EL010 = [
@@ -127,30 +125,32 @@ if __name__ == "__main__":
     # configure logger
     logging_utils.add_logger_with_process_name()
 
-    # Instantiate a Preprocessor instance
-    preprocessor = Preprocessor(
+    # Instantiate a LineLength instance
+    line_length = LineLength(
         file_path=file,
         dataset_paths=DATASET_PATHS_SZ2,
         bipolar_reference=True,
         leads=LEAD_PREFIXES_EL010,
     )
 
-    # Preprocess the data
-    preprocessed = preprocessor.parallel_preprocessing()
+    # Perform line length steps to compute unique line length
+    spike_detection_function = line_length.compute_unique_line_length()
 
-    raw = RawArray(
-        preprocessed.line_length,
-        mne.create_info(ch_names=preprocessed.channel_names, sfreq=50),
-    )
+    # Perform line length steps to compute line length
+    (
+        start_timestamp,
+        channel_names,
+        line_length_matrix,
+    ) = line_length.apply_parallel_line_length_pipeline()
 
     multiprocessing.freeze_support()
 
     os.makedirs(filename_for_saving, exist_ok=True)
 
-    data_path = os.path.join(filename_for_saving, "preprocessed.csv")
-    np.savetxt(data_path, preprocessed.line_length, delimiter=",")
+    data_path = os.path.join(filename_for_saving, "line_length.csv")
+    np.savetxt(data_path, line_length_matrix, delimiter=",")
 
     data_path = os.path.join(filename_for_saving, "std_line_length.csv")
-    np.savetxt(data_path, preprocessed.std_line_length, delimiter=",")
+    np.savetxt(data_path, spike_detection_function.data_array, delimiter=",")
 
     print("DONE preprocess")

@@ -3,7 +3,7 @@ from typing import List, Tuple
 import h5py
 import mne.io
 import numpy as np
-from h5py import Group, Dataset
+from h5py import Dataset, File
 from loguru import logger
 from mne.io import RawArray
 
@@ -103,15 +103,20 @@ def read_h5_file(
     # Extract the raw datasets from the hdf5 file
     raw_traces: List[Dataset] = [h5_file.get(path) for path in dataset_paths]
 
-    # Retrieve the channel names from the dataset paths
+    # Extract start timestamps for datasets
+    start_timestamps: List[float] = [
+        extract_start_timestamp(path, h5_file) for path in dataset_paths
+    ]
+
+    # Extract channel names from the dataset paths
     channel_names = [
         channel_path[channel_path.rfind("/") + 1 :] for channel_path in dataset_paths
     ]
 
-    # Currently attributes are on the level of the parent group of the datasets,
-    # will later on be on the level of individual datasets (recordings)
-    traces_parent_group: Group = raw_traces[0].parent
-    attributes = traces_parent_group.attrs
+    # Extract frequencies from datasets
+    frequencies: List[float] = [
+        raw_trace.attrs.get("sfreq") for raw_trace in raw_traces
+    ]
 
     if bipolar_reference:
         # Generate an instance of mne.io.RawArray from the h5 Datasets
@@ -119,15 +124,21 @@ def read_h5_file(
         raw: RawArray = RawArray(
             np.array(raw_traces),
             info=mne.create_info(
-                ch_names=channel_names, ch_types="eeg", sfreq=attributes.get("sfreq")
+                ch_names=channel_names,
+                ch_types="eeg",
+                sfreq=frequencies[0],
+                verbose=False,
             ),
+            verbose=False,
         )
         raw = generate_bipolar_references(raw, leads)
         raw_traces = raw.get_data()
 
     return [
-        create_trace(label, times, attributes)
-        for label, times in zip(channel_names, raw_traces)
+        create_trace(label, data, freq, ts)
+        for label, data, freq, ts in zip(
+            channel_names, raw_traces, frequencies, start_timestamps
+        )
     ]
 
 
@@ -161,26 +172,22 @@ def read_edf_or_fif_file(
         A list of Trace objects representing the content of the file.
     """
     raw: RawArray = (
-        mne.io.read_raw_fif(file_path)
+        mne.io.read_raw_fif(file_path, verbose=False)
         if file_format == FIF
-        else mne.io.read_raw_edf(file_path, preload=True)
+        else mne.io.read_raw_edf(file_path, preload=True, verbose=False)
     )
     if bipolar_reference:
         raw = generate_bipolar_references(raw, leads)
-    attributes = dict(
-        {
-            "n_samples": raw.n_times,
-            "start_timestamp": raw.info["meas_date"].timestamp(),
-            "sfreq": raw.info["sfreq"],
-        }
-    )
+
     return [
-        create_trace(label, times, attributes)
+        create_trace(label, times, raw.info["sfreq"], raw.info["meas_date"].timestamp())
         for label, times in zip(raw.ch_names, raw.get_data())
     ]
 
 
-def create_trace(label: str, dataset: np.array, attributes: dict) -> Trace:
+def create_trace(
+    label: str, dataset: np.array, sfreq: int, start_timestamp: float
+) -> Trace:
     """
     Create a Trace object from a recording of a particular electrode with a corresponding label.
 
@@ -192,8 +199,11 @@ def create_trace(label: str, dataset: np.array, attributes: dict) -> Trace:
     dataset : array_like
         Numerical representation of the recording.
 
-    attributes : dict
-        A set of attributes of the recording.
+    sfreq : int
+        Sampling frequency of the recording.
+
+    start_timestamp: float
+        Start timestamp of the recording (UNIX timestamp).
 
     Returns
     -------
@@ -202,11 +212,17 @@ def create_trace(label: str, dataset: np.array, attributes: dict) -> Trace:
     """
     return Trace(
         label,
-        attributes.get("n_samples"),
-        attributes.get("sfreq"),
-        attributes.get("start_timestamp"),
+        sfreq,
+        start_timestamp,
         dataset[:].astype(np.float64),
     )
+
+
+def extract_start_timestamp(dataset_path: str, file: File) -> float:
+    sub_path = dataset_path[dataset_path.find("traces/") + 7 :]
+    subgroup = sub_path[: sub_path.find("/")]
+    subgroup_attributes = file.get(f"traces/{subgroup}").attrs
+    return subgroup_attributes["start_timestamp"]
 
 
 def generate_bipolar_references(raw: RawArray, leads: List[str]) -> RawArray:
@@ -216,7 +232,7 @@ def generate_bipolar_references(raw: RawArray, leads: List[str]) -> RawArray:
         )
     anodes, cathodes = get_anodes_and_cathodes(leads, raw.ch_names)
     raw = mne.set_bipolar_reference(
-        raw, anode=anodes, cathode=cathodes, drop_refs=True, copy=False
+        raw, anode=anodes, cathode=cathodes, drop_refs=True, copy=False, verbose=False
     )
     return raw
 
