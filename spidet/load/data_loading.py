@@ -32,12 +32,15 @@ def read_file(
     ----------
     path : str
         The file path of the EEG data file.
+
     dataset_paths : List[str] (default None)
         If the file is an '.h5' file, these are the absolute paths
-        to the datasets within the file.
+        to the datasets of the respective channels within the file.
+
     bipolar_reference: bool (default False)
         A boolean indicating whether bipolar references between respective
         channels should be calculated and subsequently considered as traces
+
     leads: List[str] (default None)
         The leads for whose channels to perform bipolar referencing.
         NOTE: 'leads' cannot be None if 'bipolar_reference' is True
@@ -157,11 +160,14 @@ def read_edf_or_fif_file(
     ----------
     file_path : str
         The path to the file.
+
     file_format : str
         format indicating whether the file is of type FIF or EDF
+
     bipolar_reference: bool (default False)
         A boolean indicating whether bipolar references between respective channels
         should be calculated and subsequently considered as traces
+
     leads: List[str] (default None)
         The leads for whose channels to perform bipolar referencing.
         NOTE: 'leads' cannot be None if 'bipolar_reference' is True

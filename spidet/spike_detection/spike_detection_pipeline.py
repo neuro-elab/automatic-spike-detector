@@ -1,30 +1,58 @@
 import logging
 import multiprocessing
 import os
-from typing import Tuple, List
+from datetime import datetime
+from typing import Tuple, List, Dict
 
 import numpy as np
 import pandas as pd
 from loguru import logger
 from scipy.special import rel_entr
 from sklearn.preprocessing import normalize
+from pathlib import Path
 
+from spidet.domain.BasisFunction import BasisFunction
+from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.spike_detection.clustering import BasisFunctionClusterer
+from spidet.spike_detection.line_length import LineLength
 from spidet.spike_detection.nmf import Nmf
 from spidet.spike_detection.projecting import Projector
 from spidet.spike_detection.thresholding import ThresholdGenerator
+from spidet.utils.times_utils import compute_rescaled_timeline
+from spidet.utils.plotting_utils import plot_w_and_consensus_matrix
 
 
-class NmfPipeline:
+class SpikeDetectionPipeline:
     def __init__(
         self,
-        result_dir: str,
+        file_path: str,
+        results_dir: str = None,
         nmf_runs: int = 100,
         rank_range: Tuple[int, int] = (2, 10),
+        line_length_freq: int = 50,
     ):
-        self.result_dir: str = result_dir
+        self.file_path = file_path
+        self.results_dir: str = self.__create_results_dir(results_dir)
         self.nmf_runs: int = nmf_runs
         self.rank_range: Tuple[int, int] = rank_range
+        self.line_length_freq = line_length_freq
+
+    def __create_results_dir(self, results_dir: str):
+        if results_dir is None:
+            # Create default directory if none is given
+            file_path = self.file_path
+            filename_for_saving = (
+                file_path[file_path.rfind("/") + 1 :]
+                .replace(".", "_")
+                .replace(" ", "_")
+            )
+
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            results_dir = os.path.join(
+                Path.home(), filename_for_saving + "_" + timestamp
+            )
+        os.makedirs(results_dir, exist_ok=True)
+        return results_dir
 
     @staticmethod
     def __compute_cdf(matrix: np.ndarray, bins: np.ndarray):
@@ -34,10 +62,12 @@ class NmfPipeline:
         cdf_vals = np.cumsum(counts) / (N * (N - 1) / 2)
         return cdf_vals + 1e-10  # add a small offset to avoid div0!
 
-    def __compute_cdf_area(self, cdf_vals, bin_width):
+    @staticmethod
+    def __compute_cdf_area(cdf_vals, bin_width):
         return np.sum(cdf_vals[:-1]) * bin_width
 
-    def __compute_delta_k(self, areas, cdfs):
+    @staticmethod
+    def __compute_delta_k(areas, cdfs):
         delta_k = np.zeros(len(areas))
         delta_y = np.zeros(len(areas))
         delta_k[0] = areas[0]
@@ -65,26 +95,21 @@ class NmfPipeline:
 
         return areas, delta_k, delta_y, k_opt
 
-    def run_nmf_pipeline(
-        self,
+    @staticmethod
+    def perform_nmf_steps_for_rank(
         preprocessed_data: np.ndarray,
         rank: int,
         n_runs: int,
-        results_dir: str,
         execute: bool = False,
-    ):
-        logging.debug(f"Starting NMF pipeline for rank {rank}")
-
-        # Create results directory for specific rank
-        rank_dir = os.path.join(results_dir, f"k={rank}")
-        os.makedirs(rank_dir, exist_ok=True)
+    ) -> Tuple[Dict, np.ndarray, np.ndarray, np.ndarray]:
+        logging.debug(f"Starting Spike detection pipeline for rank {rank}")
 
         #####################
         #   NMF             #
         #####################
 
         # Instantiate nmf classifier
-        nmf_classifier = Nmf(rank_dir, rank)
+        nmf_classifier = Nmf(rank=rank)
 
         # Run NMF consensus clustering for specified rank and number of runs (default = 100)
         metrics, consensus, h_best, w_best = nmf_classifier.nmf_run(
@@ -125,9 +150,11 @@ class NmfPipeline:
                 preprocessed_data
             )
 
-        return metrics, consensus
+        return metrics, consensus, h_best, w_best
 
-    def parallel_processing(self, preprocessed_data: np.ndarray):
+    def parallel_processing(
+        self, preprocessed_data: np.ndarray, channel_names: List[str]
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Parallel NMF spike detection.
 
@@ -156,19 +183,26 @@ class NmfPipeline:
 
         with multiprocessing.Pool(processes=n_cores) as pool:
             results = pool.starmap(
-                self.run_nmf_pipeline,
+                self.perform_nmf_steps_for_rank,
                 [
-                    (data_matrix, rank, self.nmf_runs, self.result_dir)
+                    (data_matrix, rank, self.nmf_runs)
                     for rank in range(self.rank_range[0], self.rank_range[1] + 1)
                 ],
             )
 
-        # Extract and store consensus matrices and metrics from results
-        consensus_matrices = [consensus for _, consensus in results]
-        metrics = [metrics for metrics, _ in results]
+        # Extract consensus, h and w matrices and metrics from results
+        consensus_matrices = [consensus for _, consensus, _, _ in results]
+        h_matrices = [h_best for _, _, h_best, _ in results]
+        w_matrices = [w_best for _, _, _, w_best in results]
+        metrics = [metrics for metrics, _, _, _ in results]
 
         # Calculate final statistics
         C, delta_k, delta_y, k_opt = self.__calculate_statistics(consensus_matrices)
+
+        # Get the H and W matrices for the optimal rank
+        idx_opt = k_opt - self.rank_range[0]
+        h_opt = h_matrices[idx_opt]
+        w_opt = w_matrices[idx_opt]
 
         # Generate metrics data frame
         metrics_df = pd.DataFrame(metrics)
@@ -184,10 +218,80 @@ class NmfPipeline:
             f"optimal k = {k_opt}"
         )
 
+        # Plot and save W and consensus matrices
+        plot_w_and_consensus_matrix(
+            w_matrices=w_matrices,
+            consensus_matrices=consensus_matrices,
+            experiment_dir=self.results_dir,
+            channel_names=channel_names,
+        )
+
         # Saving metrics as CSV
-        metrics_path = os.path.join(self.result_dir, "metrics.csv")
+        metrics_path = os.path.join(self.results_dir, "metrics.csv")
         metrics_df.to_csv(metrics_path, index=False)
 
-        return (
-            self.result_dir  # return the directory where results are saved and the M matrix
+        return h_opt, w_opt
+
+    def run(
+        self,
+        channel_paths: List[str],
+        bipolar_reference: bool = False,
+        leads: List[str] = None,
+    ) -> Tuple[List[BasisFunction], List[SpikeDetectionFunction]]:
+        # Instantiate a LineLength instance
+        line_length = LineLength(
+            file_path=self.file_path,
+            dataset_paths=channel_paths,
+            bipolar_reference=bipolar_reference,
+            leads=leads,
         )
+
+        # Perform line length steps to compute line length
+        (
+            start_timestamp,
+            channel_names,
+            line_length_matrix,
+        ) = line_length.apply_parallel_line_length_pipeline()
+
+        # Run parallelized NMF
+        h_opt, w_opt = self.parallel_processing(
+            preprocessed_data=line_length_matrix, channel_names=channel_names
+        )
+
+        # Create unique id prefix
+        filename = self.file_path[self.file_path.rfind("/") + 1 :]
+        unique_id_prefix = filename[: filename.rfind(".")]
+
+        # Compute times for H x-axis
+        times = compute_rescaled_timeline(
+            start_timestamp=start_timestamp,
+            length=h_opt.shape[1],
+            sfreq=self.line_length_freq,
+        )
+
+        # Create return objects
+        basis_functions: List[BasisFunction] = []
+        spike_detection_functions: List[SpikeDetectionFunction] = []
+
+        for idx, (bf, sdf) in enumerate(zip(w_opt.T, h_opt)):
+            # Create BasisFunction
+            label_bf = f"W{idx}"
+            unique_id_bf = f"{unique_id_prefix}_{label_bf}"
+            basis_fct = BasisFunction(
+                label=label_bf,
+                unique_id=unique_id_bf,
+                channel_names=channel_names,
+                data_array=bf,
+            )
+
+            # Create SpikeDetectionFunction
+            label_sdf = f"H{idx}"
+            unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
+            spike_detection_fct = SpikeDetectionFunction(
+                label=label_sdf, unique_id=unique_id_sdf, times=times, data_array=sdf
+            )
+
+            basis_functions.append(basis_fct)
+            spike_detection_functions.append(spike_detection_fct)
+
+        return basis_functions, spike_detection_functions

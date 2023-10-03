@@ -164,7 +164,7 @@ class LineLength:
         resampling_freq: int = 500,
         bandpass_cutoff_low: int = 0.1,
         bandpass_cutoff_high: int = 200,
-        n_processes: int = 8,
+        n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
     ) -> Tuple[float, List[str], np.ndarray]:
@@ -209,7 +209,7 @@ class LineLength:
         resampling_freq: int = 500,
         bandpass_cutoff_low: int = 0.1,
         bandpass_cutoff_high: int = 200,
-        n_processes: int = 8,
+        n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
     ) -> SpikeDetectionFunction:
