@@ -6,7 +6,7 @@ from loguru import logger
 
 from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.domain.Trace import Trace
-from spidet.load.data_loading import read_file
+from spidet.load.data_loading import DataLoader
 from spidet.preprocess.preprocessing import apply_preprocessing_steps
 from spidet.preprocess.resampling import resample_data
 from spidet.utils.times_utils import compute_rescaled_timeline
@@ -19,11 +19,13 @@ class LineLength:
         dataset_paths: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
+        bad_times: np.ndarray = None,
     ):
         self.file_path = file_path
         self.dataset_paths = dataset_paths
         self.bipolar_reference = bipolar_reference
         self.leads = leads
+        self.bad_times = bad_times
         self.line_length_window: int = 40
         self.line_length_freq: int = 50
 
@@ -35,6 +37,7 @@ class LineLength:
         ----------
         eeg_data : numpy.ndarray
             Input EEG data.
+
         sfreq : float
             Frequency of the input EEG data.
 
@@ -173,7 +176,8 @@ class LineLength:
         self.line_length_window = line_length_window
 
         # Load the eeg traces from the given file
-        traces: List[Trace] = read_file(
+        data_loader = DataLoader(bad_times=self.bad_times)
+        traces: List[Trace] = data_loader.read_file(
             self.file_path, self.dataset_paths, self.bipolar_reference, self.leads
         )
 

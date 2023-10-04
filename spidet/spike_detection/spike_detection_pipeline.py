@@ -27,12 +27,14 @@ class SpikeDetectionPipeline:
         self,
         file_path: str,
         results_dir: str = None,
+        bad_times: np.ndarray = None,
         nmf_runs: int = 100,
         rank_range: Tuple[int, int] = (2, 10),
         line_length_freq: int = 50,
     ):
         self.file_path = file_path
         self.results_dir: str = self.__create_results_dir(results_dir)
+        self.bad_times = bad_times
         self.nmf_runs: int = nmf_runs
         self.rank_range: Tuple[int, int] = rank_range
         self.line_length_freq = line_length_freq
@@ -210,13 +212,7 @@ class SpikeDetectionPipeline:
         metrics_df["delta_k (AUC)"] = delta_k
         metrics_df["delta_y (KL-div)"] = delta_y
 
-        logger.debug(
-            f"Calculated statistics:\n "
-            f"C = {C}\n "
-            f"delta_k (AUC) = {delta_k}\n "
-            f"delta_y (KL-div) = {delta_y}\n "
-            f"optimal k = {k_opt}"
-        )
+        logger.debug(f"Optimal rank: k = {k_opt}")
 
         # Plot and save W and consensus matrices
         plot_w_and_consensus_matrix(
@@ -244,6 +240,7 @@ class SpikeDetectionPipeline:
             dataset_paths=channel_paths,
             bipolar_reference=bipolar_reference,
             leads=leads,
+            bad_times=self.bad_times,
         )
 
         # Perform line length steps to compute line length

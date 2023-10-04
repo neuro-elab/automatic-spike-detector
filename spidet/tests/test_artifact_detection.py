@@ -1,7 +1,7 @@
 import argparse
 
 from spidet.domain.Artifacts import Artifacts
-from spidet.preprocess.artiact_detection import ArtifactDetector
+from spidet.preprocess.artifact_detection import ArtifactDetector
 from spidet.tests.variables import DATASET_PATHS_EL010, DATASET_PATHS_SZ2
 
 if __name__ == "__main__":
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     # Run artifact detection
     artifacts: Artifacts = artifact_detector.run(
-        file_path=file, channel_paths=DATASET_PATHS_EL010
+        file_path=file, channel_paths=DATASET_PATHS_SZ2
     )
 
     print(f"Bad channels: {artifacts.bad_channels}")

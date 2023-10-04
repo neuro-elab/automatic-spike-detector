@@ -7,7 +7,12 @@ import numpy as np
 from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.spike_detection.line_length import LineLength
 from spidet.utils import logging_utils
-from spidet.tests.variables import DATASET_PATHS_SZ2, LEAD_PREFIXES_EL010
+from spidet.tests.variables import (
+    DATASET_PATHS_SZ2,
+    LEAD_PREFIXES_SZ2,
+    DATASET_PATHS_EL010,
+    LEAD_PREFIXES_EL010,
+)
 
 if __name__ == "__main__":
     # parse cli args
@@ -28,7 +33,7 @@ if __name__ == "__main__":
     # Instantiate a LineLength instance
     line_length = LineLength(
         file_path=file,
-        dataset_paths=DATASET_PATHS_SZ2,
+        dataset_paths=DATASET_PATHS_EL010,
         bipolar_reference=True,
         leads=LEAD_PREFIXES_EL010,
     )
