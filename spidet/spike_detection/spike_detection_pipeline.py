@@ -223,8 +223,21 @@ class SpikeDetectionPipeline:
         )
 
         # Saving metrics as CSV
+        logger.debug("Saving metrics")
         metrics_path = os.path.join(self.results_dir, "metrics.csv")
         metrics_df.to_csv(metrics_path, index=False)
+
+        # Saving H and W matrices
+        logger.debug(f"Saving W and H for ranks {rank_list}")
+        for idx in range(len(h_matrices)):
+            h_matrix = h_matrices[idx]
+            w_matrix = w_matrices[idx]
+
+            saving_path = os.path.join(self.results_dir, f"k={rank_list[idx]}")
+            os.makedirs(saving_path, exist_ok=True)
+
+            np.savetxt(f"{saving_path}/H_best.csv", h_matrix, delimiter=",")
+            np.savetxt(f"{saving_path}/W_best.csv", w_matrix, delimiter=",")
 
         return h_opt, w_opt
 
