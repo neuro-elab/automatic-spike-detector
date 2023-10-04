@@ -34,10 +34,10 @@ class LineLength:
             for row in range(self.bad_times.shape[0]):
                 bad_times_on = np.rint(
                     self.bad_times[row, 0] / orig_length * data.shape[1]
-                )
+                ).astype(int)
                 bad_times_off = np.rint(
                     self.bad_times[row, 1] / orig_length * data.shape[1]
-                )
+                ).astype(int)
                 data[:, bad_times_on:bad_times_off] = 0
 
         return data
