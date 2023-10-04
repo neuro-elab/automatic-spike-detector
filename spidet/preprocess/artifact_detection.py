@@ -1,14 +1,20 @@
+from typing import List
+
 import numpy as np
+from loguru import logger
 
 from spidet.domain.Artifacts import Artifacts
+from spidet.domain.Trace import Trace
+from spidet.load.data_loading import DataLoader
 
 
 class ArtifactDetector:
+    @staticmethod
     def __detect_bad_times(
-        self,
         data: np.ndarray,
         sfreq: int,
     ):
+        logger.debug("Computing bad times")
         bad_times = None
         times = data.shape[1]
 
@@ -22,11 +28,13 @@ class ArtifactDetector:
 
         # Calculate start and end points of bad times
         on_bad_times = np.where(
-            np.diff(np.concatenate([[False], np.bitwise_or(flat, sat)])) == 1
+            np.diff(np.concatenate([[False], np.bitwise_or(flat, sat)]).astype(int))
+            == 1
         )[0].squeeze()
 
         off_bad_times = np.where(
-            np.diff(np.concatenate([[False], np.bitwise_or(flat, sat)])) == -1
+            np.diff(np.concatenate([[False], np.bitwise_or(flat, sat)]).astype(int))
+            == -1
         )[0].squeeze()
 
         # Correct for unequal number of elements
@@ -45,14 +53,18 @@ class ArtifactDetector:
             on_indices = np.append(1, relevant_gaps).nonzero()[0]
             on_bad_times = on_bad_times[on_indices]
 
-            off_indices = np.append(relevant_gaps, 1)
+            off_indices = np.append(relevant_gaps, 1).nonzero()[0]
             off_bad_times = off_bad_times[off_indices]
 
-            bad_times = np.vstack((on_bad_times, off_bad_times)).T / sfreq
+            bad_times = np.vstack((on_bad_times, off_bad_times)).T
 
+        logger.debug(f"Identified {bad_times.shape[0]} periods as bad times")
         return bad_times
 
-    def __detect_bad_channels(self, data: np.ndarray, bad_times: np.ndarray):
+    @staticmethod
+    def __detect_bad_channels(data: np.ndarray, bad_times: np.ndarray):
+        logger.debug("Computing bad channels")
+
         nr_channels, times = data.shape
 
         # Binary array indicating which channels are considered empty
@@ -80,12 +92,13 @@ class ArtifactDetector:
         white_noise_channels = sum_per_channel > 3
 
         bad_channels = np.bitwise_or(
-            np.zeros(nr_channels), empty_channels, white_noise_channels
+            np.zeros(nr_channels, dtype=bool), empty_channels, white_noise_channels
         )
 
+        logger.debug(f"Identified {np.sum(bad_channels)} channels as potentially bad")
         return bad_channels
 
-    def run(
+    def run_on_data(
         self,
         data: np.ndarray,
         sfreq: int,
@@ -94,6 +107,8 @@ class ArtifactDetector:
     ) -> Artifacts:
         bad_times = None
         bad_channels = None
+
+        logger.debug("Running artifact detection")
 
         # Calculate bad times, i.e. times corresponding to possible artifact
         if detect_bad_times:
@@ -104,3 +119,18 @@ class ArtifactDetector:
             bad_channels = self.__detect_bad_channels(data, bad_times)
 
         return Artifacts(bad_times=bad_times, bad_channels=bad_channels)
+
+    def run(self, file_path: str, channel_paths: List[str]) -> Artifacts:
+        # Read data from file
+        data_loader = DataLoader()
+        traces: List[Trace] = data_loader.read_file(
+            path=file_path, dataset_paths=channel_paths
+        )
+
+        # Perform artifact detection
+        sfreq = traces[0].sfreq
+        artifacts: Artifacts = self.run_on_data(
+            data=np.array([trace.data for trace in traces]), sfreq=sfreq
+        )
+
+        return artifacts
