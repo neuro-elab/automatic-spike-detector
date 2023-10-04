@@ -52,7 +52,7 @@ class DataLoader:
                 )
                 exclude.extend(indices)
 
-        return np.delete(data, exclude, axis=1)
+        return np.delete(data, exclude, axis=0)
 
     def generate_bipolar_references(self, raw: RawArray, leads: List[str]) -> RawArray:
         if leads is None:
