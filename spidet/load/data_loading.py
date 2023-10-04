@@ -16,9 +16,6 @@ FIF = "fif"
 
 
 class DataLoader:
-    def __init__(self, bad_times: np.ndarray = None):
-        self.bad_times = bad_times
-
     @staticmethod
     def extract_start_timestamp(dataset_path: str, file: File) -> float:
         sub_path = dataset_path[dataset_path.find("traces/") + 7 :]
@@ -43,17 +40,6 @@ class DataLoader:
 
         return anodes, cathodes
 
-    def exclude_bad_times(self, data: np.ndarray) -> np.ndarray:
-        exclude = []
-        if self.bad_times is not None:
-            for row in range(self.bad_times.shape[0]):
-                indices = list(
-                    range(self.bad_times[row, 0], self.bad_times[row, 1] + 1)
-                )
-                exclude.extend(indices)
-
-        return np.delete(data, exclude, axis=0)
-
     def generate_bipolar_references(self, raw: RawArray, leads: List[str]) -> RawArray:
         if leads is None:
             raise Exception(
@@ -70,8 +56,9 @@ class DataLoader:
         )
         return raw
 
+    @staticmethod
     def create_trace(
-        self, label: str, dataset: np.array, sfreq: int, start_timestamp: float
+        label: str, dataset: np.array, sfreq: int, start_timestamp: float
     ) -> Trace:
         """
         Create a Trace object from a recording of a particular electrode with a corresponding label.
@@ -95,16 +82,11 @@ class DataLoader:
         Trace
             A Trace object representing a recording from an electrode with the corresponding label.
         """
-        data = dataset[:].astype(np.float64)
-
-        # Exclude bad times if any
-        data = self.exclude_bad_times(data)
-
         return Trace(
             label,
             sfreq,
             start_timestamp,
-            data,
+            dataset[:].astype(np.float64),
         )
 
     def read_file(

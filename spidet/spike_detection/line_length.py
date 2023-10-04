@@ -29,6 +29,19 @@ class LineLength:
         self.line_length_window: int = 40
         self.line_length_freq: int = 50
 
+    def zero_out_bad_times(self, data: np.ndarray, orig_length: int) -> np.ndarray:
+        if self.bad_times is not None:
+            for row in range(self.bad_times.shape[0]):
+                bad_times_on = np.rint(
+                    self.bad_times[row, 0] / orig_length * data.shape[1]
+                )
+                bad_times_off = np.rint(
+                    self.bad_times[row, 1] / orig_length * data.shape[1]
+                )
+                data[:, bad_times_on:bad_times_off] = 0
+
+        return data
+
     def compute_line_length(self, eeg_data: np.array, sfreq: int):
         """
         Computes the line length of the input EEG data.
@@ -176,7 +189,7 @@ class LineLength:
         self.line_length_window = line_length_window
 
         # Load the eeg traces from the given file
-        data_loader = DataLoader(bad_times=self.bad_times)
+        data_loader = DataLoader()
         traces: List[Trace] = data_loader.read_file(
             self.file_path, self.dataset_paths, self.bipolar_reference, self.leads
         )
@@ -204,6 +217,12 @@ class LineLength:
 
         # Combine results from parallel processing
         line_length_all = np.concatenate(line_length, axis=0)
+
+        # Zero out bad times if any
+        logger.debug("Zeroing out bad times on line length")
+        line_length_all = self.zero_out_bad_times(
+            data=line_length_all, orig_length=len(traces[0].data)
+        )
 
         return start_timestamp, [trace.label for trace in traces], line_length_all
 

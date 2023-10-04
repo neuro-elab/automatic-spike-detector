@@ -208,8 +208,8 @@ class SpikeDetectionPipeline:
 
         # Generate metrics data frame
         metrics_df = pd.DataFrame(metrics)
-        metrics_df["C"] = C
-        metrics_df["delta_k (AUC)"] = delta_k
+        metrics_df["AUC"] = C
+        metrics_df["delta_k (CDF)"] = delta_k
         metrics_df["delta_y (KL-div)"] = delta_y
 
         logger.debug(f"Optimal rank: k = {k_opt}")
