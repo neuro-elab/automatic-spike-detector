@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
 
-PREFIX_BRAIN_REGIONS: Sequence = ["Hip2", "Temp", "FrOr", "In An", "InPo", "Hip1"]
+from tests.variables import LEAD_PREFIXES_EL010
 
 
 def plot_std_line_length(
@@ -99,7 +99,7 @@ def plot_line_length_data(
     line_length_eeg: np.ndarray,
     channel_names: List[str],
     start_time_recording: datetime,
-    prefix_brain_regions: Sequence[str] = PREFIX_BRAIN_REGIONS,
+    lead_prefixes: Sequence[str] = LEAD_PREFIXES_EL010,
     display_all: bool = False,
     offset: timedelta = timedelta(),
     duration: int = 10,
@@ -145,9 +145,9 @@ def plot_line_length_data(
     eeg_period = line_length_eeg[:, start:stop]
 
     # Figure to plot brain regions combined in the same file
-    fig_comb, ax_comb = plt.subplots(len(prefix_brain_regions), 1, figsize=(20, 20))
+    fig_comb, ax_comb = plt.subplots(len(lead_prefixes), 1, figsize=(20, 20))
 
-    for idx, prefix in enumerate(prefix_brain_regions):
+    for idx, prefix in enumerate(lead_prefixes):
         logger.debug(
             seizure_prefix(
                 f"LL EEG {prefix}: generate plot for start time {start_time_display_period.time()} and duration {duration} seconds",
@@ -208,9 +208,7 @@ def plot_line_length_data(
         )
 
     filename_prefix = (
-        "EEG_LL"
-        if prefix_brain_regions == PREFIX_BRAIN_REGIONS
-        else "_".join(prefix_brain_regions)
+        "EEG_LL" if lead_prefixes == LEAD_PREFIXES_EL010 else "_".join(lead_prefixes)
     )
     fig_comb.suptitle(title)
     fig_comb.savefig(

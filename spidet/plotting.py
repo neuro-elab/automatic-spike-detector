@@ -7,7 +7,7 @@ from loguru import logger
 from numpy import genfromtxt
 
 from spidet.load.data_loading import DataLoader
-from tests.variables import LEAD_PREFIXES_EL010, LABELS_EL010
+from tests.variables import LEAD_PREFIXES_EL010, LABELS_EL010, LEAD_PREFIXES_AJ
 from spidet.utils import plotting_utils
 
 SZ_LABEL = "Sz"
