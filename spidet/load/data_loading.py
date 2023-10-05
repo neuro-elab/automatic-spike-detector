@@ -259,7 +259,7 @@ class DataLoader:
             A list of Trace objects representing the content of the file.
         """
         raw: RawArray = (
-            mne.io.read_raw_fif(file_path, verbose=False)
+            mne.io.read_raw_fif(file_path, preload=True, verbose=False)
             if file_format == FIF
             else mne.io.read_raw_edf(file_path, preload=True, verbose=False)
         )
