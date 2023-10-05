@@ -30,15 +30,14 @@ class LineLength:
         self.line_length_freq: int = 50
 
     def zero_out_bad_times(self, data: np.ndarray, orig_length: int) -> np.ndarray:
-        if self.bad_times is not None:
-            for row in range(self.bad_times.shape[0]):
-                bad_times_on = np.rint(
-                    self.bad_times[row, 0] / orig_length * data.shape[1]
-                ).astype(int)
-                bad_times_off = np.rint(
-                    self.bad_times[row, 1] / orig_length * data.shape[1]
-                ).astype(int)
-                data[:, bad_times_on:bad_times_off] = 0
+        for row in range(self.bad_times.shape[0]):
+            bad_times_on = np.rint(
+                self.bad_times[row, 0] / orig_length * data.shape[1]
+            ).astype(int)
+            bad_times_off = np.rint(
+                self.bad_times[row, 1] / orig_length * data.shape[1]
+            ).astype(int)
+            data[:, bad_times_on:bad_times_off] = 0
 
         return data
 
@@ -219,10 +218,11 @@ class LineLength:
         line_length_all = np.concatenate(line_length, axis=0)
 
         # Zero out bad times if any
-        logger.debug("Zeroing out bad times on line length")
-        line_length_all = self.zero_out_bad_times(
-            data=line_length_all, orig_length=len(traces[0].data)
-        )
+        if self.bad_times is not None:
+            logger.debug("Zeroing out bad times on line length")
+            line_length_all = self.zero_out_bad_times(
+                data=line_length_all, orig_length=len(traces[0].data)
+            )
 
         return start_timestamp, [trace.label for trace in traces], line_length_all
 
