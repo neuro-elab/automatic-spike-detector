@@ -27,6 +27,7 @@ class SpikeDetectionPipeline:
         self,
         file_path: str,
         results_dir: str = None,
+        save_nmf_matrices: bool = False,
         bad_times: np.ndarray = None,
         nmf_runs: int = 100,
         rank_range: Tuple[int, int] = (2, 10),
@@ -34,6 +35,7 @@ class SpikeDetectionPipeline:
     ):
         self.file_path = file_path
         self.results_dir: str = self.__create_results_dir(results_dir)
+        self.save_nmf_matrices = save_nmf_matrices
         self.bad_times = bad_times
         self.nmf_runs: int = nmf_runs
         self.rank_range: Tuple[int, int] = rank_range
@@ -228,16 +230,17 @@ class SpikeDetectionPipeline:
         metrics_df.to_csv(metrics_path, index=False)
 
         # Saving H and W matrices
-        logger.debug(f"Saving W and H for ranks {rank_list}")
-        for idx in range(len(h_matrices)):
-            h_matrix = h_matrices[idx]
-            w_matrix = w_matrices[idx]
+        if self.save_nmf_matrices:
+            logger.debug(f"Saving W and H for ranks {rank_list}")
+            for idx in range(len(h_matrices)):
+                h_matrix = h_matrices[idx]
+                w_matrix = w_matrices[idx]
 
-            saving_path = os.path.join(self.results_dir, f"k={rank_list[idx]}")
-            os.makedirs(saving_path, exist_ok=True)
+                saving_path = os.path.join(self.results_dir, f"k={rank_list[idx]}")
+                os.makedirs(saving_path, exist_ok=True)
 
-            np.savetxt(f"{saving_path}/H_best.csv", h_matrix, delimiter=",")
-            np.savetxt(f"{saving_path}/W_best.csv", w_matrix, delimiter=",")
+                np.savetxt(f"{saving_path}/H_best.csv", h_matrix, delimiter=",")
+                np.savetxt(f"{saving_path}/W_best.csv", w_matrix, delimiter=",")
 
         return h_opt, w_opt
 
