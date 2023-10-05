@@ -2,7 +2,7 @@ import argparse
 
 from spidet.domain.Artifacts import Artifacts
 from spidet.preprocess.artifact_detection import ArtifactDetector
-from spidet.tests.variables import DATASET_PATHS_EL010, DATASET_PATHS_SZ2
+from tests.variables import DATASET_PATHS_SZ2
 
 if __name__ == "__main__":
     # parse cli args

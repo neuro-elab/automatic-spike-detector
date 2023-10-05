@@ -6,9 +6,7 @@ import numpy as np
 from loguru import logger
 
 from spidet.spike_detection.spike_detection_pipeline import SpikeDetectionPipeline
-from spidet.tests.variables import (
-    DATASET_PATHS_SZ2,
-    LEAD_PREFIXES_SZ2,
+from tests.variables import (
     DATASET_PATHS_EL010,
     LEAD_PREFIXES_EL010,
 )

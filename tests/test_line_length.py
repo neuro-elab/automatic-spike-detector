@@ -7,9 +7,7 @@ import numpy as np
 from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.spike_detection.line_length import LineLength
 from spidet.utils import logging_utils
-from spidet.tests.variables import (
-    DATASET_PATHS_SZ2,
-    LEAD_PREFIXES_SZ2,
+from tests.variables import (
     DATASET_PATHS_EL010,
     LEAD_PREFIXES_EL010,
 )
