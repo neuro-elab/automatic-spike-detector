@@ -351,10 +351,13 @@ def plot_h_matrix_period(
     )
 
     for idx in range(len(rank_dirs)):
-        labels = dict() if rank_labels_idx is None else rank_labels_idx.get(idx + 2)
+        current_rank = int(rank_dirs[idx][-1])
+        labels = (
+            dict() if rank_labels_idx is None else rank_labels_idx.get(current_rank)
+        )
         labels = [
             f"H{rank + 1}" if labels is None else labels.get(rank, f"H{rank + 1}")
-            for rank in range(idx + 2)
+            for rank in range(current_rank)
         ]
         h_best = h_matrices[idx]
 
@@ -384,7 +387,7 @@ def plot_h_matrix_period(
 
         ax[idx].set_xticks(xticks, ticks_as_datetime)
         ax[idx].set_xlabel("Time of the day [HH:MM:SS.ff]")
-        ax[idx].set_title(f"Rank = {idx + 2}")
+        ax[idx].set_title(f"Rank = {current_rank}")
 
     fig.subplots_adjust(hspace=1.0)
     period = "all" if display_all else f"{duration}s"

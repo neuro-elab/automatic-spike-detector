@@ -18,8 +18,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--file", help="full path to file to be processed", required=True
     )
+    parser.add_argument("--bt", help="path to bad times file", required=False)
 
     file: str = parser.parse_args().file
+    bad_times_file: str = parser.parse_args().bt
 
     # Configure logger
     logging_utils.add_logger_with_process_name()
@@ -34,29 +36,7 @@ if __name__ == "__main__":
     runs_per_rank = 100
 
     # Define bad times
-    bad_times = np.array(
-        [
-            [3080850, 3080854],
-            [3545668, 3545670],
-            [3551326, 3551327],
-            [3563311, 3563313],
-            [6233543, 6233545],
-            [29343015, 29343019],
-            [29368598, 29368606],
-            [31829228, 31829233],
-            [31961742, 31961746],
-            [32573698, 32573872],
-            [41377108, 41377115],
-            [45858403, 45858417],
-            [50101975, 50101980],
-            [50501533, 50501541],
-            [50502059, 50502061],
-            [50521703, 50521712],
-            [50723130, 50723140],
-            [56445678, 56445684],
-            [56564357, 56564378],
-        ]
-    )
+    bad_times = np.genfromtxt(bad_times_file, delimiter=",")
 
     # Initialize spike detection pipeline
     spike_detection_pipeline = SpikeDetectionPipeline(
