@@ -7,7 +7,9 @@ from h5py import Dataset, File
 from loguru import logger
 from mne.io import RawArray
 
+from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.domain.Trace import Trace
+from spidet.utils.times_utils import compute_rescaled_timeline
 
 # Supported file formats
 HDF5 = "h5"
@@ -272,3 +274,37 @@ class DataLoader:
             )
             for label, times in zip(raw.ch_names, raw.get_data())
         ]
+
+    @staticmethod
+    def load_h_matrix(
+        file_path: str, start_timestamp: float, sfreq: int = 50
+    ) -> List[SpikeDetectionFunction]:
+        logger.debug(f"Loading H matrix {file_path}")
+        h_matrix = np.genfromtxt(file_path, delimiter=",")
+
+        # Compute times for H x-axis
+        times = compute_rescaled_timeline(
+            start_timestamp=start_timestamp,
+            length=h_matrix.shape[1],
+            sfreq=sfreq,
+        )
+
+        # Create unique id prefix
+        rank = file_path[file_path.find("/k=") + 1]
+        dir_path = file_path[: file_path.find("/k=")]
+        unique_id_prefix = f"{dir_path[dir_path.rfind('/') + 1:]}_rank_{rank}"
+
+        # Create return objects
+        spike_detection_functions: List[SpikeDetectionFunction] = []
+
+        for idx, sdf in enumerate(h_matrix):
+            # Create SpikeDetectionFunction
+            label_sdf = f"H{idx}"
+            unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
+            spike_detection_fct = SpikeDetectionFunction(
+                label=label_sdf, unique_id=unique_id_sdf, times=times, data_array=sdf
+            )
+
+            spike_detection_functions.append(spike_detection_fct)
+
+        return spike_detection_functions
