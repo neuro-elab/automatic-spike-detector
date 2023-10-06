@@ -435,7 +435,7 @@ def create_file_title(
     period: str,
 ) -> str:
     return (
-        f"Patient: {extract_label_from_path(exp_dir)} - "
+        f"{extract_label_from_path(exp_dir)} - "
         f"{data_kind} - Start time: {start_time_display_period.time()}, "
         f"Period: {period} (Start of recording: {start_time_recording}, Offset: {offset_seconds} seconds)"
     )
