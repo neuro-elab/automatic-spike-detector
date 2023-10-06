@@ -8,6 +8,7 @@ FIF = "fif"
 
 def convert_fif_to_edf(file_path: str, save_path: str) -> None:
     filename = file_path[file_path.rfind("/") + 1 :]
+    filename = filename[: filename.rfind(".")]
     file_format = file_path[file_path.rfind(".") + 1 :].lower()
 
     if file_format != FIF:
