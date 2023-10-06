@@ -6,7 +6,7 @@ from loguru import logger
 
 from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.domain.Trace import Trace
-from spidet.load.data_loading import read_file
+from spidet.load.data_loading import DataLoader
 from spidet.preprocess.preprocessing import apply_preprocessing_steps
 from spidet.preprocess.resampling import resample_data
 from spidet.utils.times_utils import compute_rescaled_timeline
@@ -19,13 +19,27 @@ class LineLength:
         dataset_paths: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
+        bad_times: np.ndarray = None,
     ):
         self.file_path = file_path
         self.dataset_paths = dataset_paths
         self.bipolar_reference = bipolar_reference
         self.leads = leads
+        self.bad_times = bad_times
         self.line_length_window: int = 40
         self.line_length_freq: int = 50
+
+    def zero_out_bad_times(self, data: np.ndarray, orig_length: int) -> np.ndarray:
+        for row in range(self.bad_times.shape[0]):
+            bad_times_on = np.rint(
+                self.bad_times[row, 0] / orig_length * data.shape[1]
+            ).astype(int)
+            bad_times_off = np.rint(
+                self.bad_times[row, 1] / orig_length * data.shape[1]
+            ).astype(int)
+            data[:, bad_times_on:bad_times_off] = 0
+
+        return data
 
     def compute_line_length(self, eeg_data: np.array, sfreq: int):
         """
@@ -35,6 +49,7 @@ class LineLength:
         ----------
         eeg_data : numpy.ndarray
             Input EEG data.
+
         sfreq : float
             Frequency of the input EEG data.
 
@@ -164,7 +179,7 @@ class LineLength:
         resampling_freq: int = 500,
         bandpass_cutoff_low: int = 0.1,
         bandpass_cutoff_high: int = 200,
-        n_processes: int = 8,
+        n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
     ) -> Tuple[float, List[str], np.ndarray]:
@@ -173,7 +188,8 @@ class LineLength:
         self.line_length_window = line_length_window
 
         # Load the eeg traces from the given file
-        traces: List[Trace] = read_file(
+        data_loader = DataLoader()
+        traces: List[Trace] = data_loader.read_file(
             self.file_path, self.dataset_paths, self.bipolar_reference, self.leads
         )
 
@@ -201,6 +217,13 @@ class LineLength:
         # Combine results from parallel processing
         line_length_all = np.concatenate(line_length, axis=0)
 
+        # Zero out bad times if any
+        if self.bad_times is not None:
+            logger.debug("Zeroing out bad times on line length")
+            line_length_all = self.zero_out_bad_times(
+                data=line_length_all, orig_length=len(traces[0].data)
+            )
+
         return start_timestamp, [trace.label for trace in traces], line_length_all
 
     def compute_unique_line_length(
@@ -209,7 +232,7 @@ class LineLength:
         resampling_freq: int = 500,
         bandpass_cutoff_low: int = 0.1,
         bandpass_cutoff_high: int = 200,
-        n_processes: int = 8,
+        n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
     ) -> SpikeDetectionFunction:

@@ -1,88 +1,17 @@
 import argparse
 import os
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
 import numpy as np
+from loguru import logger
 from numpy import genfromtxt
 
+from spidet.load.data_loading import DataLoader
+from tests.variables import LEAD_PREFIXES_EL010, LABELS_EL010, LEAD_PREFIXES_AJ
 from spidet.utils import plotting_utils
-from spidet.load.data_loading import get_anodes_and_cathodes
-from loguru import logger
 
 SZ_LABEL = "Sz"
 
-LABELS_EL010 = [
-    "Hip21",
-    "Hip22",
-    "Hip23",
-    "Hip24",
-    "Hip25",
-    "Hip26",
-    "Hip27",
-    "Hip28",
-    "Hip29",
-    "Hip210",
-    "Temp1",
-    "Temp2",
-    "Temp3",
-    "Temp4",
-    "Temp5",
-    "Temp6",
-    "Temp7",
-    "Temp8",
-    "Temp9",
-    "Temp10",
-    "FrOr1",
-    "FrOr2",
-    "FrOr3",
-    "FrOr4",
-    "FrOr5",
-    "FrOr6",
-    "FrOr7",
-    "FrOr8",
-    "FrOr9",
-    "FrOr10",
-    "FrOr11",
-    "FrOr12",
-    "In An1",
-    "In An2",
-    "In An3",
-    "In An4",
-    "In An5",
-    "In An6",
-    "In An7",
-    "In An8",
-    "In An9",
-    "In An10",
-    "In An11",
-    "In An12",
-    "InPo1",
-    "InPo2",
-    "InPo3",
-    "InPo4",
-    "InPo5",
-    "InPo6",
-    "InPo7",
-    "InPo8",
-    "InPo9",
-    "InPo10",
-    "InPo11",
-    "InPo12",
-    "Hip11",
-    "Hip12",
-    "Hip13",
-    "Hip14",
-    "Hip15",
-    "Hip16",
-    "Hip17",
-    "Hip18",
-    "Hip19",
-    "Hip110",
-    "Hip111",
-    "Hip112",
-]
-
-LEAD_PREFIXES_EL010 = ["Hip2", "Temp", "FrOr", "In An", "InPo", "Hip1"]
 
 if __name__ == "__main__":
     # Parse cli args
@@ -93,11 +22,11 @@ if __name__ == "__main__":
     folder: str = parser.parse_args().folder
 
     # Set plotting variables
-    plot_h: bool = False
+    plot_h: bool = True
     plot_w: bool = False
-    plot_line_length: bool = True
+    plot_line_length: bool = False
     plot_seizures = False
-    plot_unique_line_length = True
+    plot_unique_line_length = False
 
     # Set seizure params
     offset_gaps = [
@@ -135,22 +64,44 @@ if __name__ == "__main__":
     )
 
     # Set start time of the recording
-    start_time_recording: datetime = datetime(2021, 11, 10, 21, 54, 58)
+    start_time_recording: datetime = datetime(2020, 8, 15, 20, 0, 0)
 
     # Set params for single plotting periods
-    offset = timedelta(hours=2, minutes=7)
+    offset = timedelta(hours=2, minutes=18)
     duration = 2 * 60
-    display_all = True
+    display_all = False
     y_lim = 1e-9
 
     # Get list of channel names
-    anodes, cathodes = get_anodes_and_cathodes(LEAD_PREFIXES_EL010, LABELS_EL010)
+    anodes, cathodes = DataLoader().get_anodes_and_cathodes(
+        LEAD_PREFIXES_EL010, LABELS_EL010
+    )
     channel_names = [anode + "-" + cathode for anode, cathode in zip(anodes, cathodes)]
 
     # Plot W matrices
     if plot_w:
+        rank_dirs = plotting_utils.get_rank_dirs_sorted(folder)
+        w_matrices = []
+        consensus_matrices = []
+        for idx in range(len(rank_dirs)):
+            logger.debug(
+                f"{rank_dirs[idx][rank_dirs[idx].rfind('/') + 1:]}: Loading w and consensus matrices"
+            )
+
+            file_path_w = rank_dirs[idx] + "/W_best.csv"
+            w_best = genfromtxt(file_path_w, delimiter=",")
+            w_matrices.append(w_best)
+
+            file_path_consensus = rank_dirs[idx] + "/consensus_matrix.csv"
+            consensus = genfromtxt(file_path_consensus, delimiter=",")
+            consensus_matrices.append(consensus)
+
         plotting_utils.plot_w_and_consensus_matrix(
-            folder, channel_names, rank_labels_idx
+            w_matrices=w_matrices,
+            consensus_matrices=consensus_matrices,
+            experiment_dir=folder,
+            channel_names=channel_names,
+            rank_labels_idx=rank_labels_idx,
         )
 
     # Get line length eeg if necessary
@@ -228,7 +179,6 @@ if __name__ == "__main__":
                 folder,
                 line_length_eeg,
                 channel_names,
-                # prefix_brain_regions=["Hip1"],
                 start_time_recording=start_time_recording,
                 display_all=display_all,
                 offset=offset,
@@ -244,5 +194,5 @@ if __name__ == "__main__":
                 display_all=display_all,
                 offset=offset,
                 duration=duration,
-                rank_labels_idx=rank_labels_idx,
+                # rank_labels_idx=rank_labels_idx,
             )

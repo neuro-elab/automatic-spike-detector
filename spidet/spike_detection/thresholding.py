@@ -134,11 +134,15 @@ class ThresholdGenerator:
         threshold_fit = np.polyfit(
             bin_edges[
                 idx_first_inf
-                - round((idx_second_peak - idx_first_inf) / 2) : idx_second_peak
+                - np.rint((idx_second_peak - idx_first_inf) / 2).astype(
+                    int
+                ) : idx_second_peak
             ],
             hist_smoothed[
                 idx_first_inf
-                - round((idx_second_peak - idx_first_inf) / 2) : idx_second_peak
+                - np.rint((idx_second_peak - idx_first_inf) / 2).astype(
+                    int
+                ) : idx_second_peak
             ],
             deg=1,
         )

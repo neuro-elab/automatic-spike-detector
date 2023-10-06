@@ -7,9 +7,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
-from numpy import genfromtxt
 
-PREFIX_BRAIN_REGIONS: Sequence = ["Hip2", "Temp", "FrOr", "In An", "InPo", "Hip1"]
+from tests.variables import LEAD_PREFIXES_EL010
 
 
 def plot_std_line_length(
@@ -22,6 +21,18 @@ def plot_std_line_length(
     sfreq: float = 50,
     seizure: int = None,
 ) -> None:
+    dir_path = (
+        os.path.join(experiment_dir, "plots_line_length_data", "std_line_length")
+        if seizure is None
+        else os.path.join(
+            experiment_dir,
+            "plots_line_length_data",
+            "std_line_length",
+            f"seizure_{seizure}",
+        )
+    )
+    os.makedirs(dir_path, exist_ok=True)
+
     offset_seconds = int(offset.total_seconds())
     if display_all and offset_seconds != 0:
         logger.warning("display_all is True, ignoring any given offset and duration")
@@ -72,7 +83,7 @@ def plot_std_line_length(
     fig.suptitle(title)
     fig.savefig(
         os.path.join(
-            experiment_dir,
+            dir_path,
             create_filename(
                 prefix="Std_LL",
                 offset=offset_seconds,
@@ -88,7 +99,7 @@ def plot_line_length_data(
     line_length_eeg: np.ndarray,
     channel_names: List[str],
     start_time_recording: datetime,
-    prefix_brain_regions: Sequence[str] = PREFIX_BRAIN_REGIONS,
+    lead_prefixes: Sequence[str] = LEAD_PREFIXES_EL010,
     display_all: bool = False,
     offset: timedelta = timedelta(),
     duration: int = 10,
@@ -134,9 +145,9 @@ def plot_line_length_data(
     eeg_period = line_length_eeg[:, start:stop]
 
     # Figure to plot brain regions combined in the same file
-    fig_comb, ax_comb = plt.subplots(len(prefix_brain_regions), 1, figsize=(20, 20))
+    fig_comb, ax_comb = plt.subplots(len(lead_prefixes), 1, figsize=(20, 20))
 
-    for idx, prefix in enumerate(prefix_brain_regions):
+    for idx, prefix in enumerate(lead_prefixes):
         logger.debug(
             seizure_prefix(
                 f"LL EEG {prefix}: generate plot for start time {start_time_display_period.time()} and duration {duration} seconds",
@@ -197,9 +208,7 @@ def plot_line_length_data(
         )
 
     filename_prefix = (
-        "EEG_LL"
-        if prefix_brain_regions == PREFIX_BRAIN_REGIONS
-        else "_".join(prefix_brain_regions)
+        "EEG_LL" if lead_prefixes == LEAD_PREFIXES_EL010 else "_".join(lead_prefixes)
     )
     fig_comb.suptitle(title)
     fig_comb.savefig(
@@ -216,14 +225,15 @@ def plot_line_length_data(
 
 
 def plot_w_and_consensus_matrix(
+    w_matrices: list[np.ndarray],
+    consensus_matrices: List[np.ndarray],
     experiment_dir: str,
     channel_names: List[str],
     rank_labels_idx: Dict[int, Dict[int, str]] = None,
 ) -> None:
-    rank_dirs = get_rank_dirs_sorted(experiment_dir)
-    first_rank = int(rank_dirs[0][-1:])
+    first_rank = w_matrices[0].shape[1]
 
-    nr_ranks = len(rank_dirs)
+    nr_ranks = len(w_matrices)
 
     nr_cols = 3 if nr_ranks >= 9 else 2
     nr_rows = int(
@@ -241,8 +251,7 @@ def plot_w_and_consensus_matrix(
             if nr_ranks_plotted >= nr_ranks:
                 break
             # PLot W matrix
-            file_path_w = rank_dirs[nr_ranks_plotted] + "/W_best.csv"
-            w_best = genfromtxt(file_path_w, delimiter=",")
+            w_best = w_matrices[nr_ranks_plotted]
             ax_w[row, col].imshow(w_best, cmap=mpl.colormaps["YlOrRd"], aspect="auto")
             ax_w[row, col].set_title(f"Rank = {nr_ranks_plotted + first_rank}")
 
@@ -262,9 +271,10 @@ def plot_w_and_consensus_matrix(
             ax_w[row, col].tick_params(bottom=False, top=False, left=False)
 
             # Plot consensus matrix
-            file_path_consensus = rank_dirs[nr_ranks_plotted] + "/consensus_matrix.csv"
-            consensus_matrix = genfromtxt(file_path_consensus, delimiter=",")
-            ax_consensus[row, col].matshow(consensus_matrix, cmap=mpl.colormaps["YlGn"])
+            consensus_matrix = consensus_matrices[nr_ranks_plotted]
+            ax_consensus[row, col].matshow(
+                consensus_matrix, cmap=mpl.colormaps["YlGn"], aspect="auto"
+            )
             ax_consensus[row, col].set_title(f"Rank = {nr_ranks_plotted + first_rank}")
 
             ax_consensus[row, col].set_xticks(range(len(channel_names)))
@@ -277,19 +287,26 @@ def plot_w_and_consensus_matrix(
 
             nr_ranks_plotted += 1
 
-    patient_label = extract_patient_label_from_path(experiment_dir)
+    # Delete unused subplots
+    if nr_rows * nr_cols >= nr_ranks_plotted:
+        nr_deletes = nr_rows * nr_cols - nr_ranks_plotted
+        for col in range(1, nr_deletes + 1):
+            fig_w.delaxes(ax_w[-1, -col])
+            fig_consensus.delaxes(ax_consensus[-1, -col])
 
-    fig_w.suptitle(f"Patient: {patient_label} - W matrix")
+    file_label = extract_label_from_path(experiment_dir)
+
+    fig_w.suptitle(f"{file_label} - W matrix")
     fig_w.subplots_adjust(hspace=0.3, wspace=0.3)
     fig_w.colorbar(
         mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlOrRd"]), ax=ax_w, shrink=0.5
     )
     fig_w.savefig(experiment_dir + "/W_matrix.pdf")
 
-    fig_consensus.suptitle(f"Patient: {patient_label} - CONSENSUS matrix")
+    fig_consensus.suptitle(f"{file_label} - CONSENSUS matrix")
     fig_consensus.subplots_adjust(hspace=0.5, wspace=0.3)
     fig_consensus.colorbar(
-        mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlGn"]), ax=ax_w, shrink=0.5
+        mpl.cm.ScalarMappable(cmap=mpl.colormaps["YlGn"]), ax=ax_consensus, shrink=0.5
     )
     fig_consensus.savefig(experiment_dir + "/consensus_matrix.pdf")
 
@@ -332,10 +349,13 @@ def plot_h_matrix_period(
     )
 
     for idx in range(len(rank_dirs)):
-        labels = dict() if rank_labels_idx is None else rank_labels_idx.get(idx + 2)
+        current_rank = int(rank_dirs[idx][-1])
+        labels = (
+            dict() if rank_labels_idx is None else rank_labels_idx.get(current_rank)
+        )
         labels = [
             f"H{rank + 1}" if labels is None else labels.get(rank, f"H{rank + 1}")
-            for rank in range(idx + 2)
+            for rank in range(current_rank)
         ]
         h_best = h_matrices[idx]
 
@@ -365,7 +385,7 @@ def plot_h_matrix_period(
 
         ax[idx].set_xticks(xticks, ticks_as_datetime)
         ax[idx].set_xlabel("Time of the day [HH:MM:SS.ff]")
-        ax[idx].set_title(f"Rank = {idx + 2}")
+        ax[idx].set_title(f"Rank = {current_rank}")
 
     fig.subplots_adjust(hspace=1.0)
     period = "all" if display_all else f"{duration}s"
@@ -400,7 +420,7 @@ def get_rank_dirs_sorted(experiment_dir: str) -> List[str]:
     return sorted(rank_dirs, key=lambda x: int(re.search(r"\d+$", x).group()))
 
 
-def extract_patient_label_from_path(experiment_dir: str) -> str:
+def extract_label_from_path(experiment_dir: str) -> str:
     start_idx = experiment_dir.rfind("/") + 1
     end_idx = start_idx + experiment_dir[start_idx:].find("_")
     return experiment_dir[start_idx:end_idx]
@@ -415,7 +435,7 @@ def create_file_title(
     period: str,
 ) -> str:
     return (
-        f"Patient: {extract_patient_label_from_path(exp_dir)} - "
+        f"{extract_label_from_path(exp_dir)} - "
         f"{data_kind} - Start time: {start_time_display_period.time()}, "
         f"Period: {period} (Start of recording: {start_time_recording}, Offset: {offset_seconds} seconds)"
     )

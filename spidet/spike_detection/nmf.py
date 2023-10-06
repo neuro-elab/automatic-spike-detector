@@ -1,4 +1,3 @@
-import os
 from typing import Tuple, Dict
 
 import nimfa
@@ -8,8 +7,7 @@ from scipy.cluster.hierarchy import linkage, cophenet
 
 
 class Nmf:
-    def __init__(self, rank_dir: str, rank: int):
-        self.rank_dir = rank_dir
+    def __init__(self, rank: int):
         self.rank = rank
 
     def __calculate_cophenetic_corr(self, A: np.ndarray) -> np.ndarray:
@@ -39,20 +37,6 @@ class Nmf:
         coph = cophenet(Z, Y)[0]
 
         return coph
-
-    def __save_results(
-        self, consensus: np.ndarray, h_best: np.ndarray, w_best: np.ndarray
-    ) -> None:
-        # Saving consensus matrix
-        consensus_path = os.path.join(self.rank_dir, "consensus_matrix.csv")
-        np.savetxt(consensus_path, consensus, delimiter=",")
-
-        # Saving H_best and W_best matrices
-        h_best_path = os.path.join(self.rank_dir, "H_best.csv")
-        np.savetxt(h_best_path, h_best, delimiter=",")
-
-        w_best_path = os.path.join(self.rank_dir, "W_best.csv")
-        np.savetxt(w_best_path, w_best, delimiter=",")
 
     def nmf_run(
         self, preprocessed_data: np.ndarray, n_runs: int
@@ -94,9 +78,6 @@ class Nmf:
             "Instability index": instability,
         }
 
-        # Saving results
-        self.__save_results(consensus, h_best, w_best)
-
-        logger.debug(f"Rank {self.rank}: Finished {n_runs} runs of NMF")
+        logger.debug(f"Rank {self.rank}: Finished {n_runs} iterations of NMF")
 
         return metrics, consensus, h_best, w_best
