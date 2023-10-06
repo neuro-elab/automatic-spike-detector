@@ -36,7 +36,10 @@ if __name__ == "__main__":
     runs_per_rank = 100
 
     # Define bad times
-    bad_times = np.genfromtxt(bad_times_file, delimiter=",")
+    if bad_times_file is not None:
+        bad_times = np.genfromtxt(bad_times_file, delimiter=",")
+    else:
+        bad_times = None
 
     # Initialize spike detection pipeline
     spike_detection_pipeline = SpikeDetectionPipeline(
