@@ -23,11 +23,13 @@ if __name__ == "__main__":
     # Initialize data loader
     data_loader = DataLoader()
 
-    # Load H matrix
-    spike_detection_functions: List[SpikeDetectionFunction] = data_loader.load_h_matrix(
+    # Load spike detection functions
+    spike_detection_functions: List[
+        SpikeDetectionFunction
+    ] = data_loader.load_spike_detection_functions(
         file_path=file, start_timestamp=start_datetime.timestamp()
     )
 
     logger.debug(
-        f"Loaded the following H matrix functions:\n {spike_detection_functions}"
+        f"Loaded the following spike detection functions:\n {spike_detection_functions}"
     )

@@ -16,6 +16,10 @@ HDF5 = "h5"
 EDF = "edf"
 FIF = "fif"
 
+# Other variables
+LABEL_STD_LL = "Std_LL"
+H_KEYWORD = "H_best"
+
 
 class DataLoader:
     @staticmethod
@@ -297,16 +301,16 @@ class DataLoader:
         ]
 
     @staticmethod
-    def load_h_matrix(
+    def load_spike_detection_functions(
         file_path: str, start_timestamp: float, sfreq: int = 50
     ) -> List[SpikeDetectionFunction]:
-        logger.debug(f"Loading H matrix {file_path}")
-        h_matrix = np.genfromtxt(file_path, delimiter=",")
+        logger.debug(f"Loading spike detection functions {file_path}")
+        data_matrix = np.genfromtxt(file_path, delimiter=",")
 
-        # Compute times for H x-axis
+        # Compute times for x-axis
         times = compute_rescaled_timeline(
             start_timestamp=start_timestamp,
-            length=h_matrix.shape[1],
+            length=data_matrix.shape[1],
             sfreq=sfreq,
         )
 
@@ -318,9 +322,9 @@ class DataLoader:
         # Create return objects
         spike_detection_functions: List[SpikeDetectionFunction] = []
 
-        for idx, sdf in enumerate(h_matrix):
+        for idx, sdf in enumerate(data_matrix):
             # Create SpikeDetectionFunction
-            label_sdf = f"H{idx}"
+            label_sdf = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
             unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
             spike_detection_fct = SpikeDetectionFunction(
                 label=label_sdf, unique_id=unique_id_sdf, times=times, data_array=sdf
