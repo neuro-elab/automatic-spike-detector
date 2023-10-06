@@ -170,3 +170,5 @@ DATASET_PATHS_SZ2 = [
 ]
 
 LEAD_PREFIXES_SZ2 = ["Hip", "aHip"]
+
+LEAD_PREFIXES_AJ = ["Amy", "HippA", "LesA", "LesI", "LesP", "LesS", "HippM", "T1Ant"]

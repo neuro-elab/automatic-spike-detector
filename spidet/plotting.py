@@ -6,8 +6,8 @@ import numpy as np
 from loguru import logger
 from numpy import genfromtxt
 
-from spidet.load.data_loading import get_anodes_and_cathodes
-from spidet.tests.variables import LEAD_PREFIXES_EL010, LABELS_EL010
+from spidet.load.data_loading import DataLoader
+from tests.variables import LEAD_PREFIXES_EL010, LABELS_EL010, LEAD_PREFIXES_AJ
 from spidet.utils import plotting_utils
 
 SZ_LABEL = "Sz"
@@ -22,8 +22,8 @@ if __name__ == "__main__":
     folder: str = parser.parse_args().folder
 
     # Set plotting variables
-    plot_h: bool = False
-    plot_w: bool = True
+    plot_h: bool = True
+    plot_w: bool = False
     plot_line_length: bool = False
     plot_seizures = False
     plot_unique_line_length = False
@@ -64,16 +64,18 @@ if __name__ == "__main__":
     )
 
     # Set start time of the recording
-    start_time_recording: datetime = datetime(2021, 11, 10, 21, 54, 58)
+    start_time_recording: datetime = datetime(2020, 8, 15, 20, 0, 0)
 
     # Set params for single plotting periods
-    offset = timedelta(hours=2, minutes=7)
+    offset = timedelta(hours=2, minutes=18)
     duration = 2 * 60
-    display_all = True
+    display_all = False
     y_lim = 1e-9
 
     # Get list of channel names
-    anodes, cathodes = get_anodes_and_cathodes(LEAD_PREFIXES_EL010, LABELS_EL010)
+    anodes, cathodes = DataLoader().get_anodes_and_cathodes(
+        LEAD_PREFIXES_EL010, LABELS_EL010
+    )
     channel_names = [anode + "-" + cathode for anode, cathode in zip(anodes, cathodes)]
 
     # Plot W matrices
@@ -177,7 +179,6 @@ if __name__ == "__main__":
                 folder,
                 line_length_eeg,
                 channel_names,
-                # prefix_brain_regions=["Hip1"],
                 start_time_recording=start_time_recording,
                 display_all=display_all,
                 offset=offset,
@@ -193,5 +194,5 @@ if __name__ == "__main__":
                 display_all=display_all,
                 offset=offset,
                 duration=duration,
-                rank_labels_idx=rank_labels_idx,
+                # rank_labels_idx=rank_labels_idx,
             )

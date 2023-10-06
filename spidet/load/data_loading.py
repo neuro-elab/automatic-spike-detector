@@ -7,15 +7,28 @@ from h5py import Dataset, File
 from loguru import logger
 from mne.io import RawArray
 
+from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.domain.Trace import Trace
+from spidet.utils.times_utils import compute_rescaled_timeline
 
 # Supported file formats
 HDF5 = "h5"
 EDF = "edf"
 FIF = "fif"
 
+# Other variables
+LABEL_STD_LL = "Std_LL"
+H_KEYWORD = "H_best"
+
 
 class DataLoader:
+    @staticmethod
+    def extract_channel_names(channel_paths: List[str]) -> List[str]:
+        return [
+            channel_path[channel_path.rfind("/") + 1 :]
+            for channel_path in channel_paths
+        ]
+
     @staticmethod
     def extract_start_timestamp(dataset_path: str, file: File) -> float:
         sub_path = dataset_path[dataset_path.find("traces/") + 7 :]
@@ -92,7 +105,7 @@ class DataLoader:
     def read_file(
         self,
         path: str,
-        dataset_paths: List[str] = None,
+        channel_paths: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
     ) -> List[Trace]:
@@ -108,9 +121,9 @@ class DataLoader:
         path : str
             The file path of the EEG data file.
 
-        dataset_paths : List[str] (default None)
-            If the file is an '.h5' file, these are the absolute paths
-            to the datasets of the respective channels within the file.
+        channel_paths : List[str]
+            Paths to the channels to include within the file
+            (for edf and fif defaults to include all channels)
 
         bipolar_reference: bool (default False)
             A boolean indicating whether bipolar references between respective
@@ -135,10 +148,10 @@ class DataLoader:
         file_format = path[path.rfind(".") + 1 :].lower()
 
         if file_format == HDF5:
-            return self.read_h5_file(path, dataset_paths, bipolar_reference, leads)
+            return self.read_h5_file(path, channel_paths, bipolar_reference, leads)
         elif file_format in [EDF, FIF]:
             return self.read_edf_or_fif_file(
-                path, file_format, bipolar_reference, leads
+                path, file_format, channel_paths, bipolar_reference, leads
             )
         else:
             raise Exception(
@@ -148,7 +161,7 @@ class DataLoader:
     def read_h5_file(
         self,
         file_path: str,
-        dataset_paths: List[str],
+        channel_paths: List[str],
         bipolar_reference: bool = False,
         leads: List[str] = None,
     ) -> List[Trace]:
@@ -162,8 +175,8 @@ class DataLoader:
         file_path : str
             The path to the HDF5 file.
 
-        dataset_paths : List[str]
-            The absolute paths to the datasets within an HDF5 file.
+        channel_paths : List[str]
+            Paths to the channels to include within the file
 
         bipolar_reference: bool (default False)
             A boolean indicating whether bipolar references between respective channels
@@ -177,25 +190,29 @@ class DataLoader:
         -------
         List[Trace]
             A list of Trace objects representing the content of the HDF5 file.
+
+        Raises
+        ------
+        Exception
+            If the channel paths are None.
         """
-        if dataset_paths is None:
-            raise Exception("Paths to the dataset within the HDF5 file can not be None")
+        if channel_paths is None:
+            raise Exception(
+                "Paths to the channels within the file can not be None for h5"
+            )
 
         h5_file = h5py.File(file_path, "r")
 
         # Extract the raw datasets from the hdf5 file
-        raw_traces: List[Dataset] = [h5_file.get(path) for path in dataset_paths]
+        raw_traces: List[Dataset] = [h5_file.get(path) for path in channel_paths]
 
         # Extract start timestamps for datasets
         start_timestamps: List[float] = [
-            self.extract_start_timestamp(path, h5_file) for path in dataset_paths
+            self.extract_start_timestamp(path, h5_file) for path in channel_paths
         ]
 
         # Extract channel names from the dataset paths
-        channel_names = [
-            channel_path[channel_path.rfind("/") + 1 :]
-            for channel_path in dataset_paths
-        ]
+        channel_names = self.extract_channel_names(channel_paths)
 
         # Extract frequencies from datasets
         frequencies: List[float] = [
@@ -229,6 +246,7 @@ class DataLoader:
         self,
         file_path: str,
         file_format: str,
+        channel_paths: List[str],
         bipolar_reference: bool = False,
         leads: List[str] = None,
     ):
@@ -244,6 +262,10 @@ class DataLoader:
 
         file_format : str
             format indicating whether the file is of type FIF or EDF
+
+        channel_paths : List[str]
+            Paths to the channels to include within the file
+            (defaults to all if non are present)
 
         bipolar_reference: bool (default False)
             A boolean indicating whether bipolar references between respective channels
@@ -263,6 +285,11 @@ class DataLoader:
             if file_format == FIF
             else mne.io.read_raw_edf(file_path, preload=True, verbose=False)
         )
+
+        if channel_paths is not None:
+            channel_names = self.extract_channel_names(channel_paths)
+            raw = raw.pick(channel_names)
+
         if bipolar_reference:
             raw = self.generate_bipolar_references(raw, leads)
 
@@ -272,3 +299,37 @@ class DataLoader:
             )
             for label, times in zip(raw.ch_names, raw.get_data())
         ]
+
+    @staticmethod
+    def load_spike_detection_functions(
+        file_path: str, start_timestamp: float, sfreq: int = 50
+    ) -> List[SpikeDetectionFunction]:
+        logger.debug(f"Loading spike detection functions {file_path}")
+        data_matrix = np.genfromtxt(file_path, delimiter=",")
+
+        # Compute times for x-axis
+        times = compute_rescaled_timeline(
+            start_timestamp=start_timestamp,
+            length=data_matrix.shape[1],
+            sfreq=sfreq,
+        )
+
+        # Create unique id prefix
+        rank = file_path[file_path.find("/k=") + 1]
+        dir_path = file_path[: file_path.find("/k=")]
+        unique_id_prefix = f"{dir_path[dir_path.rfind('/') + 1:]}_rank_{rank}"
+
+        # Create return objects
+        spike_detection_functions: List[SpikeDetectionFunction] = []
+
+        for idx, sdf in enumerate(data_matrix):
+            # Create SpikeDetectionFunction
+            label_sdf = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
+            unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
+            spike_detection_fct = SpikeDetectionFunction(
+                label=label_sdf, unique_id=unique_id_sdf, times=times, data_array=sdf
+            )
+
+            spike_detection_functions.append(spike_detection_fct)
+
+        return spike_detection_functions

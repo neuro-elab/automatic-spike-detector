@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
 
-PREFIX_BRAIN_REGIONS: Sequence = ["Hip2", "Temp", "FrOr", "In An", "InPo", "Hip1"]
+from tests.variables import LEAD_PREFIXES_EL010
 
 
 def plot_std_line_length(
@@ -99,7 +99,7 @@ def plot_line_length_data(
     line_length_eeg: np.ndarray,
     channel_names: List[str],
     start_time_recording: datetime,
-    prefix_brain_regions: Sequence[str] = PREFIX_BRAIN_REGIONS,
+    lead_prefixes: Sequence[str] = LEAD_PREFIXES_EL010,
     display_all: bool = False,
     offset: timedelta = timedelta(),
     duration: int = 10,
@@ -145,9 +145,9 @@ def plot_line_length_data(
     eeg_period = line_length_eeg[:, start:stop]
 
     # Figure to plot brain regions combined in the same file
-    fig_comb, ax_comb = plt.subplots(len(prefix_brain_regions), 1, figsize=(20, 20))
+    fig_comb, ax_comb = plt.subplots(len(lead_prefixes), 1, figsize=(20, 20))
 
-    for idx, prefix in enumerate(prefix_brain_regions):
+    for idx, prefix in enumerate(lead_prefixes):
         logger.debug(
             seizure_prefix(
                 f"LL EEG {prefix}: generate plot for start time {start_time_display_period.time()} and duration {duration} seconds",
@@ -208,9 +208,7 @@ def plot_line_length_data(
         )
 
     filename_prefix = (
-        "EEG_LL"
-        if prefix_brain_regions == PREFIX_BRAIN_REGIONS
-        else "_".join(prefix_brain_regions)
+        "EEG_LL" if lead_prefixes == LEAD_PREFIXES_EL010 else "_".join(lead_prefixes)
     )
     fig_comb.suptitle(title)
     fig_comb.savefig(
@@ -351,10 +349,13 @@ def plot_h_matrix_period(
     )
 
     for idx in range(len(rank_dirs)):
-        labels = dict() if rank_labels_idx is None else rank_labels_idx.get(idx + 2)
+        current_rank = int(rank_dirs[idx][-1])
+        labels = (
+            dict() if rank_labels_idx is None else rank_labels_idx.get(current_rank)
+        )
         labels = [
             f"H{rank + 1}" if labels is None else labels.get(rank, f"H{rank + 1}")
-            for rank in range(idx + 2)
+            for rank in range(current_rank)
         ]
         h_best = h_matrices[idx]
 
@@ -384,7 +385,7 @@ def plot_h_matrix_period(
 
         ax[idx].set_xticks(xticks, ticks_as_datetime)
         ax[idx].set_xlabel("Time of the day [HH:MM:SS.ff]")
-        ax[idx].set_title(f"Rank = {idx + 2}")
+        ax[idx].set_title(f"Rank = {current_rank}")
 
     fig.subplots_adjust(hspace=1.0)
     period = "all" if display_all else f"{duration}s"
@@ -434,7 +435,7 @@ def create_file_title(
     period: str,
 ) -> str:
     return (
-        f"Patient: {extract_label_from_path(exp_dir)} - "
+        f"{extract_label_from_path(exp_dir)} - "
         f"{data_kind} - Start time: {start_time_display_period.time()}, "
         f"Period: {period} (Start of recording: {start_time_recording}, Offset: {offset_seconds} seconds)"
     )

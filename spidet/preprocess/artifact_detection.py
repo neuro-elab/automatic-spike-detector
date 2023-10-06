@@ -58,7 +58,9 @@ class ArtifactDetector:
 
             bad_times = np.vstack((on_bad_times, off_bad_times)).T
 
-        logger.debug(f"Identified {bad_times.shape[0]} periods as bad times")
+        logger.debug(
+            f"Identified {0 if bad_times is None else bad_times.shape[0]} periods as bad times"
+        )
         return bad_times
 
     @staticmethod
@@ -124,7 +126,7 @@ class ArtifactDetector:
         # Read data from file
         data_loader = DataLoader()
         traces: List[Trace] = data_loader.read_file(
-            path=file_path, dataset_paths=channel_paths
+            path=file_path, channel_paths=channel_paths
         )
 
         # Perform artifact detection
