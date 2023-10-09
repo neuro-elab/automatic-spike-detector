@@ -65,10 +65,11 @@ if __name__ == "__main__":
 
     # Set start time of the recording
     start_time_recording: datetime = datetime(2020, 8, 15, 20, 0, 0)
+    # start_time_recording: datetime = datetime(2021, 11, 11, 16, 1, 20)
 
     # Set params for single plotting periods
-    offset = timedelta(hours=2, minutes=18)
-    duration = 2 * 60
+    offset = timedelta(hours=2, minutes=16, seconds=0)
+    duration = 18 * 60
     display_all = False
     y_lim = 1e-9
 

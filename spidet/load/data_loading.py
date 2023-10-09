@@ -249,7 +249,7 @@ class DataLoader:
         channel_paths: List[str],
         bipolar_reference: bool = False,
         leads: List[str] = None,
-    ):
+    ) -> List[Trace]:
         """
         Loads a file in either FIF or EDF format and transforms its content to a list of Trace objects.
         Provides the option to perform bipolar referencing for channels within a lead,
