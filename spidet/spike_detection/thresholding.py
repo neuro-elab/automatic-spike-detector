@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 
 import numpy as np
 
@@ -18,7 +18,7 @@ class ThresholdGenerator:
 
     def __determine_involved_channels(
         self, spikes_on: np.ndarray, spikes_off: np.ndarray
-    ) -> Dict[int, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         nr_events = len(spikes_on)
         nr_channels = self.preprocessed_data.shape[0]
         channels_involved = np.zeros((nr_events, nr_channels))
@@ -70,22 +70,25 @@ class ThresholdGenerator:
 
         if nr_channels > 50:
             # For large nr of channels, only consider events associated with multiple channels
-            relevant_channels = {
-                event: channels_involved[event]
+            relevant_channels = [
+                event
                 for event in range(nr_events)
                 if np.sum(channels_involved[event]) > 1
-            }
+            ]
             # channels_involved = channels_involved[np.sum(channels_involved, axis=1) > 1]
         else:
             # Remove events not associated with any channel
-            relevant_channels = {
-                event: channels_involved[event]
+            relevant_channels = [
+                event
                 for event in range(nr_events)
                 if np.sum(channels_involved[event]) > 0
-            }
-            # channels_involved = channels_involved[np.sum(channels_involved, axis=1) > 0]
+            ]
 
-        return relevant_channels
+        return (
+            channels_involved[relevant_channels, :],
+            spikes_on[relevant_channels],
+            spikes_off[relevant_channels],
+        )
 
     def generate_threshold(self) -> float:
         # TODO: add doc
@@ -204,17 +207,18 @@ class ThresholdGenerator:
             )
 
             # Determine which channels were involved in measuring which events
-            # (1 = involved, 0 = not involved)
-            channel_event_assoc = self.__determine_involved_channels(
-                spikes_on, spikes_off
-            )
+            (
+                channel_event_assoc,
+                spikes_on,
+                spikes_off,
+            ) = self.__determine_involved_channels(spikes_on, spikes_off)
 
             spikes.update(
                 {
                     idx: dict(
                         {
-                            "spikes_on": spikes_on[list(channel_event_assoc.keys())],
-                            "spikes_off": spikes_off[list(channel_event_assoc.keys())],
+                            "spikes_on": spikes_on,
+                            "spikes_off": spikes_off,
                             "channels_involved": channel_event_assoc,
                         }
                     )

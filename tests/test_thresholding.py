@@ -49,6 +49,6 @@ if __name__ == "__main__":
         spike_annotations = threshold_generator.find_spikes(threshold)
 
         logger.debug(
-            f"Returned spike annotations for rank "
-            f"{rank_dir[rank_dir.rfind('=') + 1:]}"
+            f"Got the following spike annotations for rank "
+            f"{rank_dir[rank_dir.rfind('=') + 1:]}: {spike_annotations}"
         )
