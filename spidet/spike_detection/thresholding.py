@@ -18,7 +18,7 @@ class ThresholdGenerator:
 
     def __determine_involved_channels(
         self, spikes_on: np.ndarray, spikes_off: np.ndarray
-    ) -> np.ndarray:
+    ) -> Dict[int, np.ndarray]:
         nr_events = len(spikes_on)
         nr_channels = self.preprocessed_data.shape[0]
         channels_involved = np.zeros((nr_events, nr_channels))
@@ -51,27 +51,41 @@ class ThresholdGenerator:
             z_scores = (event_window - median_channels[:, None]) / std_channels[:, None]
 
             # Get maximum z-scores along event window and respective indices for each channel
-            max_z, idx_max = np.max(z_scores, axis=1), np.argmax(z_scores, axis=1)
+            max_z, channel_lags = np.max(z_scores, axis=1), np.argmax(z_scores, axis=1)
 
             # Include channels having z-score higher than z-threshold
             channels = max_z > self.z_threshold
 
-            if np.all(channels, where=False):
+            if not any(channels):
                 continue
 
-            # First channel to reach maximum z-score above threshold
-            first = np.min(idx_max[channels])
+            # Set value to maximum lag for channels not included
+            not_included = np.nonzero((channels + 1) % 2)[0]
+            channel_lags[not_included] = np.max(channel_lags)
 
-            channels_involved[event, :] = channels * (idx_max - first + 1)
+            # Get the channel that first reaches max z-score
+            min_lag = np.min(channel_lags)
+
+            channels_involved[event, :] = channels * (channel_lags - min_lag + 1)
 
         if nr_channels > 50:
             # For large nr of channels, only consider events associated with multiple channels
-            channels_involved = channels_involved[np.sum(channels_involved, axis=1) > 1]
+            relevant_channels = {
+                event: channels_involved[event]
+                for event in range(nr_events)
+                if np.sum(channels_involved[event]) > 1
+            }
+            # channels_involved = channels_involved[np.sum(channels_involved, axis=1) > 1]
         else:
             # Remove events not associated with any channel
-            channels_involved = channels_involved[np.sum(channels_involved, axis=1) > 0]
+            relevant_channels = {
+                event: channels_involved[event]
+                for event in range(nr_events)
+                if np.sum(channels_involved[event]) > 0
+            }
+            # channels_involved = channels_involved[np.sum(channels_involved, axis=1) > 0]
 
-        return channels_involved
+        return relevant_channels
 
     def generate_threshold(self) -> float:
         # TODO: add doc
@@ -199,8 +213,8 @@ class ThresholdGenerator:
                 {
                     idx: dict(
                         {
-                            "spikes_on": spikes_on,
-                            "spikes_off": spikes_off,
+                            "spikes_on": spikes_on[list(channel_event_assoc.keys())],
+                            "spikes_off": spikes_off[list(channel_event_assoc.keys())],
                             "channels_involved": channel_event_assoc,
                         }
                     )
