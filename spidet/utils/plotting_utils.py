@@ -417,6 +417,16 @@ def get_rank_dirs_sorted(experiment_dir: str) -> List[str]:
         if os.path.isdir(os.path.join(experiment_dir, k_dir)) and "k=" in k_dir
     ]
 
+    # Only ranks 3, 4, 5
+    ranks = ["k=3", "k=4", "k=5"]
+
+    def dir_contains_rank(rank_dir: str) -> bool:
+        for k in ranks:
+            if k in rank_dir:
+                return True
+        return False
+
+    rank_dirs = list(filter(lambda rank_dir: dir_contains_rank(rank_dir), rank_dirs))
     return sorted(rank_dirs, key=lambda x: int(re.search(r"\d+$", x).group()))
 
 

@@ -1,10 +1,7 @@
 import argparse
-from typing import List
+
 from datetime import datetime
 
-from loguru import logger
-
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.load.data_loading import DataLoader
 from spidet.utils import logging_utils
 
@@ -23,13 +20,6 @@ if __name__ == "__main__":
     # Initialize data loader
     data_loader = DataLoader()
 
-    # Load spike detection functions
-    spike_detection_functions: List[
-        SpikeDetectionFunction
-    ] = data_loader.load_spike_detection_functions(
-        file_path=file, start_timestamp=start_datetime.timestamp()
-    )
+    traces = data_loader.read_file(path=file)
 
-    logger.debug(
-        f"Loaded the following spike detection functions:\n {spike_detection_functions}"
-    )
+    x = 5
