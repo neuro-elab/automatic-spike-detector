@@ -4,7 +4,7 @@ import numpy as np
 
 from spidet.domain.Artifacts import Artifacts
 from spidet.preprocess.artifact_detection import ArtifactDetector
-from tests.variables import DATASET_PATHS_008
+from tests.variables import DATASET_PATHS_008, LEAD_PREFIXES_008
 
 if __name__ == "__main__":
     # parse cli args
@@ -25,7 +25,8 @@ if __name__ == "__main__":
         detect_stimulation_artifacts=True,
     )
 
-    np.savetxt("bad_times.csv", artifacts.bad_times, delimiter=",")
+    if artifacts.bad_times is not None:
+        np.savetxt("bad_times.csv", artifacts.bad_times, delimiter=",")
 
     print(f"Bad channels: {artifacts.bad_channels}")
     print(f"Bad times: {artifacts.bad_times}")

@@ -105,7 +105,7 @@ class ArtifactDetector:
         logger.debug("Detecting stimulation artifacts")
 
         # A stimulation has the same value along a channel and across channels
-        stimulation = np.append(False, np.all(np.diff(data, 1, 1) == 0))
+        stimulation = np.append(False, np.all(np.diff(data, 1, 1) == 0, axis=0))
 
         # Find starting and ending points of stimulation
         stim_on = np.nonzero(np.diff(stimulation, 1) == 1)[0]
@@ -116,6 +116,9 @@ class ArtifactDetector:
             stim_on = stim_on[:-1]
         elif len(stim_off) > len(stim_on):
             stim_on = np.append(1, stim_on)
+
+        if len(stim_on) == 0:
+            return bad_times
 
         # Calculate gaps (periods between off and the next on)
         gaps = stim_on[1:] - stim_off[:-1]
@@ -144,7 +147,11 @@ class ArtifactDetector:
         if len(stim_on) > 0:
             stim_periods = np.vstack((stim_on - 10, stim_off + max_duration)).T
 
-            bad_times = np.vstack((bad_times, stim_periods))
+            bad_times = (
+                stim_periods
+                if bad_times is None
+                else np.vstack((bad_times, stim_periods))
+            )
 
         return bad_times
 
@@ -179,6 +186,8 @@ class ArtifactDetector:
         self,
         file_path: str,
         channel_paths: List[str],
+        bipolar_reference: bool = False,
+        leads: List[str] = None,
         detect_bad_times: bool = True,
         detect_bad_channels: bool = True,
         detect_stimulation_artifacts: bool = False,
@@ -186,7 +195,10 @@ class ArtifactDetector:
         # Read data from file
         data_loader = DataLoader()
         traces: List[Trace] = data_loader.read_file(
-            path=file_path, channel_paths=channel_paths
+            path=file_path,
+            channel_paths=channel_paths,
+            bipolar_reference=bipolar_reference,
+            leads=leads,
         )
 
         # Perform artifact detection
