@@ -175,7 +175,14 @@ class ArtifactDetector:
 
         return Artifacts(bad_times=bad_times, bad_channels=bad_channels)
 
-    def run(self, file_path: str, channel_paths: List[str]) -> Artifacts:
+    def run(
+        self,
+        file_path: str,
+        channel_paths: List[str],
+        detect_bad_times: bool = True,
+        detect_bad_channels: bool = True,
+        detect_stimulation_artifacts: bool = False,
+    ) -> Artifacts:
         # Read data from file
         data_loader = DataLoader()
         traces: List[Trace] = data_loader.read_file(
@@ -185,7 +192,11 @@ class ArtifactDetector:
         # Perform artifact detection
         sfreq = traces[0].sfreq
         artifacts: Artifacts = self.run_on_data(
-            data=np.array([trace.data for trace in traces]), sfreq=sfreq
+            data=np.array([trace.data for trace in traces]),
+            sfreq=sfreq,
+            detect_bad_times=detect_bad_times,
+            detect_bad_channels=detect_bad_channels,
+            detect_stimulation_artifacts=detect_stimulation_artifacts,
         )
 
         return artifacts
