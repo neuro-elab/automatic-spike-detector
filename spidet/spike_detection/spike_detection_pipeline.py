@@ -231,16 +231,22 @@ class SpikeDetectionPipeline:
 
         # Saving H and W matrices
         if self.save_nmf_matrices:
-            logger.debug(f"Saving W and H for ranks {rank_list}")
+            logger.debug(f"Saving W, H and Consensus matrices for ranks {rank_list}")
             for idx in range(len(h_matrices)):
                 h_matrix = h_matrices[idx]
                 w_matrix = w_matrices[idx]
+                consensus_matrix = consensus_matrices[idx]
 
                 saving_path = os.path.join(self.results_dir, f"k={rank_list[idx]}")
                 os.makedirs(saving_path, exist_ok=True)
 
                 np.savetxt(f"{saving_path}/H_best.csv", h_matrix, delimiter=",")
                 np.savetxt(f"{saving_path}/W_best.csv", w_matrix, delimiter=",")
+                np.savetxt(
+                    f"{saving_path}/consensus_matrix.csv",
+                    consensus_matrix,
+                    delimiter=",",
+                )
 
         return h_opt, w_opt
 
@@ -248,12 +254,14 @@ class SpikeDetectionPipeline:
         self,
         channel_paths: List[str],
         bipolar_reference: bool = False,
+        exclude: List[str] = None,
         leads: List[str] = None,
     ) -> Tuple[List[BasisFunction], List[SpikeDetectionFunction]]:
         # Instantiate a LineLength instance
         line_length = LineLength(
             file_path=self.file_path,
             dataset_paths=channel_paths,
+            exclude=exclude,
             bipolar_reference=bipolar_reference,
             leads=leads,
             bad_times=self.bad_times,

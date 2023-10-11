@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     # Set plotting variables
     plot_h: bool = True
-    plot_w: bool = False
+    plot_w: bool = True
     plot_line_length: bool = False
     plot_seizures = False
     plot_unique_line_length = False

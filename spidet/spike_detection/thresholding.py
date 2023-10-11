@@ -75,7 +75,6 @@ class ThresholdGenerator:
                 for event in range(nr_events)
                 if np.sum(channels_involved[event]) > 1
             ]
-            # channels_involved = channels_involved[np.sum(channels_involved, axis=1) > 1]
         else:
             # Remove events not associated with any channel
             relevant_channels = [

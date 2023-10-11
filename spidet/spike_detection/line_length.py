@@ -17,12 +17,14 @@ class LineLength:
         self,
         file_path: str,
         dataset_paths: List[str] = None,
+        exclude: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
         bad_times: np.ndarray = None,
     ):
         self.file_path = file_path
         self.dataset_paths = dataset_paths
+        self.exclude = exclude
         self.bipolar_reference = bipolar_reference
         self.leads = leads
         self.bad_times = bad_times
@@ -190,7 +192,11 @@ class LineLength:
         # Load the eeg traces from the given file
         data_loader = DataLoader()
         traces: List[Trace] = data_loader.read_file(
-            self.file_path, self.dataset_paths, self.bipolar_reference, self.leads
+            self.file_path,
+            self.dataset_paths,
+            self.exclude,
+            self.bipolar_reference,
+            self.leads,
         )
 
         # Start time of the recording
