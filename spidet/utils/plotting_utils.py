@@ -242,8 +242,8 @@ def plot_w_and_consensus_matrix(
         else (nr_ranks + nr_ranks % nr_cols) / nr_cols
     )
 
-    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(10, 10))
-    fig_consensus, ax_consensus = plt.subplots(nr_rows, nr_cols, figsize=(10, 10))
+    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(15, 15))
+    fig_consensus, ax_consensus = plt.subplots(nr_rows, nr_cols, figsize=(15, 15))
 
     nr_ranks_plotted = 0
     for row in range(nr_rows):

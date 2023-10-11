@@ -48,8 +48,11 @@ class DataLoader:
                 )
             )
             for idx in range(len(channels) - 1):
-                anodes.append(channels[idx])
-                cathodes.append(channels[idx + 1])
+                ch_nr_anode = int(channels[idx].split(prefix)[-1])
+                ch_nr_cathode = int(channels[idx + 1].split(prefix)[-1])
+                if ch_nr_anode + 1 == ch_nr_cathode:
+                    anodes.append(channels[idx])
+                    cathodes.append(channels[idx + 1])
 
         return anodes, cathodes
 
@@ -106,6 +109,7 @@ class DataLoader:
         self,
         path: str,
         channel_paths: List[str] = None,
+        exclude: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
     ) -> List[Trace]:
@@ -151,7 +155,7 @@ class DataLoader:
             return self.read_h5_file(path, channel_paths, bipolar_reference, leads)
         elif file_format in [EDF, FIF]:
             return self.read_edf_or_fif_file(
-                path, file_format, channel_paths, bipolar_reference, leads
+                path, file_format, channel_paths, exclude, bipolar_reference, leads
             )
         else:
             raise Exception(
@@ -247,6 +251,7 @@ class DataLoader:
         file_path: str,
         file_format: str,
         channel_paths: List[str],
+        exclude: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
     ) -> List[Trace]:
@@ -280,10 +285,13 @@ class DataLoader:
         List[Trace]
             A list of Trace objects representing the content of the file.
         """
+        exclude = exclude if exclude is not None else list()
         raw: RawArray = (
-            mne.io.read_raw_fif(file_path, preload=True, verbose=False)
+            mne.io.read_raw_fif(file_path, exclude=exclude, preload=True, verbose=False)
             if file_format == FIF
-            else mne.io.read_raw_edf(file_path, preload=True, verbose=False)
+            else mne.io.read_raw_edf(
+                file_path, exclude=exclude, preload=True, verbose=False
+            )
         )
 
         if channel_paths is not None:
