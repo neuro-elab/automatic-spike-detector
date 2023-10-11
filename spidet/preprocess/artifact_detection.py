@@ -100,12 +100,61 @@ class ArtifactDetector:
         logger.debug(f"Identified {np.sum(bad_channels)} channels as potentially bad")
         return bad_channels
 
+    @staticmethod
+    def __detect_stimulation_artifacts(data: np.ndarray, bad_times: np.ndarray):
+        logger.debug("Detecting stimulation artifacts")
+
+        # A stimulation has the same value along a channel and across channels
+        stimulation = np.append(False, np.all(np.diff(data, 1, 1) == 0))
+
+        # Find starting and ending points of stimulation
+        stim_on = np.nonzero(np.diff(stimulation, 1) == 1)[0]
+        stim_off = np.nonzero(np.diff(stimulation, 1) == -1)[0]
+
+        # Correct for unequal number of elements
+        if len(stim_on) > len(stim_off):
+            stim_on = stim_on[:-1]
+        elif len(stim_off) > len(stim_on):
+            stim_on = np.append(1, stim_on)
+
+        # Calculate gaps (periods between off and the next on)
+        gaps = stim_on[1:] - stim_off[:-1]
+
+        # Only consider gaps of a minimum length of 10 data points
+        relevant_gaps = gaps >= 10
+
+        on_indices = np.append(1, relevant_gaps).nonzero()[0]
+        stim_on = stim_on[on_indices]
+
+        off_indices = np.append(relevant_gaps, 1).nonzero()[0]
+        stim_off = stim_off[off_indices]
+
+        # Calculate durations of the periods of stimulation
+        durations = stim_off - stim_on
+
+        # Consider only periods of length at least 2 data points
+        relevant_periods = np.nonzero(durations >= 2)[0]
+
+        stim_on = stim_on[relevant_periods]
+        stim_off = stim_off[relevant_periods]
+        durations = durations[relevant_periods]
+
+        max_duration = np.percentile(durations, 90)
+
+        if len(stim_on) > 0:
+            stim_periods = np.vstack((stim_on - 10, stim_off + max_duration)).T
+
+            bad_times = np.vstack((bad_times, stim_periods))
+
+        return bad_times
+
     def run_on_data(
         self,
         data: np.ndarray,
         sfreq: int,
         detect_bad_times: bool = True,
         detect_bad_channels: bool = True,
+        detect_stimulation_artifacts: bool = False,
     ) -> Artifacts:
         bad_times = None
         bad_channels = None
@@ -119,6 +168,10 @@ class ArtifactDetector:
         # Calculate bad channels, i.e. channels that could be considered an artifact
         if detect_bad_channels:
             bad_channels = self.__detect_bad_channels(data, bad_times)
+
+        # Calculate artifacts that might be induced by stimulation
+        if detect_stimulation_artifacts:
+            bad_times = self.__detect_stimulation_artifacts(data, bad_times)
 
         return Artifacts(bad_times=bad_times, bad_channels=bad_channels)
 
