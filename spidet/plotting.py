@@ -34,11 +34,12 @@ if __name__ == "__main__":
     annotations: str = parser.parse_args().annotations
 
     # Set plotting variables
-    plot_h: bool = True
+    plot_h: bool = False
     plot_w: bool = False
     plot_line_length: bool = False
     plot_seizures = False
     plot_unique_line_length = False
+    plot_metrics: bool = True
 
     # Set seizure params
     offset_gaps = [
@@ -134,6 +135,11 @@ if __name__ == "__main__":
             channel_names=channel_names,
             rank_labels_idx=rank_labels_idx,
         )
+
+    # PLot metrics
+    if plot_metrics:
+        metrics = pd.read_csv(os.path.join(folder, "metrics.csv"))
+        plotting_utils.plot_metrics(metrics, folder)
 
     # Get line length eeg if necessary
     if plot_line_length:

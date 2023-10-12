@@ -6,6 +6,7 @@ from typing import List, Sequence, Dict
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from loguru import logger
 
 from tests.variables import LEAD_PREFIXES_EL010
@@ -421,6 +422,26 @@ def plot_h_matrix_period(
             ),
         )
     )
+
+
+def plot_metrics(metrics: pd.DataFrame, dir_path: str) -> None:
+    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+
+    # Plot Cophenetic Correlation
+    ax[0].plot(metrics["Rank"], metrics["Cophenetic Correlation"])
+    ax[0].set_title("Cophenetic Correlation")
+    ax[0].set_xlabel("Rank")
+
+    # Plot delta of auc of cdf
+    ax[1].plot(metrics["Rank"], metrics["delta_k (CDF)"])
+    ax[1].set_title("Change AUC of CDF")
+    ax[1].set_xlabel("Rank")
+    ax[1].set_ylabel("Delta k")
+
+    file_label = extract_label_from_path(dir_path)
+    fig.suptitle(f"{file_label} - Metrics")
+
+    plt.savefig(f"{dir_path}/metrics.pdf")
 
 
 def get_rank_dirs_sorted(experiment_dir: str) -> List[str]:
