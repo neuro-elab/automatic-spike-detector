@@ -321,6 +321,7 @@ def plot_h_matrix_period(
     sfreq: float = 50,
     seizure: int = None,
     rank_labels_idx: Dict[int, Dict[int, str]] = None,
+    spike_annotations: List[datetime] = None,
 ) -> None:
     rank_dirs = get_rank_dirs_sorted(experiment_dir)
     dir_path = (
@@ -349,7 +350,8 @@ def plot_h_matrix_period(
     )
 
     for idx in range(len(rank_dirs)):
-        current_rank = int(rank_dirs[idx][-1])
+        current_rank_dir = rank_dirs[idx]
+        current_rank = int(current_rank_dir[current_rank_dir.rfind("=") + 1 :])
         labels = (
             dict() if rank_labels_idx is None else rank_labels_idx.get(current_rank)
         )
@@ -369,6 +371,18 @@ def plot_h_matrix_period(
 
         # Extract sub-period from H
         h_period = h_best[:, start:stop]
+
+        # Map spike annotations, if available, to x-axis
+        if spike_annotations is not None:
+            spikes = []
+            for spike in spike_annotations:
+                offset_spike = spike.timestamp() - start_time_recording.timestamp()
+                if offset_seconds < offset_spike < offset_seconds + duration:
+                    offset_within_period = offset_spike - offset_seconds
+                    spikes.append(offset_within_period * sfreq)
+            ax[idx].vlines(
+                spikes, 0, np.max(h_period), linestyles="solid", colors="silver"
+            )
 
         # Plot
         ax[idx].plot(h_period.T)
@@ -417,8 +431,8 @@ def get_rank_dirs_sorted(experiment_dir: str) -> List[str]:
         if os.path.isdir(os.path.join(experiment_dir, k_dir)) and "k=" in k_dir
     ]
 
-    # Only ranks 3, 4, 5
-    ranks = ["k=3", "k=4", "k=5"]
+    # Only ranks specified are considered
+    ranks = ["k=3", "k=4", "k=5", "k=6", "k=7", "k=8", "k=9", "k=10"]
 
     def dir_contains_rank(rank_dir: str) -> bool:
         for k in ranks:

@@ -105,7 +105,9 @@ class ArtifactDetector:
         logger.debug("Detecting stimulation artifacts")
 
         # A stimulation has the same value along a channel and across channels
-        stimulation = np.append(False, np.all(np.diff(data, 1, 1) == 0, axis=0))
+        stimulation = np.append(
+            0, np.all(np.diff(data, axis=1) == 0, axis=0).astype(int)
+        )
 
         # Find starting and ending points of stimulation
         stim_on = np.nonzero(np.diff(stimulation, 1) == 1)[0]
@@ -114,7 +116,8 @@ class ArtifactDetector:
         # Correct for unequal number of elements
         if len(stim_on) > len(stim_off):
             stim_on = stim_on[:-1]
-        elif len(stim_off) > len(stim_on):
+
+        if len(stim_off) > len(stim_on):
             stim_on = np.append(1, stim_on)
 
         if len(stim_on) == 0:

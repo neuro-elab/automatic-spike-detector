@@ -293,7 +293,7 @@ class DataLoader:
                 file_path, exclude=exclude, preload=True, verbose=False
             )
         )
-
+        print(raw.info["meas_date"])
         if channel_paths is not None:
             channel_names = self.extract_channel_names(channel_paths)
             raw = raw.pick(channel_names)

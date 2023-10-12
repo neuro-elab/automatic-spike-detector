@@ -12,6 +12,10 @@ from tests.variables import (
     LEAD_PREFIXES_EL010,
     DATASET_PATHS_008,
     LEAD_PREFIXES_008,
+    DATASET_PATHS_007,
+    LEAD_PREFIXES_007,
+    DATASET_PATHS_006,
+    LEAD_PREFIXES_006,
 )
 from spidet.utils import logging_utils
 
@@ -22,20 +26,26 @@ if __name__ == "__main__":
         "--file", help="full path to file to be processed", required=True
     )
     parser.add_argument("--bt", help="path to bad times file", required=False)
+    parser.add_argument("--bc", help="path to bad channels file", required=False)
     parser.add_argument("--labels", help="path labels file", required=False)
 
     file: str = parser.parse_args().file
     bad_times_file: str = parser.parse_args().bt
+    bad_channels_file: str = parser.parse_args().bc
     labels_file: str = parser.parse_args().labels
 
     # Configure logger
     logging_utils.add_logger_with_process_name()
 
+    # Channels and leads
+    channels = DATASET_PATHS_008
+    leads = LEAD_PREFIXES_008
+
     multiprocessing.freeze_support()
 
     # Specify range of ranks
     k_min = 3
-    k_max = 6
+    k_max = 10
 
     # How many runs of NMF to perform per rank
     runs_per_rank = 100
@@ -52,6 +62,12 @@ if __name__ == "__main__":
     else:
         exclude = None
 
+    # Define bad channels
+    if bad_channels_file is not None:
+        bad_channels = np.genfromtxt(bad_channels_file, delimiter=",")
+        include_channels = np.nonzero((bad_channels + 1) % 2)[0]
+        channels = [channels[channel] for channel in include_channels]
+
     # Initialize spike detection pipeline
     spike_detection_pipeline = SpikeDetectionPipeline(
         file_path=file,
@@ -64,9 +80,10 @@ if __name__ == "__main__":
     # Run spike detection pipeline
     start = time.time()
     basis_functions, spike_detection_functions = spike_detection_pipeline.run(
-        channel_paths=DATASET_PATHS_008,
+        channel_paths=channels,
+        exclude=exclude,
         bipolar_reference=True,
-        leads=LEAD_PREFIXES_008,
+        leads=leads,
     )
     end = time.time()
     logger.debug(f"Finished nmf in {end - start} seconds")

@@ -1,13 +1,20 @@
 import argparse
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
+import pandas as pd
 from loguru import logger
 from numpy import genfromtxt
 
 from spidet.load.data_loading import DataLoader
-from tests.variables import LEAD_PREFIXES_EL010, LABELS_EL010, LEAD_PREFIXES_AJ
+from tests.variables import (
+    LEAD_PREFIXES_EL010,
+    LABELS_EL010,
+    LEAD_PREFIXES_AJ,
+    LEAD_PREFIXES_008,
+    DATASET_PATHS_008,
+)
 from spidet.utils import plotting_utils
 
 SZ_LABEL = "Sz"
@@ -19,11 +26,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--folder", help="folder where the results reside", required=True
     )
+    parser.add_argument(
+        "--annotations", help="path to annotations file", required=False
+    )
+
     folder: str = parser.parse_args().folder
+    annotations: str = parser.parse_args().annotations
 
     # Set plotting variables
     plot_h: bool = True
-    plot_w: bool = True
+    plot_w: bool = False
     plot_line_length: bool = False
     plot_seizures = False
     plot_unique_line_length = False
@@ -50,7 +62,6 @@ if __name__ == "__main__":
     }
 
     # Set labels if known
-
     rank_labels_idx = dict(
         {
             4: dict({3: SZ_LABEL}),
@@ -64,18 +75,37 @@ if __name__ == "__main__":
     )
 
     # Set start time of the recording
-    start_time_recording: datetime = datetime(2020, 8, 15, 20, 0, 0)
+    start_time_recording: datetime = datetime(2023, 5, 10, 22, 0, 38)
     # start_time_recording: datetime = datetime(2021, 11, 11, 16, 1, 20)
 
     # Set params for single plotting periods
-    offset = timedelta(hours=2, minutes=16, seconds=0)
-    duration = 18 * 60
+    offset = timedelta(hours=0, minutes=0, seconds=14)
+    duration = 5
     display_all = False
     y_lim = 1e-9
 
+    # Get spike annotations if available
+    if annotations is not None:
+        df_annotations = pd.read_csv(annotations)
+        spike_times = list(
+            (
+                df_annotations[df_annotations["description"].str.startswith("x")][
+                    "onset"
+                ]
+            ).values
+        )
+        spike_times = list(
+            map(
+                lambda spike: datetime.strptime(spike, "%Y-%m-%d %H:%M:%S.%f"),
+                spike_times,
+            )
+        )
+    else:
+        spike_times = None
+
     # Get list of channel names
     anodes, cathodes = DataLoader().get_anodes_and_cathodes(
-        LEAD_PREFIXES_EL010, LABELS_EL010
+        LEAD_PREFIXES_008, DataLoader().extract_channel_names(DATASET_PATHS_008)
     )
     channel_names = [anode + "-" + cathode for anode, cathode in zip(anodes, cathodes)]
 
@@ -195,5 +225,6 @@ if __name__ == "__main__":
                 display_all=display_all,
                 offset=offset,
                 duration=duration,
+                spike_annotations=spike_times,
                 # rank_labels_idx=rank_labels_idx,
             )

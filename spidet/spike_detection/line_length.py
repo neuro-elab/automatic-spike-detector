@@ -33,12 +33,17 @@ class LineLength:
 
     def zero_out_bad_times(self, data: np.ndarray, orig_length: int) -> np.ndarray:
         for row in range(self.bad_times.shape[0]):
-            bad_times_on = np.rint(
-                self.bad_times[row, 0] / orig_length * data.shape[1]
-            ).astype(int)
-            bad_times_off = np.rint(
-                self.bad_times[row, 1] / orig_length * data.shape[1]
-            ).astype(int)
+            if self.bad_times.ndim == 1:
+                bad_times = self.bad_times
+            else:
+                bad_times = self.bad_times[row]
+
+            bad_times_on = np.rint(bad_times[0] / orig_length * data.shape[1]).astype(
+                int
+            )
+            bad_times_off = np.rint(bad_times[1] / orig_length * data.shape[1]).astype(
+                int
+            )
             data[:, bad_times_on:bad_times_off] = 0
 
         return data
