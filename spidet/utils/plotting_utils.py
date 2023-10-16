@@ -243,8 +243,8 @@ def plot_w_and_consensus_matrix(
         else (nr_ranks + nr_ranks % nr_cols) / nr_cols
     )
 
-    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(15, 15))
-    fig_consensus, ax_consensus = plt.subplots(nr_rows, nr_cols, figsize=(15, 15))
+    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(30, 30))
+    fig_consensus, ax_consensus = plt.subplots(nr_rows, nr_cols, figsize=(20, 20))
 
     nr_ranks_plotted = 0
     for row in range(nr_rows):
@@ -429,6 +429,7 @@ def plot_metrics(metrics: pd.DataFrame, dir_path: str) -> None:
 
     # Plot Cophenetic Correlation
     ax[0].plot(metrics["Rank"], metrics["Cophenetic Correlation"])
+    ax[0].set_ylim(0, 1)
     ax[0].set_title("Cophenetic Correlation")
     ax[0].set_xlabel("Rank")
 
@@ -453,7 +454,7 @@ def get_rank_dirs_sorted(experiment_dir: str) -> List[str]:
     ]
 
     # Only ranks specified are considered
-    ranks = ["k=3", "k=4", "k=5", "k=6", "k=7", "k=8", "k=9", "k=10"]
+    ranks = ["k=2", "k=3", "k=4", "k=5", "k=6", "k=7", "k=8", "k=9", "k=10"]
 
     def dir_contains_rank(rank_dir: str) -> bool:
         for k in ranks:

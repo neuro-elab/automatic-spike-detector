@@ -1,11 +1,13 @@
 import argparse
 import multiprocessing
 import time
+from typing import List
 
 import numpy as np
 from loguru import logger
 import pandas as pd
 
+from spidet.load.data_loading import DataLoader
 from spidet.spike_detection.spike_detection_pipeline import SpikeDetectionPipeline
 from tests.variables import (
     DATASET_PATHS_EL010,
@@ -18,6 +20,20 @@ from tests.variables import (
     LEAD_PREFIXES_006,
 )
 from spidet.utils import logging_utils
+
+
+def get_bipolar_channel_names(leads: List[str], channel_names: List[str]) -> List[str]:
+    anodes, cathodes = DataLoader().get_anodes_and_cathodes(leads, channel_names)
+
+    bipolar_ch_names = []
+    for prefix in leads:
+        lead_anodes = list(filter(lambda name: name.startswith(prefix), anodes))
+        lead_cathodes = list(filter(lambda name: name.startswith(prefix), cathodes))
+        for anode, cathode in zip(lead_anodes, lead_cathodes):
+            bipolar_ch_names.append(f"{anode}-{cathode}")
+
+    return bipolar_ch_names
+
 
 if __name__ == "__main__":
     # parse cli args
@@ -38,13 +54,13 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channels = DATASET_PATHS_008
-    leads = LEAD_PREFIXES_008
+    channels = DATASET_PATHS_006
+    leads = LEAD_PREFIXES_006
 
     multiprocessing.freeze_support()
 
     # Specify range of ranks
-    k_min = 3
+    k_min = 2
     k_max = 10
 
     # How many runs of NMF to perform per rank
@@ -66,7 +82,9 @@ if __name__ == "__main__":
     if bad_channels_file is not None:
         bad_channels = np.genfromtxt(bad_channels_file, delimiter=",")
         include_channels = np.nonzero((bad_channels + 1) % 2)[0]
-        channels = [channels[channel] for channel in include_channels]
+        channels = DataLoader().extract_channel_names(channels)
+        bip_ch_names = get_bipolar_channel_names(leads, channels)
+        channels = [bip_ch_names[channel] for channel in include_channels]
 
     # Initialize spike detection pipeline
     spike_detection_pipeline = SpikeDetectionPipeline(

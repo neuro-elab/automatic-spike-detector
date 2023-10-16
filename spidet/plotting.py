@@ -14,6 +14,10 @@ from tests.variables import (
     LEAD_PREFIXES_AJ,
     LEAD_PREFIXES_008,
     DATASET_PATHS_008,
+    LEAD_PREFIXES_007,
+    DATASET_PATHS_007,
+    LEAD_PREFIXES_006,
+    DATASET_PATHS_006,
 )
 from spidet.utils import plotting_utils
 
@@ -35,11 +39,11 @@ if __name__ == "__main__":
 
     # Set plotting variables
     plot_h: bool = False
-    plot_w: bool = False
+    plot_w: bool = True
     plot_line_length: bool = False
     plot_seizures = False
     plot_unique_line_length = False
-    plot_metrics: bool = True
+    plot_metrics: bool = False
 
     # Set seizure params
     offset_gaps = [
@@ -106,7 +110,7 @@ if __name__ == "__main__":
 
     # Get list of channel names
     anodes, cathodes = DataLoader().get_anodes_and_cathodes(
-        LEAD_PREFIXES_008, DataLoader().extract_channel_names(DATASET_PATHS_008)
+        LEAD_PREFIXES_006, DataLoader().extract_channel_names(DATASET_PATHS_006)
     )
     channel_names = [anode + "-" + cathode for anode, cathode in zip(anodes, cathodes)]
 

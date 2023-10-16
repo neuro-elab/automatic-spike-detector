@@ -293,14 +293,16 @@ class DataLoader:
                 file_path, exclude=exclude, preload=True, verbose=False
             )
         )
-        print(raw.info["meas_date"])
-        if channel_paths is not None:
-            channel_names = self.extract_channel_names(channel_paths)
-            raw = raw.pick(channel_names)
+
+        logger.debug(f"Beginning of the recording: {raw.info['meas_date']}")
 
         if bipolar_reference:
             raw = self.generate_bipolar_references(raw, leads)
 
+        if channel_paths is not None:
+            channel_names = self.extract_channel_names(channel_paths)
+            raw = raw.pick(channel_names)
+        print(raw.ch_names)
         return [
             self.create_trace(
                 label, times, raw.info["sfreq"], raw.info["meas_date"].timestamp()
