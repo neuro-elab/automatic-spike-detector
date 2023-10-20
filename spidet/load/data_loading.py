@@ -1,3 +1,4 @@
+import re
 from typing import List, Tuple
 
 import h5py
@@ -26,6 +27,8 @@ class DataLoader:
     def extract_channel_names(channel_paths: List[str]) -> List[str]:
         return [
             channel_path[channel_path.rfind("/") + 1 :]
+            if "/" in channel_path
+            else channel_path
             for channel_path in channel_paths
         ]
 
@@ -40,11 +43,23 @@ class DataLoader:
     def get_anodes_and_cathodes(
         leads: List[str], channel_names: List[str]
     ) -> Tuple[List[str], List[str]]:
+        # Sort channels
+        sorted_channels = []
+        for prefix in leads:
+            prefix_channels = list(
+                filter(lambda name: name.startswith(prefix), channel_names)
+            )
+            prefix_channels_sorted = sorted(
+                prefix_channels, key=lambda s: int(re.search(r"\d+", s).group())
+            )
+            sorted_channels.extend(prefix_channels_sorted)
+
         anodes, cathodes = [], []
         for prefix in leads:
             channels = list(
                 filter(
-                    lambda channel_name: channel_name.startswith(prefix), channel_names
+                    lambda channel_name: channel_name.startswith(prefix),
+                    sorted_channels,
                 )
             )
             for idx in range(len(channels) - 1):
@@ -302,7 +317,6 @@ class DataLoader:
         if bipolar_reference:
             raw = self.generate_bipolar_references(raw, leads)
 
-        print(raw.ch_names)
         return [
             self.create_trace(
                 label, times, raw.info["sfreq"], raw.info["meas_date"].timestamp()

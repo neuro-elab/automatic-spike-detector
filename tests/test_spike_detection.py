@@ -1,4 +1,5 @@
 import argparse
+import re
 import multiprocessing
 import time
 from typing import List
@@ -41,11 +42,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--file", help="full path to file to be processed", required=True
     )
+    parser.add_argument(
+        "-br",
+        action="store_true",
+        help="Flag to indicate bipolar reference",
+        required=False,
+    )
     parser.add_argument("--bt", help="path to bad times file", required=False)
     parser.add_argument("--bc", help="path to bad channels file", required=False)
     parser.add_argument("--labels", help="path labels file", required=False)
 
     file: str = parser.parse_args().file
+    bipolar_reference: bool = parser.parse_args().br
     bad_times_file: str = parser.parse_args().bt
     bad_channels_file: str = parser.parse_args().bc
     labels_file: str = parser.parse_args().labels
@@ -54,8 +62,8 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channels = DATASET_PATHS_008
-    leads = LEAD_PREFIXES_008
+    channel_paths = DATASET_PATHS_007
+    leads = LEAD_PREFIXES_007
 
     multiprocessing.freeze_support()
 
@@ -78,13 +86,42 @@ if __name__ == "__main__":
     else:
         exclude = None
 
+    # extract channel names from channel paths
+    channels = DataLoader().extract_channel_names(channel_paths)
+
     # Define bad channels
+    channels_included = None
     if bad_channels_file is not None:
+        # Retrieve bad channels indices
         bad_channels = np.genfromtxt(bad_channels_file, delimiter=",")
+
+        # Reverse to get channels to be included and retrieve its indices
         include_channels = np.nonzero((bad_channels + 1) % 2)[0]
-        channels = DataLoader().extract_channel_names(channels)
-        bip_ch_names = get_bipolar_channel_names(leads, channels)
-        channels = [bip_ch_names[channel] for channel in include_channels]
+
+        if bipolar_reference:
+            bipolar_channels = get_bipolar_channel_names(leads, channels)
+            print(bipolar_channels)
+            bipolar_channels_included = [
+                bipolar_channels[channel] for channel in include_channels
+            ]
+
+            # Map to regular channel names
+            channels_included = sum(
+                list(
+                    map(
+                        lambda bipolar_channel_name: bipolar_channel_name.split("-"),
+                        bipolar_channels_included,
+                    )
+                ),
+                [],
+            )
+        else:
+            channels_included = [channels[channel] for channel in include_channels]
+    else:
+        channels_included = channels
+
+    # Get unique channels
+    channels_included = list(set(channels_included))
 
     # Initialize spike detection pipeline
     spike_detection_pipeline = SpikeDetectionPipeline(
@@ -98,9 +135,9 @@ if __name__ == "__main__":
     # Run spike detection pipeline
     start = time.time()
     basis_functions, spike_detection_functions = spike_detection_pipeline.run(
-        channel_paths=channels,
+        channel_paths=channels_included,
         exclude=exclude,
-        bipolar_reference=True,
+        bipolar_reference=bipolar_reference,
         leads=leads,
     )
     end = time.time()
