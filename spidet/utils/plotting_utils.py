@@ -59,7 +59,8 @@ def plot_std_line_length(
     start = int(sfreq * offset_seconds)
     stop = len(std_line_length) if display_all else start + int(sfreq * duration)
 
-    # Extract sub-period from preprocessed_eeg
+    # Extract sub-period from preprocessed
+    # _eeg
     ll_period = std_line_length[start:stop]
 
     # Figure to plot brain regions combined in the same file
@@ -186,7 +187,6 @@ def plot_line_length_data(
 
         # Plot in common file
         ax_comb[idx].plot(eeg_period[channels_idx_start:channels_idx_stop, :].T)
-        ax_comb[idx].legend(channels, loc="center left")
         ax_comb[idx].set_xticks(xticks, ticks_as_datetime)
         ax_comb[idx].set_xlabel("Time of the day [HH:MM:SS.ff]")
         ax_comb[idx].set_ylabel("Volt")
@@ -206,6 +206,17 @@ def plot_line_length_data(
                     prefix=prefix, offset=offset_seconds, period=period, seizure=seizure
                 ),
             )
+        )
+
+    # Add legends to combined plot
+    for idx, prefix in enumerate(lead_prefixes):
+        # Extract channels for particular prefix
+        channels = list(
+            filter(lambda channel_name: channel_name.startswith(prefix), channel_names)
+        )
+        # Add legend
+        ax_comb[idx].legend(
+            channels, loc=("center right" if idx % 2 == 0 else "center left")
         )
 
     filename_prefix = (
@@ -243,7 +254,7 @@ def plot_w_and_consensus_matrix(
         else (nr_ranks + nr_ranks % nr_cols) / nr_cols
     )
 
-    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(30, 30))
+    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(20, 20))
     fig_consensus, ax_consensus = plt.subplots(nr_rows, nr_cols, figsize=(20, 20))
 
     nr_ranks_plotted = 0
@@ -360,6 +371,9 @@ def plot_h_matrix_period(
             f"H{rank + 1}" if labels is None else labels.get(rank, f"H{rank + 1}")
             for rank in range(current_rank)
         ]
+        if spike_annotations is not None:
+            labels.insert(0, "Spikes")
+
         h_best = h_matrices[idx]
 
         # Start and end of the time period to display data for
@@ -378,7 +392,9 @@ def plot_h_matrix_period(
             spikes = []
             for spike in spike_annotations:
                 offset_spike = spike.timestamp() - start_time_recording.timestamp()
-                if offset_seconds < offset_spike < offset_seconds + duration:
+                if display_all:
+                    spikes.append(offset_spike * sfreq)
+                elif offset_seconds < offset_spike < offset_seconds + duration:
                     offset_within_period = offset_spike - offset_seconds
                     spikes.append(offset_within_period * sfreq)
             ax[idx].vlines(

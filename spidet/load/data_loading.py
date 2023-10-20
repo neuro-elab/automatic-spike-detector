@@ -295,13 +295,13 @@ class DataLoader:
         )
 
         logger.debug(f"Beginning of the recording: {raw.info['meas_date']}")
+        if channel_paths is not None:
+            channel_names = self.extract_channel_names(channel_paths)
+            raw = raw.pick(channel_names)
 
         if bipolar_reference:
             raw = self.generate_bipolar_references(raw, leads)
 
-        if channel_paths is not None:
-            channel_names = self.extract_channel_names(channel_paths)
-            raw = raw.pick(channel_names)
         print(raw.ch_names)
         return [
             self.create_trace(

@@ -1,6 +1,6 @@
 import argparse
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -38,12 +38,16 @@ if __name__ == "__main__":
     annotations: str = parser.parse_args().annotations
 
     # Set plotting variables
-    plot_h: bool = False
-    plot_w: bool = True
+    plot_h: bool = True
+    plot_w: bool = False
     plot_line_length: bool = False
     plot_seizures = False
     plot_unique_line_length = False
     plot_metrics: bool = False
+
+    # Define data set
+    leads = LEAD_PREFIXES_008
+    datasets = DATASET_PATHS_008
 
     # Set seizure params
     offset_gaps = [
@@ -84,8 +88,8 @@ if __name__ == "__main__":
     # start_time_recording: datetime = datetime(2021, 11, 11, 16, 1, 20)
 
     # Set params for single plotting periods
-    offset = timedelta(hours=0, minutes=0, seconds=14)
-    duration = 5
+    offset = timedelta(hours=0, minutes=0, seconds=0)
+    duration = 2 * 60
     display_all = False
     y_lim = 1e-9
 
@@ -110,7 +114,7 @@ if __name__ == "__main__":
 
     # Get list of channel names
     anodes, cathodes = DataLoader().get_anodes_and_cathodes(
-        LEAD_PREFIXES_006, DataLoader().extract_channel_names(DATASET_PATHS_006)
+        leads, DataLoader().extract_channel_names(datasets)
     )
     channel_names = [anode + "-" + cathode for anode, cathode in zip(anodes, cathodes)]
 
@@ -183,7 +187,7 @@ if __name__ == "__main__":
                         folder,
                         line_length_eeg,
                         channel_names,
-                        # prefix_brain_regions=["Hip1"],
+                        lead_prefixes=leads,
                         start_time_recording=start_time_recording,
                         offset=start_offset,
                         duration=dur,
@@ -220,6 +224,7 @@ if __name__ == "__main__":
                 folder,
                 line_length_eeg,
                 channel_names,
+                lead_prefixes=leads,
                 start_time_recording=start_time_recording,
                 display_all=display_all,
                 offset=offset,

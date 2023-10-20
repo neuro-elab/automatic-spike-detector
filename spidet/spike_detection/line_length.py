@@ -1,8 +1,9 @@
 import multiprocessing
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 import numpy as np
 from loguru import logger
+from scipy.signal.windows import hamming
 
 from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.domain.Trace import Trace
@@ -31,12 +32,34 @@ class LineLength:
         self.line_length_window: int = 40
         self.line_length_freq: int = 50
 
-    def zero_out_bad_times(self, data: np.ndarray, orig_length: int) -> np.ndarray:
-        for row in range(self.bad_times.shape[0]):
+    def dampen_bad_times(
+        self, data: np.ndarray[Any, np.dtype[np.float64]], orig_length: int
+    ) -> np.ndarray:
+        """
+        Dampens bad times within line length data by applying hamming windows
+        to the periods between two intervals considered as artifacts (bad times).
+
+        Parameters
+        ----------
+        data : numpy.ndarray[Any, np.dtype[np.float64]]
+            The line length of EEG channels.
+
+        orig_length : int
+            The length of the underlying EEG channels.
+
+        Returns
+        -------
+        smoothed_data : numpy.ndarray[Any, np.dtype[np.float64]]
+            The line length data wih artifacts being zeroed and smoothed transition periods.
+
+        """
+        smoothed_data = np.zeros(data.shape)
+        hamming_on = 0
+        for row_idx in range(self.bad_times.shape[0]):
             if self.bad_times.ndim == 1:
                 bad_times = self.bad_times
             else:
-                bad_times = self.bad_times[row]
+                bad_times = self.bad_times[row_idx]
 
             bad_times_on = np.rint(bad_times[0] / orig_length * data.shape[1]).astype(
                 int
@@ -44,9 +67,20 @@ class LineLength:
             bad_times_off = np.rint(bad_times[1] / orig_length * data.shape[1]).astype(
                 int
             )
-            data[:, bad_times_on:bad_times_off] = 0
 
-        return data
+            hamming_off = bad_times_on
+            smoothed_data[:, hamming_on:hamming_off] = data[
+                :, hamming_on:hamming_off
+            ] * hamming(hamming_off - hamming_on)
+
+            hamming_on = bad_times_off
+
+        hamming_off = data.shape[1]
+        smoothed_data[:, hamming_on:hamming_off] = data[
+            :, hamming_on:hamming_off
+        ] * hamming(hamming_off - hamming_on)
+
+        return smoothed_data
 
     def compute_line_length(self, eeg_data: np.array, sfreq: int):
         """
@@ -230,8 +264,8 @@ class LineLength:
 
         # Zero out bad times if any
         if self.bad_times is not None:
-            logger.debug("Zeroing out bad times on line length")
-            line_length_all = self.zero_out_bad_times(
+            logger.debug("Dampening bad times on line length with hamming window")
+            line_length_all = self.dampen_bad_times(
                 data=line_length_all, orig_length=len(traces[0].data)
             )
 

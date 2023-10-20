@@ -2,6 +2,7 @@ import argparse
 import os
 
 import numpy as np
+import pandas as pd
 
 from spidet.domain.Artifacts import Artifacts
 from spidet.preprocess.artifact_detection import ArtifactDetector
@@ -20,10 +21,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "--file", help="full path to file to be processed", required=True
     )
+    parser.add_argument(
+        "--annotations", help="path to annotations file", required=False
+    )
 
     file: str = parser.parse_args().file
+    annotations: str = parser.parse_args().annotations
 
     filename, ext = os.path.splitext(file[file.rfind("/") + 1 :])
+
+    # Get trigger annotations if available
+    if annotations is not None:
+        df_annotations = pd.read_csv(annotations)
+        trigger_times = list(
+            (
+                df_annotations[df_annotations["description"].str.startswith("TRIG")][
+                    "onset"
+                ]
+            ).values
+        )
 
     # Initialize artifact detector
     artifact_detector = ArtifactDetector()
@@ -33,6 +49,7 @@ if __name__ == "__main__":
         file_path=file,
         bipolar_reference=True,
         leads=LEAD_PREFIXES_008,
+        trigger_times=trigger_times,
         channel_paths=DATASET_PATHS_008,
         detect_stimulation_artifacts=True,
     )
