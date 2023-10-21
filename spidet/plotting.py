@@ -38,12 +38,12 @@ if __name__ == "__main__":
     annotations: str = parser.parse_args().annotations
 
     # Set plotting variables
-    plot_h: bool = True
+    plot_h: bool = False
     plot_w: bool = False
-    plot_line_length: bool = False
+    plot_line_length: bool = True
     plot_seizures = False
     plot_unique_line_length = False
-    plot_metrics: bool = False
+    plot_metrics: bool = True
 
     # Define data set
     leads = LEAD_PREFIXES_008
@@ -84,18 +84,19 @@ if __name__ == "__main__":
     )
 
     # Set start time of the recording
-    start_time_recording: datetime = datetime(2023, 5, 10, 22, 0, 38)
-    # start_time_recording: datetime = datetime(2021, 11, 11, 16, 1, 20)
+    start_time_recording: datetime = datetime(2023, 3, 14, 2, 32, 11)
+    # start_time_recording: datetime = datetime(2023, 2, 15, 1, 20, 28)
 
     # Set params for single plotting periods
-    offset = timedelta(hours=0, minutes=0, seconds=0)
-    duration = 2 * 60
+    offset = timedelta(hours=0, minutes=53, seconds=0)
+    duration = 20 * 60
     display_all = False
     y_lim = 1e-9
 
     # Get spike annotations if available
     if annotations is not None:
         df_annotations = pd.read_csv(annotations)
+        df_annotations["description"] = df_annotations["description"].str.lower()
         spike_times = list(
             (
                 df_annotations[df_annotations["description"].str.startswith("x")][
