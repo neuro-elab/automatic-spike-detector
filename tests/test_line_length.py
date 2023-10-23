@@ -10,6 +10,8 @@ from spidet.utils import logging_utils
 from tests.variables import (
     DATASET_PATHS_EL010,
     LEAD_PREFIXES_EL010,
+    DATASET_PATHS_008,
+    LEAD_PREFIXES_008,
 )
 
 if __name__ == "__main__":
@@ -18,8 +20,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--file", help="full path to file to be processed", required=True
     )
+    parser.add_argument("--bt", help="path to bad times file", required=False)
 
     file: str = parser.parse_args().file
+    bad_times_file: str = parser.parse_args().bt
     path_to_file = file[: file.rfind("/")]
     filename_for_saving = (
         file[file.rfind("/") + 1 :].replace(".", "_").replace(" ", "_")
@@ -28,12 +32,19 @@ if __name__ == "__main__":
     # configure logger
     logging_utils.add_logger_with_process_name()
 
+    # Define bad times
+    if bad_times_file is not None:
+        bad_times = np.genfromtxt(bad_times_file, delimiter=",")
+    else:
+        bad_times = None
+
     # Instantiate a LineLength instance
     line_length = LineLength(
         file_path=file,
-        dataset_paths=DATASET_PATHS_EL010,
+        dataset_paths=DATASET_PATHS_008,
         bipolar_reference=True,
-        leads=LEAD_PREFIXES_EL010,
+        leads=LEAD_PREFIXES_008,
+        bad_times=bad_times,
     )
 
     # Perform line length steps to compute unique line length

@@ -6,6 +6,7 @@ from typing import List, Sequence, Dict
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from loguru import logger
 
 from tests.variables import LEAD_PREFIXES_EL010
@@ -58,7 +59,8 @@ def plot_std_line_length(
     start = int(sfreq * offset_seconds)
     stop = len(std_line_length) if display_all else start + int(sfreq * duration)
 
-    # Extract sub-period from preprocessed_eeg
+    # Extract sub-period from preprocessed
+    # _eeg
     ll_period = std_line_length[start:stop]
 
     # Figure to plot brain regions combined in the same file
@@ -185,7 +187,6 @@ def plot_line_length_data(
 
         # Plot in common file
         ax_comb[idx].plot(eeg_period[channels_idx_start:channels_idx_stop, :].T)
-        ax_comb[idx].legend(channels, loc="center left")
         ax_comb[idx].set_xticks(xticks, ticks_as_datetime)
         ax_comb[idx].set_xlabel("Time of the day [HH:MM:SS.ff]")
         ax_comb[idx].set_ylabel("Volt")
@@ -205,6 +206,17 @@ def plot_line_length_data(
                     prefix=prefix, offset=offset_seconds, period=period, seizure=seizure
                 ),
             )
+        )
+
+    # Add legends to combined plot
+    for idx, prefix in enumerate(lead_prefixes):
+        # Extract channels for particular prefix
+        channels = list(
+            filter(lambda channel_name: channel_name.startswith(prefix), channel_names)
+        )
+        # Add legend
+        ax_comb[idx].legend(
+            channels, loc=("center right" if idx % 2 == 0 else "center left")
         )
 
     filename_prefix = (
@@ -242,8 +254,8 @@ def plot_w_and_consensus_matrix(
         else (nr_ranks + nr_ranks % nr_cols) / nr_cols
     )
 
-    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(15, 15))
-    fig_consensus, ax_consensus = plt.subplots(nr_rows, nr_cols, figsize=(15, 15))
+    fig_w, ax_w = plt.subplots(nr_rows, nr_cols, figsize=(20, 20))
+    fig_consensus, ax_consensus = plt.subplots(nr_rows, nr_cols, figsize=(20, 20))
 
     nr_ranks_plotted = 0
     for row in range(nr_rows):
@@ -321,6 +333,7 @@ def plot_h_matrix_period(
     sfreq: float = 50,
     seizure: int = None,
     rank_labels_idx: Dict[int, Dict[int, str]] = None,
+    spike_annotations: List[datetime] = None,
 ) -> None:
     rank_dirs = get_rank_dirs_sorted(experiment_dir)
     dir_path = (
@@ -349,7 +362,8 @@ def plot_h_matrix_period(
     )
 
     for idx in range(len(rank_dirs)):
-        current_rank = int(rank_dirs[idx][-1])
+        current_rank_dir = rank_dirs[idx]
+        current_rank = int(current_rank_dir[current_rank_dir.rfind("=") + 1 :])
         labels = (
             dict() if rank_labels_idx is None else rank_labels_idx.get(current_rank)
         )
@@ -357,6 +371,9 @@ def plot_h_matrix_period(
             f"H{rank + 1}" if labels is None else labels.get(rank, f"H{rank + 1}")
             for rank in range(current_rank)
         ]
+        if spike_annotations is not None:
+            labels.insert(0, "Spikes")
+
         h_best = h_matrices[idx]
 
         # Start and end of the time period to display data for
@@ -369,6 +386,20 @@ def plot_h_matrix_period(
 
         # Extract sub-period from H
         h_period = h_best[:, start:stop]
+
+        # Map spike annotations, if available, to x-axis
+        if spike_annotations is not None:
+            spikes = []
+            for spike in spike_annotations:
+                offset_spike = spike.timestamp() - start_time_recording.timestamp()
+                if display_all:
+                    spikes.append(offset_spike * sfreq)
+                elif offset_seconds < offset_spike < offset_seconds + duration:
+                    offset_within_period = offset_spike - offset_seconds
+                    spikes.append(offset_within_period * sfreq)
+            ax[idx].vlines(
+                spikes, 0, np.max(h_period), linestyles="solid", colors="silver"
+            )
 
         # Plot
         ax[idx].plot(h_period.T)
@@ -409,6 +440,27 @@ def plot_h_matrix_period(
     )
 
 
+def plot_metrics(metrics: pd.DataFrame, dir_path: str) -> None:
+    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+
+    # Plot Cophenetic Correlation
+    ax[0].plot(metrics["Rank"], metrics["Cophenetic Correlation"])
+    ax[0].set_ylim(0, 1)
+    ax[0].set_title("Cophenetic Correlation")
+    ax[0].set_xlabel("Rank")
+
+    # Plot delta of auc of cdf
+    ax[1].plot(metrics["Rank"], metrics["delta_k (CDF)"])
+    ax[1].set_title("Change AUC of CDF")
+    ax[1].set_xlabel("Rank")
+    ax[1].set_ylabel("Delta k")
+
+    file_label = extract_label_from_path(dir_path)
+    fig.suptitle(f"{file_label} - Metrics")
+
+    plt.savefig(f"{dir_path}/metrics.pdf")
+
+
 def get_rank_dirs_sorted(experiment_dir: str) -> List[str]:
     # Retrieve the paths to the rank directories within the experiment folder
     rank_dirs = [
@@ -417,8 +469,8 @@ def get_rank_dirs_sorted(experiment_dir: str) -> List[str]:
         if os.path.isdir(os.path.join(experiment_dir, k_dir)) and "k=" in k_dir
     ]
 
-    # Only ranks 3, 4, 5
-    ranks = ["k=3", "k=4", "k=5"]
+    # Only ranks specified are considered
+    ranks = ["k=2", "k=3", "k=4", "k=5", "k=6", "k=7", "k=8", "k=9", "k=10"]
 
     def dir_contains_rank(rank_dir: str) -> bool:
         for k in ranks:
