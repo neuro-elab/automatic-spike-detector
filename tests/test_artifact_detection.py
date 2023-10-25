@@ -6,13 +6,9 @@ import pandas as pd
 
 from spidet.domain.Artifacts import Artifacts
 from spidet.preprocess.artifact_detection import ArtifactDetector
-from tests.variables import (
+from spidet.utils.variables import (
     DATASET_PATHS_008,
     LEAD_PREFIXES_008,
-    DATASET_PATHS_007,
-    LEAD_PREFIXES_007,
-    DATASET_PATHS_006,
-    LEAD_PREFIXES_006,
 )
 
 if __name__ == "__main__":

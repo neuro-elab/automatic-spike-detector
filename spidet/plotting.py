@@ -8,16 +8,9 @@ from loguru import logger
 from numpy import genfromtxt
 
 from spidet.load.data_loading import DataLoader
-from tests.variables import (
-    LEAD_PREFIXES_EL010,
-    LABELS_EL010,
-    LEAD_PREFIXES_AJ,
+from spidet.utils.variables import (
     LEAD_PREFIXES_008,
     DATASET_PATHS_008,
-    LEAD_PREFIXES_007,
-    DATASET_PATHS_007,
-    LEAD_PREFIXES_006,
-    DATASET_PATHS_006,
 )
 from spidet.utils import plotting_utils
 

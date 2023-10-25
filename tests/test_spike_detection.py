@@ -1,5 +1,4 @@
 import argparse
-import re
 import multiprocessing
 import time
 from typing import List
@@ -10,15 +9,9 @@ import pandas as pd
 
 from spidet.load.data_loading import DataLoader
 from spidet.spike_detection.spike_detection_pipeline import SpikeDetectionPipeline
-from tests.variables import (
-    DATASET_PATHS_EL010,
-    LEAD_PREFIXES_EL010,
+from spidet.utils.variables import (
     DATASET_PATHS_008,
     LEAD_PREFIXES_008,
-    DATASET_PATHS_007,
-    LEAD_PREFIXES_007,
-    DATASET_PATHS_006,
-    LEAD_PREFIXES_006,
 )
 from spidet.utils import logging_utils
 

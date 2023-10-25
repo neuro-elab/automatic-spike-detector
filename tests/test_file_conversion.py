@@ -1,7 +1,7 @@
 import argparse
 
 from spidet.utils import file_utils
-from tests.variables import LEAD_PREFIXES_EL010, DATASET_PATHS_EL010
+from spidet.utils.variables import LEAD_PREFIXES_EL010, DATASET_PATHS_EL010
 
 if __name__ == "__main__":
     # parse cli args

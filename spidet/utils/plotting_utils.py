@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 
-from tests.variables import LEAD_PREFIXES_EL010
+from spidet.utils.variables import LEAD_PREFIXES_EL010
 
 
 def plot_std_line_length(
