@@ -12,6 +12,8 @@ from spidet.spike_detection.spike_detection_pipeline import SpikeDetectionPipeli
 from spidet.utils.variables import (
     DATASET_PATHS_008,
     LEAD_PREFIXES_008,
+    DATASET_PATHS_SZ2,
+    LEAD_PREFIXES_SZ2,
 )
 from spidet.utils import logging_utils
 
@@ -55,8 +57,8 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channel_paths = DATASET_PATHS_008
-    leads = LEAD_PREFIXES_008
+    channel_paths = DATASET_PATHS_SZ2
+    leads = LEAD_PREFIXES_SZ2
 
     multiprocessing.freeze_support()
 
@@ -99,7 +101,7 @@ if __name__ == "__main__":
             ]
 
             # Map to regular channel names
-            channels_included = sum(
+            regular_channel_names = sum(
                 list(
                     map(
                         lambda bipolar_channel_name: bipolar_channel_name.split("-"),
@@ -108,10 +110,16 @@ if __name__ == "__main__":
                 ),
                 [],
             )
+            channels_included = [
+                channel_path
+                for channel_path in channel_paths
+                if regular_name in channel_path
+                for regular_name in regular_channel_names
+            ]
         else:
-            channels_included = [channels[channel] for channel in include_channels]
+            channels_included = [channel_paths[channel] for channel in include_channels]
     else:
-        channels_included = channels
+        channels_included = channel_paths
 
     # Get unique channels
     channels_included = list(set(channels_included))

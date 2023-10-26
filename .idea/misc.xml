@@ -2,7 +2,8 @@
 <project version="4">
   <component name="Black">
     <option name="enabledOnSave" value="true" />
-    <option name="sdkUUID" value="fe1478ed-a01b-44e1-8186-2e596698da8e" />
+    <option name="pathToExecutable" value="/usr/local/bin/black" />
+    <option name="sdkUUID" value="3983ef93-e7dd-40ce-8e69-fa0f0b2c7fae" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.10 (automatic-spike-detection)" project-jdk-type="Python SDK" />
 </project>

@@ -185,7 +185,7 @@ class SpikeDetectionPipeline:
         # Using all available cores for process pool, currently only one process per rank is used
         n_cores = multiprocessing.cpu_count()
 
-        with multiprocessing.Pool(processes=n_cores) as pool:
+        with multiprocessing.Pool(processes=n_cores - 2) as pool:
             results = pool.starmap(
                 self.perform_nmf_steps_for_rank,
                 [
