@@ -31,13 +31,15 @@ if __name__ == "__main__":
         h_matrix = genfromtxt(rank_dir + "/H_best.csv", delimiter=",")
         w_matrix = genfromtxt(rank_dir + "/W_best.csv", delimiter=",")
 
-        sorted_w, sorted_h = kmeans.cluster_and_sort(h_matrix, w_matrix)
+        sorted_w, sorted_h, sorted_assignments = kmeans.cluster_and_sort(
+            h_matrix, w_matrix
+        )
 
         h_best_sorted_path = os.path.join(rank_dir, "H_best_sorted.csv")
-        np.savetxt(h_best_sorted_path, sorted_h, delimiter=",")
+        # np.savetxt(h_best_sorted_path, sorted_h, delimiter=",")
 
         w_best_sorted_path = os.path.join(rank_dir, "W_best_sorted.csv")
-        np.savetxt(w_best_sorted_path, sorted_w, delimiter=",")
+        # np.savetxt(w_best_sorted_path, sorted_w, delimiter=",")
 
         logger.debug(
             f"Clustering W for rank {rank_dir[rank_dir.rfind('=') + 1:]} "

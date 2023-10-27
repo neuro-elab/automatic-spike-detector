@@ -13,6 +13,7 @@ from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.domain.FunctionType import FunctionType
 from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.domain.Trace import Trace
+from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 
@@ -353,9 +354,15 @@ class DataLoader:
             line_length_data = np.genfromtxt(
                 os.path.join(dir_path, "line_length.csv"), delimiter=","
             )
-            threshold_generator = ThresholdGenerator(
-                line_length_data, data_matrix, sfreq
+
+            # Clustering
+            kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
+            _, sorted_h, cluster_assignments = kmeans.cluster_and_sort(
+                h_matrix=data_matrix
             )
+
+            # Generate threshold and find spikes
+            threshold_generator = ThresholdGenerator(line_length_data, sorted_h, sfreq)
             threshold = threshold_generator.generate_threshold()
             spikes = threshold_generator.find_spikes(threshold)
 
@@ -383,6 +390,7 @@ class DataLoader:
                     spikes_on_indices=spikes.get(idx)["spikes_on"],
                     spikes_off_indices=spikes.get(idx)["spikes_off"],
                     spike_threshold=threshold,
+                    codes_for_spikes=bool(cluster_assignments.get(idx)),
                 )
             else:
                 raise Exception(
