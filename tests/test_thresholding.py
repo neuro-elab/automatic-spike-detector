@@ -22,9 +22,7 @@ if __name__ == "__main__":
 
     # Read in preprocessed data
     start = time.time()
-    line_length_data = genfromtxt(
-        experiment_dir + "/line_length.csv", delimiter=",", usecols=usecols
-    )
+    line_length_data = genfromtxt(experiment_dir + "/line_length.csv", delimiter=",")
     end = time.time()
 
     print(line_length_data.shape)
@@ -39,9 +37,7 @@ if __name__ == "__main__":
     ]
 
     for rank_dir in rank_dirs:
-        h_sorted = genfromtxt(
-            rank_dir + "/H_best_sorted.csv", delimiter=",", usecols=usecols
-        )
+        h_sorted = genfromtxt(rank_dir + "/H_best_sorted.csv", delimiter=",")
         w_sorted = genfromtxt(rank_dir + "/W_best_sorted.csv", delimiter=",")
 
         threshold_generator = ThresholdGenerator(line_length_data, h_sorted, sfreq=50)

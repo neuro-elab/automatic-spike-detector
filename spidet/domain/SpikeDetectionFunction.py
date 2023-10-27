@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -7,8 +8,8 @@ import numpy as np
 class SpikeDetectionFunction:
     label: str
     unique_id: str
-    times: np.ndarray
-    data_array: np.ndarray
+    times: np.ndarray[Any, np.dtype[float]]
+    data_array: np.ndarray[Any, np.dtype[float]]
 
     def get_sub_period(self, offset: float, duration: float):
         # Find indices corresponding to offset and end of duration

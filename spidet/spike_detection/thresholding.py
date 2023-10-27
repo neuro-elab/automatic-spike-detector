@@ -20,6 +20,10 @@ class ThresholdGenerator:
         self, spikes_on: np.ndarray, spikes_off: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         nr_events = len(spikes_on)
+
+        # Return empty arrays if no events available
+        if nr_events == 0:
+            return tuple((np.array([]), np.array([]), np.array([])))
         nr_channels = self.preprocessed_data.shape[0]
         channels_involved = np.zeros((nr_events, nr_channels))
 
