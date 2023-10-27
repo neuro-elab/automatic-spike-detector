@@ -10,7 +10,7 @@ class BasisFunctionClusterer(KMeans):
         self.use_cosine_dist = use_cosine_dist
 
     def cluster_and_sort(
-        self, h_matrix: np.ndarray, w_matrix: np.ndarray
+        self, h_matrix: np.ndarray, w_matrix: np.ndarray = None
     ) -> Tuple[np.ndarray, np.ndarray, Dict]:
         rank: int = h_matrix.shape[0]
 
@@ -59,7 +59,8 @@ class BasisFunctionClusterer(KMeans):
         }
 
         # Sort W and H by cluster assignment
-        w_matrix = w_matrix[:, sorted_assignments[:, 1]]
+        if w_matrix is not None:
+            w_matrix = w_matrix[:, sorted_assignments[:, 1]]
         h_matrix = h_matrix[sorted_assignments[:, 1], :]
 
         return w_matrix, h_matrix, assignments
