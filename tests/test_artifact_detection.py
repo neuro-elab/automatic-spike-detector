@@ -48,9 +48,9 @@ if __name__ == "__main__":
     artifacts: Artifacts = artifact_detector.run(
         file_path=file,
         bipolar_reference=True,
-        leads=LEAD_PREFIXES_SZ2,
+        leads=LEAD_PREFIXES_008,
         trigger_times=trigger_times,
-        channel_paths=DATASET_PATHS_SZ2,
+        channel_paths=DATASET_PATHS_008,
         detect_stimulation_artifacts=True,
     )
 

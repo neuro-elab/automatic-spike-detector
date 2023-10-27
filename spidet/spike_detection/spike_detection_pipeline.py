@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 import os
 from datetime import datetime
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Any
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,7 @@ from pathlib import Path
 
 from spidet.domain.BasisFunction import BasisFunction
 from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.line_length import LineLength
 from spidet.spike_detection.nmf import Nmf
@@ -105,7 +106,14 @@ class SpikeDetectionPipeline:
         rank: int,
         n_runs: int,
         execute: bool = False,
-    ) -> Tuple[Dict, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[
+        Dict,
+        np.ndarray[Any, np.dtype[float]],
+        np.ndarray[Any, np.dtype[float]],
+        np.ndarray[Any, np.dtype[float]],
+        Dict[int, np.ndarray[Any, np.dtype[int]]],
+        float,
+    ]:
         logging.debug(f"Starting Spike detection pipeline for rank {rank}")
 
         #####################
@@ -120,31 +128,27 @@ class SpikeDetectionPipeline:
             preprocessed_data, n_runs
         )
 
+        #####################
+        # CLUSTERING BS FCT #
+        #####################
+
+        # Initialize kmeans classifier
+        kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
+
+        # Cluster into noise / basis function and sort according to cluster assignment
+        sorted_w, sorted_h = kmeans.cluster_and_sort(h_matrix=h_best, w_matrix=w_best)
+        # TODO check if necessary: cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
+
+        #####################
+        #   THRESHOLDING    #
+        #####################
+
+        threshold_generator = ThresholdGenerator(preprocessed_data, sorted_h, sfreq=50)
+
+        threshold = threshold_generator.generate_threshold()
+        spike_annotations = threshold_generator.find_spikes(threshold)
+
         if execute:
-            #####################
-            # CLUSTERING BS FCT #
-            #####################
-
-            # Initialize kmeans classifier
-            kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
-
-            # Cluster into noise / basis function and sort according to cluster assignment
-            sorted_w, sorted_h = kmeans.cluster_and_sort(
-                h_matrix=h_best, w_matrix=w_best
-            )
-            # TODO check if necessary: cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
-
-            #####################
-            #   THRESHOLDING    #
-            #####################
-
-            threshold_generator = ThresholdGenerator(
-                preprocessed_data, sorted_h, sfreq=50
-            )
-
-            threshold = threshold_generator.generate_threshold()
-            spike_annotations = threshold_generator.find_spikes(threshold)
-
             #####################
             #   PROJECTING      #
             #####################
@@ -154,38 +158,34 @@ class SpikeDetectionPipeline:
                 preprocessed_data
             )
 
-        return metrics, consensus, h_best, w_best
+        return metrics, consensus, h_best, w_best, spike_annotations, threshold
 
     def parallel_processing(
-        self, preprocessed_data: np.ndarray, channel_names: List[str]
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Parallel NMF spike detection.
-
-        Parameters:
-        - preprocessed_data : numpy.ndarray
-            Data matrix.
-
-        Returns:
-        - results_dir : str
-            Directory where results are saved.
-        - M : numpy.ndarray
-            3D array where each slice along the first axis is a consensus matrix for a specific rank.
-        """
+        self,
+        preprocessed_data: np.ndarray[Any, np.dtype[float]],
+        channel_names: List[str],
+    ) -> Tuple[
+        np.ndarray[Any, np.dtype[float]],
+        np.ndarray[Any, np.dtype[float]],
+        Dict[int, np.ndarray[Any, np.dtype[int]]],
+        float,
+    ]:
         # List of ranks to run NMF for
         rank_list = list(range(self.rank_range[0], self.rank_range[1] + 1))
-
-        logger.debug(
-            f"Running NMF on {len(rank_list)} cores for ranks {rank_list} and {self.nmf_runs} runs each"
-        )
+        nr_ranks = len(rank_list)
 
         # Normalize for NMF (preprocessed data needs to be non-negative)
         data_matrix = normalize(preprocessed_data)
 
-        # Using all available cores for process pool, currently only one process per rank is used
-        n_cores = multiprocessing.cpu_count()
+        # Using all cores except 2 if necessary
+        n_cores = multiprocessing.cpu_count() - 2
 
-        with multiprocessing.Pool(processes=n_cores - 2) as pool:
+        logger.debug(
+            f"Running NMF on {n_cores if nr_ranks > n_cores else nr_ranks} cores "
+            f"for ranks {rank_list} and {self.nmf_runs} runs each"
+        )
+
+        with multiprocessing.Pool(processes=n_cores) as pool:
             results = pool.starmap(
                 self.perform_nmf_steps_for_rank,
                 [
@@ -194,19 +194,25 @@ class SpikeDetectionPipeline:
                 ],
             )
 
-        # Extract consensus, h and w matrices and metrics from results
-        consensus_matrices = [consensus for _, consensus, _, _ in results]
-        h_matrices = [h_best for _, _, h_best, _ in results]
-        w_matrices = [w_best for _, _, _, w_best in results]
-        metrics = [metrics for metrics, _, _, _ in results]
+        # Extract return objects from results
+        consensus_matrices = [consensus for _, consensus, _, _, _ in results]
+        h_matrices = [h_best for _, _, h_best, _, _ in results]
+        w_matrices = [w_best for _, _, _, w_best, _ in results]
+        metrics = [metrics for metrics, _, _, _, _ in results]
+        spike_annotations = [
+            spike_annotations for _, _, _, _, spike_annotations in results
+        ]
+        thresholds = [threshold for _, _, _, _, _, threshold in results]
 
         # Calculate final statistics
         C, delta_k, delta_y, k_opt = self.__calculate_statistics(consensus_matrices)
 
-        # Get the H and W matrices for the optimal rank
+        # Get the H and W matrices with spike annotations for the optimal rank
         idx_opt = k_opt - self.rank_range[0]
         h_opt = h_matrices[idx_opt]
         w_opt = w_matrices[idx_opt]
+        spikes_opt = spike_annotations[idx_opt]
+        threshold_opt = thresholds[idx_opt]
 
         # Generate metrics data frame
         metrics_df = pd.DataFrame(metrics)
@@ -229,10 +235,13 @@ class SpikeDetectionPipeline:
         metrics_path = os.path.join(self.results_dir, "metrics.csv")
         metrics_df.to_csv(metrics_path, index=False)
 
-        # Saving H and W matrices
+        # Saving H and W matrices and spike annotations
         if self.save_nmf_matrices:
-            logger.debug(f"Saving W, H and Consensus matrices for ranks {rank_list}")
-            for idx in range(len(h_matrices)):
+            logger.debug(
+                f"Saving Consensus, W, H matrices and corresponding spike annotations for ranks {rank_list}"
+            )
+            for idx in range(nr_ranks):
+                # Saving Consensus, W and H matrices
                 h_matrix = h_matrices[idx]
                 w_matrix = w_matrices[idx]
                 consensus_matrix = consensus_matrices[idx]
@@ -248,7 +257,31 @@ class SpikeDetectionPipeline:
                     delimiter=",",
                 )
 
-        return h_opt, w_opt
+                # Saving spike annotations
+                spikes = spike_annotations[idx]
+                headers = []
+                spike_times = []
+                max_length = 0
+                for h_idx in spikes.keys():
+                    spike_times_on = spikes.get(h_idx).get("spikes_on")
+                    spike_times_off = spikes.get(h_idx).get("spikes_off")
+
+                    if len(spike_times_on) > max_length:
+                        max_length = len(spike_times_on)
+
+                    spike_times.append(spike_times_on)
+                    spike_times.append(spike_times_off)
+                    headers.extend(
+                        [f"h{h_idx + 1}_spikes_on", f"h{h_idx + 1}_spikes_off"]
+                    )
+
+                df_spike_times = pd.DataFrame(spike_times)
+                df_spike_times = df_spike_times.transpose()
+                df_spike_times.columns = headers
+
+                df_spike_times.to_csv(f"{saving_path}/spike_annotations.csv")
+
+        return h_opt, w_opt, spikes_opt, threshold_opt
 
     def run(
         self,
@@ -275,7 +308,7 @@ class SpikeDetectionPipeline:
         ) = line_length.apply_parallel_line_length_pipeline()
 
         # Run parallelized NMF
-        h_opt, w_opt = self.parallel_processing(
+        h_opt, w_opt, spikes_opt, threshold_opt = self.parallel_processing(
             preprocessed_data=line_length_matrix, channel_names=channel_names
         )
 
@@ -292,11 +325,11 @@ class SpikeDetectionPipeline:
 
         # Create return objects
         basis_functions: List[BasisFunction] = []
-        spike_detection_functions: List[SpikeDetectionFunction] = []
+        coefficient_functions: List[CoefficientsFunction] = []
 
-        for idx, (bf, sdf) in enumerate(zip(w_opt.T, h_opt)):
+        for idx, (bf, sdf, spikes_idx) in enumerate(zip(w_opt.T, h_opt, spikes_opt)):
             # Create BasisFunction
-            label_bf = f"W{idx}"
+            label_bf = f"W{idx + 1}"
             unique_id_bf = f"{unique_id_prefix}_{label_bf}"
             basis_fct = BasisFunction(
                 label=label_bf,
@@ -306,13 +339,19 @@ class SpikeDetectionPipeline:
             )
 
             # Create SpikeDetectionFunction
-            label_sdf = f"H{idx}"
+            label_sdf = f"H{idx + 1}"
             unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
-            spike_detection_fct = SpikeDetectionFunction(
-                label=label_sdf, unique_id=unique_id_sdf, times=times, data_array=sdf
+            coefficient_fct = CoefficientsFunction(
+                label=label_sdf,
+                unique_id=unique_id_sdf,
+                times=times,
+                data_array=sdf,
+                spikes_on_indices=spikes_opt.get(spikes_idx)["spikes_on"],
+                spikes_off_indices=spikes_opt.get(spikes_idx)["spikes_off"],
+                spike_threshold=threshold_opt,
             )
 
             basis_functions.append(basis_fct)
-            spike_detection_functions.append(spike_detection_fct)
+            coefficient_functions.append(coefficient_fct)
 
-        return basis_functions, spike_detection_functions
+        return basis_functions, coefficient_functions

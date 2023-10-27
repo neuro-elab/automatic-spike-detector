@@ -324,7 +324,8 @@ class ArtifactDetector:
             )
 
         # Sort and merge potentially overlapping bad time periods
-        bad_times = self.__merge_overlapping_bad_times(bad_times)
+        if bad_times is not None:
+            bad_times = self.__merge_overlapping_bad_times(bad_times)
 
         return Artifacts(bad_times=bad_times, bad_channels=bad_channels)
 

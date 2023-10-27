@@ -57,14 +57,14 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channel_paths = DATASET_PATHS_SZ2
-    leads = LEAD_PREFIXES_SZ2
+    channel_paths = DATASET_PATHS_008
+    leads = LEAD_PREFIXES_008
 
     multiprocessing.freeze_support()
 
     # Specify range of ranks
     k_min = 2
-    k_max = 10
+    k_max = 5
 
     # How many runs of NMF to perform per rank
     runs_per_rank = 100
