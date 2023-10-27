@@ -1,3 +1,4 @@
+import os.path
 import re
 from typing import List, Tuple
 
@@ -8,8 +9,11 @@ from h5py import Dataset, File
 from loguru import logger
 from mne.io import RawArray
 
+from spidet.domain.CoefficentsFunction import CoefficientsFunction
+from spidet.domain.FunctionType import FunctionType
 from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
 from spidet.domain.Trace import Trace
+from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 
 # Supported file formats
@@ -339,9 +343,21 @@ class DataLoader:
         )
 
         # Create unique id prefix
-        rank = file_path[file_path.find("/k=") + 1]
+        rank = file_path[file_path.find("/k=") + 3]
         dir_path = file_path[: file_path.find("/k=")]
         unique_id_prefix = f"{dir_path[dir_path.rfind('/') + 1:]}_rank_{rank}"
+
+        function_type = FunctionType.from_file_path(file_path)
+
+        if FunctionType.H_COEFFICIENTS == function_type:
+            line_length_data = np.genfromtxt(
+                os.path.join(dir_path, "line_length.csv"), delimiter=","
+            )
+            threshold_generator = ThresholdGenerator(
+                line_length_data, data_matrix, sfreq
+            )
+            threshold = threshold_generator.generate_threshold()
+            spikes = threshold_generator.find_spikes(threshold)
 
         # Create return objects
         spike_detection_functions: List[SpikeDetectionFunction] = []
@@ -350,9 +366,28 @@ class DataLoader:
             # Create SpikeDetectionFunction
             label_sdf = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
             unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
-            spike_detection_fct = SpikeDetectionFunction(
-                label=label_sdf, unique_id=unique_id_sdf, times=times, data_array=sdf
-            )
+
+            if FunctionType.STD_LINE_LENGTH == function_type:
+                spike_detection_fct = SpikeDetectionFunction(
+                    label=label_sdf,
+                    unique_id=unique_id_sdf,
+                    times=times,
+                    data_array=sdf,
+                )
+            elif FunctionType.H_COEFFICIENTS == function_type:
+                spike_detection_fct = CoefficientsFunction(
+                    label=label_sdf,
+                    unique_id=unique_id_sdf,
+                    times=times,
+                    data_array=sdf,
+                    spikes_on_indices=spikes.get(idx)["spikes_on"],
+                    spikes_off_indices=spikes.get(idx)["spikes_off"],
+                    spike_threshold=threshold,
+                )
+            else:
+                raise Exception(
+                    f"Function type {function_type} currently not supported by this service"
+                )
 
             spike_detection_functions.append(spike_detection_fct)
 
