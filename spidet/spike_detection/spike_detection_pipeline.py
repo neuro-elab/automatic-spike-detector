@@ -195,12 +195,12 @@ class SpikeDetectionPipeline:
             )
 
         # Extract return objects from results
-        consensus_matrices = [consensus for _, consensus, _, _, _ in results]
-        h_matrices = [h_best for _, _, h_best, _, _ in results]
-        w_matrices = [w_best for _, _, _, w_best, _ in results]
-        metrics = [metrics for metrics, _, _, _, _ in results]
+        consensus_matrices = [consensus for _, consensus, _, _, _, _ in results]
+        h_matrices = [h_best for _, _, h_best, _, _, _ in results]
+        w_matrices = [w_best for _, _, _, w_best, _, _ in results]
+        metrics = [metrics for metrics, _, _, _, _, _ in results]
         spike_annotations = [
-            spike_annotations for _, _, _, _, spike_annotations in results
+            spike_annotations for _, _, _, _, spike_annotations, _ in results
         ]
         thresholds = [threshold for _, _, _, _, _, threshold in results]
 
