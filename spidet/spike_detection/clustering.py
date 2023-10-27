@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Dict
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -11,7 +11,7 @@ class BasisFunctionClusterer(KMeans):
 
     def cluster_and_sort(
         self, h_matrix: np.ndarray, w_matrix: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, Dict]:
         rank: int = h_matrix.shape[0]
 
         # Get empirical H PDF
@@ -45,13 +45,21 @@ class BasisFunctionClusterer(KMeans):
             np.median(h_matrix[cluster_indices == 1, :])
         ):
             cluster_indices = cluster_indices % 2 + 1
+            cluster_indices = np.array(
+                [1 if idx == 1 else 0 for idx in cluster_indices]
+            )
 
         # Assign basis functions / samples to clusters
         cluster_assignments = np.vstack((cluster_indices, np.arange(rank))).T
         sorted_assignments = cluster_assignments[cluster_assignments[:, 0].argsort()]
 
+        # Create dict indicating whether index codes for basis fct (1) or noise (0)
+        assignments = {
+            idx: assignment[0] for idx, assignment in enumerate(sorted_assignments)
+        }
+
         # Sort W and H by cluster assignment
         w_matrix = w_matrix[:, sorted_assignments[:, 1]]
         h_matrix = h_matrix[sorted_assignments[:, 1], :]
 
-        return w_matrix, h_matrix
+        return w_matrix, h_matrix, assignments

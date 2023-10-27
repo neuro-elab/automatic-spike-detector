@@ -41,9 +41,9 @@ if __name__ == "__main__":
     # Instantiate a LineLength instance
     line_length = LineLength(
         file_path=file,
-        dataset_paths=DATASET_PATHS_SZ2,
+        dataset_paths=DATASET_PATHS_008,
         bipolar_reference=True,
-        leads=LEAD_PREFIXES_SZ2,
+        leads=LEAD_PREFIXES_008,
         bad_times=bad_times,
     )
 
