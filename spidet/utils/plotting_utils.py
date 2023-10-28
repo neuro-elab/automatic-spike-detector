@@ -108,6 +108,7 @@ def plot_line_length_data(
     sfreq: float = 50,
     y_lim: float = None,
     seizure: int = None,
+    spike_annotations: List[datetime] = None,
 ) -> None:
     dir_path = (
         os.path.join(experiment_dir, "plots_line_length_data")
@@ -167,6 +168,9 @@ def plot_line_length_data(
         channels_idx_start = channel_names.index(channels[0])
         channels_idx_stop = channel_names.index(channels[-1])
 
+        if spike_annotations is not None:
+            channels.insert(0, "Spikes")
+
         # Generate xticks, label as time of the day
         xticks = np.linspace(start=0, stop=eeg_period.shape[1], num=11)
         ticks_as_datetime = [
@@ -175,6 +179,31 @@ def plot_line_length_data(
             ).strftime("%T.%f")[:-4]
             for tick in xticks
         ]
+
+        # Map spike annotations, if available, to x-axis
+        if spike_annotations is not None:
+            spikes = []
+            for spike in spike_annotations:
+                offset_spike = spike.timestamp() - start_time_recording.timestamp()
+                if display_all:
+                    spikes.append(offset_spike * sfreq)
+                elif offset_seconds < offset_spike < offset_seconds + duration:
+                    offset_within_period = offset_spike - offset_seconds
+                    spikes.append(offset_within_period * sfreq)
+            ax_comb[idx].vlines(
+                spikes,
+                0,
+                np.max(eeg_period[channels_idx_start:channels_idx_stop, :].T),
+                linestyles="solid",
+                colors="silver",
+            )
+            ax.vlines(
+                spikes,
+                0,
+                np.max(eeg_period[channels_idx_start:channels_idx_stop, :].T),
+                linestyles="solid",
+                colors="silver",
+            )
 
         # Plot in separate file
         ax.plot(eeg_period[channels_idx_start:channels_idx_stop, :].T)
@@ -190,6 +219,9 @@ def plot_line_length_data(
         ax_comb[idx].set_xticks(xticks, ticks_as_datetime)
         ax_comb[idx].set_xlabel("Time of the day [HH:MM:SS.ff]")
         ax_comb[idx].set_ylabel("Volt")
+        ax_comb[idx].legend(
+            channels, loc=("center right" if idx % 2 == 0 else "center left")
+        )
 
         # Create directory for prefix if it does not already exist
         os.makedirs(
@@ -222,6 +254,7 @@ def plot_line_length_data(
     filename_prefix = (
         "EEG_LL" if lead_prefixes == LEAD_PREFIXES_EL010 else "_".join(lead_prefixes)
     )
+    fig_comb.subplots_adjust(hspace=0.6)
     fig_comb.suptitle(title)
     fig_comb.savefig(
         os.path.join(

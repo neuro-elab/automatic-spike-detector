@@ -31,12 +31,12 @@ if __name__ == "__main__":
     annotations: str = parser.parse_args().annotations
 
     # Set plotting variables
-    plot_h: bool = True
+    plot_h: bool = False
     plot_w: bool = False
     plot_line_length: bool = True
     plot_seizures = False
     plot_unique_line_length = False
-    plot_metrics: bool = True
+    plot_metrics: bool = False
 
     # Define data set
     leads = LEAD_PREFIXES_008
@@ -77,13 +77,13 @@ if __name__ == "__main__":
     )
 
     # Set start time of the recording
-    start_time_recording: datetime = datetime(2023, 6, 22, 13, 46, 14)
+    start_time_recording: datetime = datetime(2023, 5, 10, 22, 00, 38)
     # start_time_recording: datetime = datetime(2023, 2, 15, 1, 20, 28)
 
     # Set params for single plotting periods
     offset = timedelta(hours=0, minutes=0, seconds=0)
     duration = 2 * 60
-    display_all = True
+    display_all = False
     y_lim = 1e-9
 
     # Get spike annotations if available
@@ -223,6 +223,7 @@ if __name__ == "__main__":
                 display_all=display_all,
                 offset=offset,
                 duration=duration,
+                spike_annotations=spike_times,
             )
 
         # plot H matrices
