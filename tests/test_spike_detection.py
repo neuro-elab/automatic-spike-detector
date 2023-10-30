@@ -110,12 +110,10 @@ if __name__ == "__main__":
                 ),
                 [],
             )
-            channels_included = [
-                channel_path
-                for channel_path in channel_paths
-                if regular_name in channel_path
-                for regular_name in regular_channel_names
-            ]
+            channels_included = []
+            for regular_name in regular_channel_names:
+                paths = filter(lambda ch_path: regular_name in ch_path, channel_paths)
+                channels_included.extend(paths)
         else:
             channels_included = [channel_paths[channel] for channel in include_channels]
     else:
