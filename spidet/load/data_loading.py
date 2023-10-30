@@ -228,7 +228,12 @@ class DataLoader:
         h5_file = h5py.File(file_path, "r")
 
         # Extract the raw datasets from the hdf5 file
-        raw_traces: List[Dataset] = [h5_file.get(path) for path in channel_paths]
+        raw_traces: List[Dataset] = list(
+            filter(
+                lambda dataset: dataset is not None,
+                [h5_file.get(path) for path in channel_paths],
+            )
+        )
 
         # Extract start timestamps for datasets
         start_timestamps: List[float] = [

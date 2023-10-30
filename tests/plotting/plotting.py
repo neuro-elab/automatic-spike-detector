@@ -31,12 +31,12 @@ if __name__ == "__main__":
     annotations: str = parser.parse_args().annotations
 
     # Set plotting variables
-    plot_h: bool = False
+    plot_h: bool = True
     plot_w: bool = False
     plot_line_length: bool = True
     plot_seizures = False
     plot_unique_line_length = False
-    plot_metrics: bool = False
+    plot_metrics: bool = True
 
     # Define data set
     leads = LEAD_PREFIXES_008
