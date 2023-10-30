@@ -10,6 +10,10 @@ import pandas as pd
 from spidet.load.data_loading import DataLoader
 from spidet.spike_detection.spike_detection_pipeline import SpikeDetectionPipeline
 from spidet.utils.variables import (
+    DATASET_PATHS_006,
+    LEAD_PREFIXES_006,
+    DATASET_PATHS_007,
+    LEAD_PREFIXES_007,
     DATASET_PATHS_008,
     LEAD_PREFIXES_008,
     DATASET_PATHS_SZ2,
@@ -64,7 +68,7 @@ if __name__ == "__main__":
 
     # Specify range of ranks
     k_min = 2
-    k_max = 5
+    k_max = 10
 
     # How many runs of NMF to perform per rank
     runs_per_rank = 100
