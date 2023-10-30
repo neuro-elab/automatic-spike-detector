@@ -235,13 +235,21 @@ class DataLoader:
             )
         )
 
+        # Only include channel paths for which there exists a dataset in the file
+        relevant_channel_names = [trace.name for trace in raw_traces]
+        relevant_channel_paths = []
+        for channel_name in relevant_channel_names:
+            relevant_channel_paths.extend(
+                list(filter(lambda path: channel_name in path, channel_paths))
+            )
+
         # Extract start timestamps for datasets
         start_timestamps: List[float] = [
             self.extract_start_timestamp(path, h5_file) for path in channel_paths
         ]
 
         # Extract channel names from the dataset paths
-        channel_names = self.extract_channel_names(channel_paths)
+        channel_names = self.extract_channel_names(relevant_channel_paths)
 
         # Extract frequencies from datasets
         frequencies: List[float] = [
