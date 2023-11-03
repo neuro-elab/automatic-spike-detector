@@ -240,17 +240,6 @@ def plot_line_length_data(
             )
         )
 
-    # Add legends to combined plot
-    for idx, prefix in enumerate(lead_prefixes):
-        # Extract channels for particular prefix
-        channels = list(
-            filter(lambda channel_name: channel_name.startswith(prefix), channel_names)
-        )
-        # Add legend
-        ax_comb[idx].legend(
-            channels, loc=("center right" if idx % 2 == 0 else "center left")
-        )
-
     filename_prefix = (
         "EEG_LL" if lead_prefixes == LEAD_PREFIXES_EL010 else "_".join(lead_prefixes)
     )
@@ -265,7 +254,7 @@ def plot_line_length_data(
                 period=period,
                 seizure=seizure,
             ),
-        )
+        ),
     )
 
 
@@ -453,23 +442,22 @@ def plot_h_matrix_period(
 
     fig.subplots_adjust(hspace=1.0)
     period = "all" if display_all else f"{duration}s"
-    fig.suptitle(
-        create_file_title(
-            exp_dir=experiment_dir,
-            data_kind="H matrix",
-            start_time_recording=start_time_recording,
-            start_time_display_period=start_time_display_period,
-            offset_seconds=offset_seconds,
-            period=period,
-        )
+    file_title = create_file_title(
+        exp_dir=experiment_dir,
+        data_kind="H matrix",
+        start_time_recording=start_time_recording,
+        start_time_display_period=start_time_display_period,
+        offset_seconds=offset_seconds,
+        period=period,
     )
+    fig.suptitle(file_title)
     plt.savefig(
         os.path.join(
             dir_path,
             create_filename(
                 prefix="H", offset=offset_seconds, period=period, seizure=seizure
             ),
-        )
+        ),
     )
 
 
@@ -478,7 +466,7 @@ def plot_metrics(metrics: pd.DataFrame, dir_path: str) -> None:
 
     # Plot Cophenetic Correlation
     ax[0].plot(metrics["Rank"], metrics["Cophenetic Correlation"])
-    ax[0].set_ylim(0, 1)
+    ax[0].set_ylim(0.82, 0.93)
     ax[0].set_title("Cophenetic Correlation")
     ax[0].set_xlabel("Rank")
 

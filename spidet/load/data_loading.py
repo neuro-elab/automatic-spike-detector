@@ -363,22 +363,6 @@ class DataLoader:
 
         function_type = FunctionType.from_file_path(file_path)
 
-        if FunctionType.H_COEFFICIENTS == function_type:
-            line_length_data = np.genfromtxt(
-                os.path.join(dir_path, "line_length.csv"), delimiter=","
-            )
-
-            # Clustering
-            kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
-            _, sorted_h, cluster_assignments = kmeans.cluster_and_sort(
-                h_matrix=data_matrix
-            )
-
-            # Generate threshold and find spikes
-            threshold_generator = ThresholdGenerator(line_length_data, sorted_h, sfreq)
-            threshold = threshold_generator.generate_threshold()
-            spikes = threshold_generator.find_spikes(threshold)
-
         # Create return objects
         spike_detection_functions: List[SpikeDetectionFunction] = []
 
@@ -395,6 +379,23 @@ class DataLoader:
                     data_array=sdf,
                 )
             elif FunctionType.H_COEFFICIENTS == function_type:
+                line_length_data = np.genfromtxt(
+                    os.path.join(dir_path, "line_length.csv"), delimiter=","
+                )
+
+                # Clustering
+                kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
+                _, sorted_h, cluster_assignments = kmeans.cluster_and_sort(
+                    h_matrix=data_matrix
+                )
+
+                # Generate threshold and find spikes
+                threshold_generator = ThresholdGenerator(
+                    line_length_data, sorted_h, sfreq
+                )
+                threshold = threshold_generator.generate_threshold()
+                spikes = threshold_generator.find_spikes(threshold)
+
                 spike_detection_fct = CoefficientsFunction(
                     label=label_sdf,
                     unique_id=unique_id_sdf,

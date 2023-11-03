@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     # Specify range of ranks
     k_min = 2
-    k_max = 10
+    k_max = 5
 
     # How many runs of NMF to perform per rank
     runs_per_rank = 100

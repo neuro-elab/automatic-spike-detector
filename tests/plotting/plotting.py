@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # Set params for single plotting periods
     offset = timedelta(hours=0, minutes=0, seconds=0)
     duration = 2 * 60
-    display_all = False
+    display_all = True
     y_lim = 1e-9
 
     # Get spike annotations if available
