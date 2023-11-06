@@ -14,7 +14,7 @@ class CoefficientsFunction(SpikeDetectionFunction):
 
     def get_spike_points(
         self,
-    ) -> List[float]:
+    ) -> np.ndarray[Any, np.dtype[float]]:
         spike_points = []
 
         for idx in range(len(self.spikes_on_indices)):
