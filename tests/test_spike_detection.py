@@ -10,10 +10,16 @@ import pandas as pd
 from spidet.load.data_loading import DataLoader
 from spidet.spike_detection.spike_detection_pipeline import SpikeDetectionPipeline
 from spidet.utils.variables import (
+    DATASET_PATHS_006,
+    LEAD_PREFIXES_006,
+    DATASET_PATHS_007,
+    LEAD_PREFIXES_007,
     DATASET_PATHS_008,
     LEAD_PREFIXES_008,
     DATASET_PATHS_SZ2,
     LEAD_PREFIXES_SZ2,
+    DATASET_PATHS_AJ,
+    LEAD_PREFIXES_AJ,
 )
 from spidet.utils import logging_utils
 
@@ -57,8 +63,8 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channel_paths = DATASET_PATHS_008
-    leads = LEAD_PREFIXES_008
+    channel_paths = DATASET_PATHS_AJ
+    leads = LEAD_PREFIXES_AJ
 
     multiprocessing.freeze_support()
 
@@ -110,12 +116,10 @@ if __name__ == "__main__":
                 ),
                 [],
             )
-            channels_included = [
-                channel_path
-                for channel_path in channel_paths
-                if regular_name in channel_path
-                for regular_name in regular_channel_names
-            ]
+            channels_included = []
+            for regular_name in regular_channel_names:
+                paths = filter(lambda ch_path: regular_name in ch_path, channel_paths)
+                channels_included.extend(paths)
         else:
             channels_included = [channel_paths[channel] for channel in include_channels]
     else:

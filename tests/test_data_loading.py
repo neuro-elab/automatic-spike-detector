@@ -4,7 +4,7 @@ from datetime import datetime
 
 from spidet.load.data_loading import DataLoader
 from spidet.utils import logging_utils
-from spidet.utils.variables import DATASET_PATHS_SZ2
+from spidet.utils.variables import DATASET_PATHS_AJ_BIP
 from loguru import logger
 
 if __name__ == "__main__":
@@ -22,6 +22,6 @@ if __name__ == "__main__":
     # Initialize data loader
     data_loader = DataLoader()
 
-    traces = data_loader.read_file(path=file, channel_paths=DATASET_PATHS_SZ2)
+    traces = data_loader.read_file(path=file, channel_paths=DATASET_PATHS_AJ_BIP)
 
     logger.debug(f"Channels: {[trace.label for trace in traces]}")

@@ -77,7 +77,7 @@ if __name__ == "__main__":
     )
 
     # Set start time of the recording
-    start_time_recording: datetime = datetime(2023, 6, 22, 13, 46, 14)
+    start_time_recording: datetime = datetime(2023, 5, 10, 22, 00, 38)
     # start_time_recording: datetime = datetime(2023, 2, 15, 1, 20, 28)
 
     # Set params for single plotting periods
@@ -223,6 +223,7 @@ if __name__ == "__main__":
                 display_all=display_all,
                 offset=offset,
                 duration=duration,
+                spike_annotations=spike_times,
             )
 
         # plot H matrices

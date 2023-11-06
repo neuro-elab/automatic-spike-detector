@@ -228,7 +228,20 @@ class DataLoader:
         h5_file = h5py.File(file_path, "r")
 
         # Extract the raw datasets from the hdf5 file
-        raw_traces: List[Dataset] = [h5_file.get(path) for path in channel_paths]
+        raw_traces: List[Dataset] = list(
+            filter(
+                lambda dataset: dataset is not None,
+                [h5_file.get(path) for path in channel_paths],
+            )
+        )
+
+        # Only include channel paths for which there exists a dataset in the file
+        relevant_channel_names = [trace.name for trace in raw_traces]
+        relevant_channel_paths = []
+        for channel_name in relevant_channel_names:
+            relevant_channel_paths.extend(
+                list(filter(lambda path: channel_name in path, channel_paths))
+            )
 
         # Extract start timestamps for datasets
         start_timestamps: List[float] = [
@@ -236,7 +249,7 @@ class DataLoader:
         ]
 
         # Extract channel names from the dataset paths
-        channel_names = self.extract_channel_names(channel_paths)
+        channel_names = self.extract_channel_names(relevant_channel_paths)
 
         # Extract frequencies from datasets
         frequencies: List[float] = [
@@ -307,7 +320,7 @@ class DataLoader:
         """
         exclude = exclude if exclude is not None else list()
         raw: RawArray = (
-            mne.io.read_raw_fif(file_path, exclude=exclude, preload=True, verbose=False)
+            mne.io.read_raw_fif(file_path, preload=True, verbose=False)
             if file_format == FIF
             else mne.io.read_raw_edf(
                 file_path, exclude=exclude, preload=True, verbose=False
