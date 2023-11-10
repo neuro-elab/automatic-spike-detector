@@ -9,8 +9,8 @@ from spidet.preprocess.artifact_detection import ArtifactDetector
 from spidet.utils.variables import (
     DATASET_PATHS_008,
     LEAD_PREFIXES_008,
-    LEAD_PREFIXES_AJ,
-    DATASET_PATHS_AJ,
+    LEAD_PREFIXES_EL003,
+    DATASET_PATHS_EL003,
     LEAD_PREFIXES_SZ2,
 )
 
@@ -49,9 +49,9 @@ if __name__ == "__main__":
     artifacts: Artifacts = artifact_detector.run(
         file_path=file,
         bipolar_reference=False,
-        leads=LEAD_PREFIXES_AJ,
+        leads=LEAD_PREFIXES_EL003,
         trigger_times=trigger_times,
-        channel_paths=DATASET_PATHS_AJ,
+        channel_paths=DATASET_PATHS_EL003,
         detect_stimulation_artifacts=True,
     )
 

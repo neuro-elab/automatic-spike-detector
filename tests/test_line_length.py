@@ -12,8 +12,8 @@ from spidet.utils.variables import (
     LEAD_PREFIXES_008,
     DATASET_PATHS_SZ2,
     LEAD_PREFIXES_SZ2,
-    DATASET_PATHS_AJ,
-    LEAD_PREFIXES_AJ,
+    DATASET_PATHS_EL003,
+    LEAD_PREFIXES_EL003,
 )
 
 if __name__ == "__main__":
@@ -43,9 +43,9 @@ if __name__ == "__main__":
     # Instantiate a LineLength instance
     line_length = LineLength(
         file_path=file,
-        dataset_paths=DATASET_PATHS_AJ,
+        dataset_paths=DATASET_PATHS_EL003,
         bipolar_reference=False,
-        leads=LEAD_PREFIXES_AJ,
+        leads=LEAD_PREFIXES_EL003,
         bad_times=bad_times,
     )
 

@@ -18,8 +18,9 @@ from spidet.utils.variables import (
     LEAD_PREFIXES_008,
     DATASET_PATHS_SZ2,
     LEAD_PREFIXES_SZ2,
-    DATASET_PATHS_AJ,
-    LEAD_PREFIXES_AJ,
+    DATASET_PATHS_EL003,
+    LEAD_PREFIXES_EL003,
+    DATASET_PATHS_EL003_BIP,
 )
 from spidet.utils import logging_utils
 
@@ -63,8 +64,8 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channel_paths = DATASET_PATHS_AJ
-    leads = LEAD_PREFIXES_AJ
+    channel_paths = DATASET_PATHS_EL003_BIP
+    leads = LEAD_PREFIXES_EL003
 
     multiprocessing.freeze_support()
 

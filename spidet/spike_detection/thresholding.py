@@ -102,6 +102,9 @@ class ThresholdGenerator:
         hist, bin_edges = np.histogram(self.h_matrix, bins=nr_bins)
 
         # TODO: check whether disregard bin 0 (Epitome)
+        # Get rid of bin 0
+        # hist, bin_edges = hist[1:], bin_edges[1:]
+
         # Smooth hist with running mean of 10 dps
         hist_smoothed = np.convolve(hist, np.ones(10) / 10, mode="same")
 
@@ -110,6 +113,11 @@ class ThresholdGenerator:
             hist_smoothed = np.convolve(hist_smoothed, np.ones(3) / 3, mode="same")
 
         # TODO: check whether disregard 10 last dp, depending on smoothing
+        hist, hist_smoothed, bin_edges = (
+            hist[:-10],
+            hist_smoothed[:-10],
+            bin_edges[:-10],
+        )
 
         # Compute first differences
         first_diff = np.diff(hist_smoothed, 1)
