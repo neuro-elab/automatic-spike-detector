@@ -271,6 +271,7 @@ class DataLoader:
             )
             raw = self.generate_bipolar_references(raw, leads)
             raw_traces = raw.get_data()
+            channel_names = raw.ch_names
 
         return [
             self.create_trace(label, data, freq, ts)
