@@ -249,11 +249,17 @@ class SpikeDetectionPipeline:
         metrics_path = os.path.join(self.results_dir, "metrics.csv")
         metrics_df.to_csv(metrics_path, index=False)
 
-        # Saving H and W matrices and spike annotations
+        # Saving H and W matrices, spike annotations and line length matrix
         if self.save_nmf_matrices:
             logger.debug(
-                f"Saving Consensus, W, H matrices and corresponding spike annotations for ranks {rank_list}"
+                f"Saving LineLength and Consensus, W, H matrices and corresponding spike annotations for ranks {rank_list}"
             )
+
+            # Saving line length
+            np.savetxt(
+                f"{self.results_dir}/line_length.csv", data_matrix, delimiter=","
+            )
+
             for idx in range(nr_ranks):
                 # Saving Consensus, W and H matrices
                 h_matrix = h_matrices[idx]
