@@ -1,5 +1,6 @@
 import argparse
 import multiprocessing
+import re
 import time
 from typing import List
 
@@ -128,6 +129,18 @@ if __name__ == "__main__":
 
     # Get unique channels
     channels_included = list(set(channels_included))
+
+    # Sort channels
+    sorted_channels = []
+    for prefix in leads:
+        prefix_channels = list(
+            filter(lambda name: name.startswith(prefix), channels_included)
+        )
+        prefix_channels_sorted = sorted(
+            prefix_channels, key=lambda s: int(re.search(r"\d+", s).group())
+        )
+        sorted_channels.extend(prefix_channels_sorted)
+    channels_included = sorted_channels
 
     # Initialize spike detection pipeline
     spike_detection_pipeline = SpikeDetectionPipeline(
