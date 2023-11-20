@@ -1,6 +1,7 @@
 from typing import Dict, Tuple
 
 import numpy as np
+from loguru import logger
 
 
 class ThresholdGenerator:
@@ -103,7 +104,7 @@ class ThresholdGenerator:
 
         # TODO: check whether disregard bin 0 (Epitome)
         # Get rid of bin 0
-        # hist, bin_edges = hist[1:], bin_edges[1:]
+        hist, bin_edges = hist[1:], bin_edges[1:]
 
         # Smooth hist with running mean of 10 dps
         hist_smoothed = np.convolve(hist, np.ones(10) / 10, mode="same")
@@ -159,19 +160,26 @@ class ThresholdGenerator:
         idx_second_peak += idx_first_inf - 1
 
         # Fit a line in hist
+        start_idx = np.max(
+            [
+                idx_mode,
+                idx_first_inf
+                - np.rint((idx_second_peak - idx_first_inf) / 2).astype(int),
+            ],
+        )
+        end_idx = idx_second_peak
+
+        if end_idx - start_idx <= 1:
+            end_idx = [end_idx + 3, start_idx + 3][
+                np.argmax(np.array([end_idx - start_idx + 3, 3]) > 2)
+            ]
+            logger.debug(
+                f"End index for threshold line fit either before or too close to start index, modified to: {end_idx}"
+            )
+
         threshold_fit = np.polyfit(
-            bin_edges[
-                idx_first_inf
-                - np.rint((idx_second_peak - idx_first_inf) / 2).astype(
-                    int
-                ) : idx_second_peak
-            ],
-            hist_smoothed[
-                idx_first_inf
-                - np.rint((idx_second_peak - idx_first_inf) / 2).astype(
-                    int
-                ) : idx_second_peak
-            ],
+            bin_edges[start_idx:end_idx],
+            hist_smoothed[start_idx:end_idx],
             deg=1,
         )
 
@@ -200,15 +208,15 @@ class ThresholdGenerator:
 
             spike_durations = spikes_off - spikes_on
 
-            # Consider timepoints within 40 ms as one event
+            # Consider only events having a duration of at least 20 ms
             spikes_on = spikes_on[spike_durations >= 0.02 * self.sfreq]
             spikes_off = spikes_off[spike_durations >= 0.02 * self.sfreq]
 
             # Likewise, if gaps between events are < 40 ms, they are considered the same event
             gaps = spikes_on[1:] - spikes_off[:-1]
             gaps_mask = gaps >= 0.04 * self.sfreq
-            spikes_on = spikes_on[np.append(0, gaps_mask).nonzero()[0]]
-            spikes_off = spikes_off[np.append(0, gaps_mask).nonzero()[0]]
+            spikes_on = spikes_on[np.append(1, gaps_mask).nonzero()[0]]
+            spikes_off = spikes_off[np.append(gaps_mask, 1).nonzero()[0]]
 
             # Add +/- 40 ms on either side of the events, zeroing out any negative values
             # and upper bounding values by maximum time point
