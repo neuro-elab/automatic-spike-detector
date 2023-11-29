@@ -17,14 +17,14 @@ class ThresholdGenerator:
         self.sfreq = sfreq
         self.z_threshold = z_threshold
 
-    def determine_involved_channels(
+    def __determine_involved_channels(
         self, spikes_on: np.ndarray, spikes_off: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         if self.preprocessed_data is None:
             logger.warning(
                 "Cannot determine involved channels as preprocessed data is None"
             )
-            return spikes_on, spikes_off, np.array([])
+            return np.array([]), spikes_on, spikes_off
         nr_events = len(spikes_on)
 
         # Return empty arrays if no events available
@@ -192,14 +192,8 @@ class ThresholdGenerator:
 
         return threshold
 
-    def find_spikes(
-        self, threshold: float, determine_involved_channels: bool = True
-    ) -> Dict[(int, Dict)]:
+    def find_spikes(self, threshold: float) -> Dict[(int, Dict)]:
         # TODO: add doc
-        if determine_involved_channels and self.preprocessed_data is None:
-            logger.warning(
-                "Cannot determine involved channels as preprocessed data is None"
-            )
 
         # Create spike mask indicating whether specific time point belongs to spike
         spike_mask = self.h_matrix > threshold
@@ -237,13 +231,11 @@ class ThresholdGenerator:
             )
 
             # Determine which channels were involved in measuring which events
-            channel_event_assoc = []
-            if determine_involved_channels:
-                (
-                    channel_event_assoc,
-                    spikes_on,
-                    spikes_off,
-                ) = self.determine_involved_channels(spikes_on, spikes_off)
+            (
+                channel_event_assoc,
+                spikes_on,
+                spikes_off,
+            ) = self.__determine_involved_channels(spikes_on, spikes_off)
 
             spikes.update(
                 {
