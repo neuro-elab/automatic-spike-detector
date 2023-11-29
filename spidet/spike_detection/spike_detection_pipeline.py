@@ -146,7 +146,7 @@ class SpikeDetectionPipeline:
         #   THRESHOLDING    #
         #####################
 
-        threshold_generator = ThresholdGenerator(preprocessed_data, sorted_h, sfreq=50)
+        threshold_generator = ThresholdGenerator(sorted_h, preprocessed_data, sfreq=50)
 
         threshold = threshold_generator.generate_threshold()
         spike_annotations = threshold_generator.find_spikes(threshold)

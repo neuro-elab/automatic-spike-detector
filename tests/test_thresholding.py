@@ -40,7 +40,7 @@ if __name__ == "__main__":
         h_sorted = genfromtxt(rank_dir + "/H_best_sorted.csv", delimiter=",")
         w_sorted = genfromtxt(rank_dir + "/W_best_sorted.csv", delimiter=",")
 
-        threshold_generator = ThresholdGenerator(line_length_data, h_sorted, sfreq=50)
+        threshold_generator = ThresholdGenerator(h_sorted, line_length_data, sfreq=50)
         threshold = threshold_generator.generate_threshold()
         spike_annotations = threshold_generator.find_spikes(threshold)
 

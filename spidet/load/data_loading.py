@@ -376,7 +376,7 @@ class DataLoader:
             )
 
             # Generate threshold and find spikes
-            threshold_generator = ThresholdGenerator(line_length_data, sorted_h, sfreq)
+            threshold_generator = ThresholdGenerator(sorted_h, line_length_data, sfreq)
             threshold = threshold_generator.generate_threshold()
             spikes = threshold_generator.find_spikes(threshold)
 

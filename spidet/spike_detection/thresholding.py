@@ -7,9 +7,9 @@ from loguru import logger
 class ThresholdGenerator:
     def __init__(
         self,
-        preprocessed_data: np.ndarray,
         h_matrix: np.ndarray,
-        sfreq: int,
+        preprocessed_data: np.ndarray = None,
+        sfreq: int = 50,
         z_threshold: int = 10,
     ):
         self.preprocessed_data = preprocessed_data
@@ -17,9 +17,14 @@ class ThresholdGenerator:
         self.sfreq = sfreq
         self.z_threshold = z_threshold
 
-    def __determine_involved_channels(
+    def determine_involved_channels(
         self, spikes_on: np.ndarray, spikes_off: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        if self.preprocessed_data is None:
+            logger.warning(
+                "Cannot determine involved channels as preprocessed data is None"
+            )
+            return spikes_on, spikes_off, np.array([])
         nr_events = len(spikes_on)
 
         # Return empty arrays if no events available
@@ -173,7 +178,7 @@ class ThresholdGenerator:
             end_idx = [end_idx + 3, start_idx + 3][
                 np.argmax(np.array([end_idx - start_idx + 3, 3]) > 2)
             ]
-            logger.debug(
+            logger.warning(
                 f"End index for threshold line fit either before or too close to start index, modified to: {end_idx}"
             )
 
@@ -187,8 +192,14 @@ class ThresholdGenerator:
 
         return threshold
 
-    def find_spikes(self, threshold: float) -> Dict[(int, Dict)]:
+    def find_spikes(
+        self, threshold: float, determine_involved_channels: bool = True
+    ) -> Dict[(int, Dict)]:
         # TODO: add doc
+        if determine_involved_channels and self.preprocessed_data is None:
+            logger.warning(
+                "Cannot determine involved channels as preprocessed data is None"
+            )
 
         # Create spike mask indicating whether specific time point belongs to spike
         spike_mask = self.h_matrix > threshold
@@ -226,11 +237,13 @@ class ThresholdGenerator:
             )
 
             # Determine which channels were involved in measuring which events
-            (
-                channel_event_assoc,
-                spikes_on,
-                spikes_off,
-            ) = self.__determine_involved_channels(spikes_on, spikes_off)
+            channel_event_assoc = []
+            if determine_involved_channels:
+                (
+                    channel_event_assoc,
+                    spikes_on,
+                    spikes_off,
+                ) = self.determine_involved_channels(spikes_on, spikes_off)
 
             spikes.update(
                 {
