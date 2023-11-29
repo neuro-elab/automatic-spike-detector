@@ -13,7 +13,7 @@ class ThresholdGenerator:
         z_threshold: int = 10,
     ):
         self.preprocessed_data = preprocessed_data
-        self.h_matrix = h_matrix
+        self.h_matrix = h_matrix if len(h_matrix.shape) > 1 else h_matrix[np.newaxis, :]
         self.sfreq = sfreq
         self.z_threshold = z_threshold
 
