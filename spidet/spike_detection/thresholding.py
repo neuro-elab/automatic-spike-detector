@@ -80,23 +80,23 @@ class ThresholdGenerator:
 
         if nr_channels > 50:
             # For large nr of channels, only consider events associated with multiple channels
-            relevant_channels = [
+            relevant_events = [
                 event
                 for event in range(nr_events)
                 if np.sum(channels_involved[event]) > 1
             ]
         else:
             # Remove events not associated with any channel
-            relevant_channels = [
+            relevant_events = [
                 event
                 for event in range(nr_events)
                 if np.sum(channels_involved[event]) > 0
             ]
 
         return (
-            channels_involved[relevant_channels, :],
-            spikes_on[relevant_channels],
-            spikes_off[relevant_channels],
+            channels_involved[relevant_events, :],
+            spikes_on[relevant_events],
+            spikes_off[relevant_events],
         )
 
     def generate_threshold(self) -> float:

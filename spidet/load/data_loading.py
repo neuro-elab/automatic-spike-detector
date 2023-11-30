@@ -364,26 +364,14 @@ class DataLoader:
 
         function_type = FunctionType.from_file_path(file_path)
 
-        if FunctionType.H_COEFFICIENTS == function_type:
-            line_length_data = np.genfromtxt(
-                os.path.join(dir_path, "line_length.csv"), delimiter=","
-            )
-
-            # Clustering
-            kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
-            _, sorted_h, cluster_assignments = kmeans.cluster_and_sort(
-                h_matrix=data_matrix
-            )
-
-            # Generate threshold and find spikes
-            threshold_generator = ThresholdGenerator(sorted_h, line_length_data, sfreq)
-            threshold = threshold_generator.generate_threshold()
-            spikes = threshold_generator.find_spikes(threshold)
+        # Clustering
+        kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
+        _, sorted_h, cluster_assignments = kmeans.cluster_and_sort(h_matrix=data_matrix)
 
         # Create return objects
         spike_detection_functions: List[SpikeDetectionFunction] = []
 
-        for idx, sdf in enumerate(data_matrix):
+        for idx, sdf in enumerate(sorted_h):
             # Create SpikeDetectionFunction
             label_sdf = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
             unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
@@ -396,13 +384,18 @@ class DataLoader:
                     data_array=sdf,
                 )
             elif FunctionType.H_COEFFICIENTS == function_type:
+                # Generate threshold and find spikes
+                threshold_generator = ThresholdGenerator(h_matrix=sdf, sfreq=sfreq)
+                threshold = threshold_generator.generate_threshold()
+                spikes = threshold_generator.find_spikes(threshold)
+
                 spike_detection_fct = CoefficientsFunction(
                     label=label_sdf,
                     unique_id=unique_id_sdf,
                     times=times,
                     data_array=sdf,
-                    spikes_on_indices=spikes.get(idx)["spikes_on"],
-                    spikes_off_indices=spikes.get(idx)["spikes_off"],
+                    spikes_on_indices=spikes.get(0)["spikes_on"],
+                    spikes_off_indices=spikes.get(0)["spikes_off"],
                     spike_threshold=threshold,
                     codes_for_spikes=bool(cluster_assignments.get(idx)),
                 )
