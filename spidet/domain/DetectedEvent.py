@@ -6,5 +6,5 @@ import numpy as np
 
 @dataclass
 class DetectedEvent:
-    event_times: np.ndarray[Any, np.dtype[float]]
-    event_values: np.ndarray[Any, np.dtype[float]]
+    times: np.ndarray[Any, np.dtype[float]]
+    values: np.ndarray[Any, np.dtype[float]]
