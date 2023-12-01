@@ -149,7 +149,7 @@ class SpikeDetectionPipeline:
         threshold_generator = ThresholdGenerator(sorted_h, preprocessed_data, sfreq=50)
 
         threshold = threshold_generator.generate_threshold()
-        spike_annotations = threshold_generator.find_spikes(threshold)
+        spike_annotations = threshold_generator.find_events(threshold)
 
         if execute:
             #####################
@@ -374,9 +374,9 @@ class SpikeDetectionPipeline:
                 unique_id=unique_id_sdf,
                 times=times,
                 data_array=sdf,
-                detected_periods_on=spikes_opt.get(spikes_idx)["spikes_on"],
-                detected_periods_off=spikes_opt.get(spikes_idx)["spikes_off"],
-                threshold=threshold_opt,
+                detected_events_on=spikes_opt.get(spikes_idx)["spikes_on"],
+                detected_events_off=spikes_opt.get(spikes_idx)["spikes_off"],
+                event_threshold=threshold_opt,
                 codes_for_spikes=bool(assignments_opt.get(assignments_idx)),
             )
 

@@ -3,7 +3,7 @@ from typing import Any, List
 
 import numpy as np
 
-from spidet.domain.DetectedPeriod import DetectedPeriod
+from spidet.domain.DetectedEvent import DetectedEvent
 
 
 @dataclass
@@ -12,9 +12,9 @@ class DetectionFunction:
     unique_id: str
     times: np.ndarray[Any, np.dtype[float]]
     data_array: np.ndarray[Any, np.dtype[float]]
-    detected_periods_on: np.ndarray[Any, np.dtype[int]]
-    detected_periods_off: np.ndarray[Any, np.dtype[int]]
-    threshold: float
+    detected_events_on: np.ndarray[Any, np.dtype[int]]
+    detected_events_off: np.ndarray[Any, np.dtype[int]]
+    event_threshold: float
 
     def get_sub_period(self, offset: float, duration: float):
         # Find indices corresponding to offset and end of duration
@@ -22,17 +22,17 @@ class DetectionFunction:
         end_index = (np.abs(self.times - (offset + duration))).argmin()
         return self.data_array[start_idx:end_index]
 
-    def get_detected_periods(
+    def get_detected_events(
         self,
-    ) -> List[DetectedPeriod]:
-        detected_periods = []
+    ) -> List[DetectedEvent]:
+        detected_events = []
 
         for idx, (on, off) in enumerate(
-            zip(self.detected_periods_on, self.detected_periods_off)
+            zip(self.detected_events_on, self.detected_events_off)
         ):
-            detected_period = DetectedPeriod(
+            detected_period = DetectedEvent(
                 self.times[on : off + 1], self.data_array[on : off + 1]
             )
-            detected_periods.append(detected_period)
+            detected_events.append(detected_period)
 
-        return detected_periods
+        return detected_events

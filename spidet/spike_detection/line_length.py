@@ -10,6 +10,7 @@ from spidet.domain.Trace import Trace
 from spidet.load.data_loading import DataLoader
 from spidet.preprocess.preprocessing import apply_preprocessing_steps
 from spidet.preprocess.resampling import resample_data
+from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 
 
@@ -302,6 +303,13 @@ class LineLength:
             sfreq=line_length_freq,
         )
 
+        # Generate threshold and detect periods
+        threshold_generator = ThresholdGenerator(
+            detection_function_matrix=std_line_length, sfreq=line_length_freq
+        )
+        threshold = threshold_generator.generate_threshold()
+        detected_periods = threshold_generator.find_events(threshold)
+
         # Create unique id
         filename = self.file_path[self.file_path.rfind("/") + 1 :]
         unique_id = f"{filename[:filename.rfind('.')]}_std_line_length"
@@ -311,4 +319,7 @@ class LineLength:
             unique_id=unique_id,
             times=times,
             data_array=std_line_length,
+            detected_events_on=detected_periods.get(0)["events_on"],
+            detected_events_off=detected_periods.get(0)["events_off"],
+            event_threshold=threshold,
         )

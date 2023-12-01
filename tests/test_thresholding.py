@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
         threshold_generator = ThresholdGenerator(h_sorted, line_length_data, sfreq=50)
         threshold = threshold_generator.generate_threshold()
-        spike_annotations = threshold_generator.find_spikes(threshold)
+        spike_annotations = threshold_generator.find_events(threshold)
 
         logger.debug(
             f"Got the following spike annotations for rank "

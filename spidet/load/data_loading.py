@@ -391,9 +391,11 @@ class DataLoader:
             unique_id_df = f"{unique_id_prefix}_{label_df}"
 
             # Generate threshold and find spikes
-            threshold_generator = ThresholdGenerator(h_matrix=df, sfreq=sfreq)
+            threshold_generator = ThresholdGenerator(
+                detection_function_matrix=df, sfreq=sfreq
+            )
             threshold = threshold_generator.generate_threshold()
-            spikes = threshold_generator.find_spikes(threshold)
+            spikes = threshold_generator.find_events(threshold)
 
             if FunctionType.STD_LINE_LENGTH == function_type:
                 detection_fct = DetectionFunction(
@@ -401,9 +403,9 @@ class DataLoader:
                     unique_id=unique_id_df,
                     times=times,
                     data_array=df,
-                    detected_periods_on=spikes.get(0)["spikes_on"],
-                    detected_periods_off=spikes.get(0)["spikes_off"],
-                    threshold=threshold,
+                    detected_events_on=spikes.get(0)["events_on"],
+                    detected_events_off=spikes.get(0)["events_off"],
+                    event_threshold=threshold,
                 )
             elif FunctionType.H_COEFFICIENTS == function_type:
                 detection_fct = CoefficientsFunction(
@@ -411,9 +413,9 @@ class DataLoader:
                     unique_id=unique_id_df,
                     times=times,
                     data_array=df,
-                    detected_periods_on=spikes.get(0)["spikes_on"],
-                    detected_periods_off=spikes.get(0)["spikes_off"],
-                    threshold=threshold,
+                    detected_events_on=spikes.get(0)["events_on"],
+                    detected_events_off=spikes.get(0)["events_off"],
+                    event_threshold=threshold,
                     codes_for_spikes=bool(cluster_assignments.get(idx)),
                 )
             else:
