@@ -24,12 +24,10 @@ if __name__ == "__main__":
     data_loader = DataLoader()
 
     # Load spike detection functions
-    spike_detection_functions: List[
-        DetectionFunction
-    ] = data_loader.load_spike_detection_functions(
+    detection_functions: List[DetectionFunction] = data_loader.load_detection_functions(
         file_path=file, start_timestamp=start_datetime.timestamp()
     )
 
     logger.debug(
-        f"Loaded the following spike detection functions:\n {spike_detection_functions}"
+        f"Loaded the following spike detection functions:\n {detection_functions}"
     )

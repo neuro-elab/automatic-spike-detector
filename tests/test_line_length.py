@@ -51,9 +51,7 @@ if __name__ == "__main__":
     )
 
     # Perform line length steps to compute unique line length
-    spike_detection_function: DetectionFunction = (
-        line_length.compute_unique_line_length()
-    )
+    detection_function: DetectionFunction = line_length.compute_unique_line_length()
 
     # Perform line length steps to compute line length
     (
@@ -70,6 +68,6 @@ if __name__ == "__main__":
     np.savetxt(data_path, line_length_matrix, delimiter=",")
 
     data_path = os.path.join(filename_for_saving, "std_line_length.csv")
-    np.savetxt(data_path, spike_detection_function.data_array, delimiter=",")
+    np.savetxt(data_path, detection_function.data_array, delimiter=",")
 
     print("DONE preprocess")
