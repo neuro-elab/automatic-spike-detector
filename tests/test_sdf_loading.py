@@ -4,7 +4,7 @@ from datetime import datetime
 
 from loguru import logger
 
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.DetectionFunction import DetectionFunction
 from spidet.load.data_loading import DataLoader
 from spidet.utils import logging_utils
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # Load spike detection functions
     spike_detection_functions: List[
-        SpikeDetectionFunction
+        DetectionFunction
     ] = data_loader.load_spike_detection_functions(
         file_path=file, start_timestamp=start_datetime.timestamp()
     )

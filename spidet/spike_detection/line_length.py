@@ -5,7 +5,7 @@ import numpy as np
 from loguru import logger
 from scipy.signal.windows import hamming
 
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.DetectionFunction import DetectionFunction
 from spidet.domain.Trace import Trace
 from spidet.load.data_loading import DataLoader
 from spidet.preprocess.preprocessing import apply_preprocessing_steps
@@ -280,7 +280,7 @@ class LineLength:
         n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
-    ) -> SpikeDetectionFunction:
+    ) -> DetectionFunction:
         # Compute line length for each channel (done in parallel)
         start_timestamp, _, line_length = self.apply_parallel_line_length_pipeline(
             notch_freq=notch_freq,
@@ -306,7 +306,7 @@ class LineLength:
         filename = self.file_path[self.file_path.rfind("/") + 1 :]
         unique_id = f"{filename[:filename.rfind('.')]}_std_line_length"
 
-        return SpikeDetectionFunction(
+        return DetectionFunction(
             label="Std Line Length",
             unique_id=unique_id,
             times=times,

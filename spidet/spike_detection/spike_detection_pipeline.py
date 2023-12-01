@@ -12,7 +12,7 @@ from sklearn.preprocessing import normalize
 from pathlib import Path
 
 from spidet.domain.BasisFunction import BasisFunction
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.DetectionFunction import DetectionFunction
 from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.line_length import LineLength
@@ -309,7 +309,7 @@ class SpikeDetectionPipeline:
         bipolar_reference: bool = False,
         exclude: List[str] = None,
         leads: List[str] = None,
-    ) -> Tuple[List[BasisFunction], List[SpikeDetectionFunction]]:
+    ) -> Tuple[List[BasisFunction], List[DetectionFunction]]:
         # Instantiate a LineLength instance
         line_length = LineLength(
             file_path=self.file_path,
@@ -374,9 +374,9 @@ class SpikeDetectionPipeline:
                 unique_id=unique_id_sdf,
                 times=times,
                 data_array=sdf,
-                spikes_on_indices=spikes_opt.get(spikes_idx)["spikes_on"],
-                spikes_off_indices=spikes_opt.get(spikes_idx)["spikes_off"],
-                spike_threshold=threshold_opt,
+                detected_periods_on=spikes_opt.get(spikes_idx)["spikes_on"],
+                detected_periods_off=spikes_opt.get(spikes_idx)["spikes_off"],
+                threshold=threshold_opt,
                 codes_for_spikes=bool(assignments_opt.get(assignments_idx)),
             )
 

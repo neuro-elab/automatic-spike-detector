@@ -11,7 +11,7 @@ from mne.io import RawArray
 
 from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.domain.FunctionType import FunctionType
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.DetectionFunction import DetectionFunction
 from spidet.domain.Trace import Trace
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.thresholding import ThresholdGenerator
@@ -346,7 +346,7 @@ class DataLoader:
     @staticmethod
     def load_spike_detection_functions(
         file_path: str, start_timestamp: float, sfreq: int = 50
-    ) -> List[SpikeDetectionFunction]:
+    ) -> List[DetectionFunction]:
         logger.debug(f"Loading spike detection functions {file_path}")
         data_matrix = np.genfromtxt(file_path, delimiter=",")
 
@@ -369,7 +369,7 @@ class DataLoader:
         _, sorted_h, cluster_assignments = kmeans.cluster_and_sort(h_matrix=data_matrix)
 
         # Create return objects
-        spike_detection_functions: List[SpikeDetectionFunction] = []
+        spike_detection_functions: List[DetectionFunction] = []
 
         for idx, sdf in enumerate(sorted_h):
             # Create SpikeDetectionFunction
@@ -377,7 +377,7 @@ class DataLoader:
             unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
 
             if FunctionType.STD_LINE_LENGTH == function_type:
-                spike_detection_fct = SpikeDetectionFunction(
+                spike_detection_fct = DetectionFunction(
                     label=label_sdf,
                     unique_id=unique_id_sdf,
                     times=times,
@@ -394,9 +394,9 @@ class DataLoader:
                     unique_id=unique_id_sdf,
                     times=times,
                     data_array=sdf,
-                    spikes_on_indices=spikes.get(0)["spikes_on"],
-                    spikes_off_indices=spikes.get(0)["spikes_off"],
-                    spike_threshold=threshold,
+                    detected_periods_on=spikes.get(0)["spikes_on"],
+                    detected_periods_off=spikes.get(0)["spikes_off"],
+                    threshold=threshold,
                     codes_for_spikes=bool(cluster_assignments.get(idx)),
                 )
             else:
