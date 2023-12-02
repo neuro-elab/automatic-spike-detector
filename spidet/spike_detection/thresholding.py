@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any, List
 
 import numpy as np
 from loguru import logger
@@ -12,14 +12,15 @@ class ThresholdGenerator:
         sfreq: int = 50,
         z_threshold: int = 10,
     ):
-        self.preprocessed_data = preprocessed_data
         self.detection_function_matrix = (
             detection_function_matrix
             if len(detection_function_matrix.shape) > 1
             else detection_function_matrix[np.newaxis, :]
         )
+        self.preprocessed_data = preprocessed_data
         self.sfreq = sfreq
         self.z_threshold = z_threshold
+        self.thresholds = dict()
 
     def __determine_involved_channels(
         self, events_on: np.ndarray, events_off: np.ndarray
@@ -103,13 +104,23 @@ class ThresholdGenerator:
             events_off[relevant_events],
         )
 
-    def generate_threshold(self) -> float:
+    def generate_individual_thresholds(self) -> None:
+        for idx, detection_function in enumerate(self.detection_function_matrix):
+            threshold = self.generate_threshold(data=detection_function)
+            self.thresholds.update({idx: threshold})
+
+    def generate_threshold(
+        self, data: np.ndarray[Any, np.dtype[float]] = None
+    ) -> float:
         # TODO: add doc
+        # Determine data to compute threshold for
+        data = data if data is not None else self.detection_function_matrix
+
         # Calculate number of bins
-        nr_bins = min(round(0.1 * self.detection_function_matrix.shape[1]), 1000)
+        nr_bins = min(round(0.1 * data.shape[-1]), 1000)
 
         # Create histogram of data_matrix
-        hist, bin_edges = np.histogram(self.detection_function_matrix, bins=nr_bins)
+        hist, bin_edges = np.histogram(data, bins=nr_bins)
 
         # TODO: check whether disregard bin 0 (Epitome)
         # Get rid of bin 0
@@ -196,20 +207,24 @@ class ThresholdGenerator:
 
         return threshold
 
-    def find_events(self, threshold: float) -> Dict[(int, Dict)]:
+    def find_events(self, threshold: float = None) -> Dict[(int, Dict)]:
         # TODO: add doc
-
-        # Create event mask indicating whether specific time point belongs to event
-        event_mask = self.detection_function_matrix > threshold
-
         # Process rows sequentially
         events = dict()
-        for idx, h_row in enumerate(event_mask):
+        for idx, detection_function in enumerate(self.detection_function_matrix):
+            # Determine threshold
+            threshold = threshold if threshold is not None else self.thresholds.get(idx)
+
+            # Create event mask indicating whether specific time point belongs to event
+            event_mask = detection_function > threshold
+
             # Find starting time points of events
-            events_on = np.array(np.diff(np.append(0, h_row), 1) == 1).nonzero()[0]
+            events_on = np.array(np.diff(np.append(0, event_mask), 1) == 1).nonzero()[0]
 
             # Find ending time points of events (i.e. blocks of 1s)
-            events_off = np.array(np.diff(np.append(0, h_row), 1) == -1).nonzero()[0]
+            events_off = np.array(np.diff(np.append(0, event_mask), 1) == -1).nonzero()[
+                0
+            ]
 
             # Correct for any starting event not ending within recording period
             if len(events_on) > len(events_off):
@@ -230,9 +245,9 @@ class ThresholdGenerator:
             # Add +/- 40 ms on either side of the events, zeroing out any negative values
             # and upper bounding values by maximum time point
             events_on = np.maximum(0, events_on - 0.04 * self.sfreq).astype(int)
-            events_off = np.minimum(len(h_row), events_off + 0.04 * self.sfreq).astype(
-                int
-            )
+            events_off = np.minimum(
+                len(event_mask), events_off + 0.04 * self.sfreq
+            ).astype(int)
 
             # Determine which channels were involved in measuring which events
             (

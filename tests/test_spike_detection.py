@@ -22,6 +22,10 @@ from spidet.utils.variables import (
     DATASET_PATHS_EL003,
     LEAD_PREFIXES_EL003,
     DATASET_PATHS_EL003_BIP,
+    CHANNELS_EL010_FIF,
+    PREFIXES_EL010_FIF,
+    CHANNEL_NAMES_005,
+    LEAD_PREFIXES_005,
 )
 from spidet.utils import logging_utils
 
@@ -65,8 +69,8 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channel_paths = DATASET_PATHS_EL003_BIP
-    leads = LEAD_PREFIXES_EL003
+    channel_paths = CHANNEL_NAMES_005
+    leads = LEAD_PREFIXES_005
 
     multiprocessing.freeze_support()
 
@@ -89,11 +93,12 @@ if __name__ == "__main__":
     else:
         exclude = None
 
-    # extract channel names from channel paths
+    # Extract channel names from channel paths
     channels = DataLoader().extract_channel_names(channel_paths)
 
     # Define bad channels
     channels_included = None
+
     if bad_channels_file is not None:
         # Retrieve bad channels indices
         bad_channels = np.genfromtxt(bad_channels_file, delimiter=",")
@@ -103,7 +108,6 @@ if __name__ == "__main__":
 
         if bipolar_reference:
             bipolar_channels = get_bipolar_channel_names(leads, channels)
-            print(bipolar_channels)
             bipolar_channels_included = [
                 bipolar_channels[channel] for channel in include_channels
             ]
@@ -118,29 +122,31 @@ if __name__ == "__main__":
                 ),
                 [],
             )
+
             channels_included = []
             for regular_name in regular_channel_names:
                 paths = filter(lambda ch_path: regular_name in ch_path, channel_paths)
                 channels_included.extend(paths)
+
+            # Remove duplicates and sort channels
+            channels_included = list(set(channels_included))
+            sorted_channels = []
+            for prefix in leads:
+                prefix_channels = list(
+                    filter(
+                        lambda name: name[name.rfind("/") + 1 :].startswith(prefix),
+                        channels_included,
+                    )
+                )
+                prefix_channels_sorted = sorted(
+                    prefix_channels, key=lambda s: int(re.search(r"\d+", s).group())
+                )
+                sorted_channels.extend(prefix_channels_sorted)
+            channels_included = sorted_channels
         else:
             channels_included = [channel_paths[channel] for channel in include_channels]
     else:
         channels_included = channel_paths
-
-    # Get unique channels
-    channels_included = list(set(channels_included))
-
-    # Sort channels
-    sorted_channels = []
-    for prefix in leads:
-        prefix_channels = list(
-            filter(lambda name: name.startswith(prefix), channels_included)
-        )
-        prefix_channels_sorted = sorted(
-            prefix_channels, key=lambda s: int(re.search(r"\d+", s).group())
-        )
-        sorted_channels.extend(prefix_channels_sorted)
-    channels_included = sorted_channels
 
     # Initialize spike detection pipeline
     spike_detection_pipeline = SpikeDetectionPipeline(

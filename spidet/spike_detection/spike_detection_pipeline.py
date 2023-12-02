@@ -148,8 +148,8 @@ class SpikeDetectionPipeline:
 
         threshold_generator = ThresholdGenerator(sorted_h, preprocessed_data, sfreq=50)
 
-        threshold = threshold_generator.generate_threshold()
-        spike_annotations = threshold_generator.find_events(threshold)
+        threshold_generator.generate_individual_thresholds()
+        spike_annotations = threshold_generator.find_events()
 
         if execute:
             #####################
@@ -167,7 +167,7 @@ class SpikeDetectionPipeline:
             sorted_h,
             sorted_w,
             spike_annotations,
-            threshold,
+            threshold_generator.thresholds,
             cluster_assignments,
         )
 
@@ -179,7 +179,7 @@ class SpikeDetectionPipeline:
         np.ndarray[Any, np.dtype[float]],
         np.ndarray[Any, np.dtype[float]],
         Dict[int, np.ndarray[Any, np.dtype[int]]],
-        float,
+        Dict[int, float],
         Dict[int, int],
     ]:
         # List of ranks to run NMF for
@@ -225,7 +225,7 @@ class SpikeDetectionPipeline:
         h_opt = h_matrices[idx_opt]
         w_opt = w_matrices[idx_opt]
         spikes_opt = spike_annotations[idx_opt]
-        threshold_opt = thresholds[idx_opt]
+        thresholds_opt = thresholds[idx_opt]
         assignments_opt = cluster_assignments[idx_opt]
 
         # Generate metrics data frame
@@ -283,8 +283,8 @@ class SpikeDetectionPipeline:
                 spike_times = []
                 max_length = 0
                 for h_idx in spikes.keys():
-                    spike_times_on = spikes.get(h_idx).get("spikes_on")
-                    spike_times_off = spikes.get(h_idx).get("spikes_off")
+                    spike_times_on = spikes.get(h_idx).get("events_on")
+                    spike_times_off = spikes.get(h_idx).get("events_off")
 
                     if len(spike_times_on) > max_length:
                         max_length = len(spike_times_on)
@@ -301,7 +301,7 @@ class SpikeDetectionPipeline:
 
                 df_spike_times.to_csv(f"{saving_path}/spike_annotations.csv")
 
-        return h_opt, w_opt, spikes_opt, threshold_opt, assignments_opt
+        return h_opt, w_opt, spikes_opt, thresholds_opt, assignments_opt
 
     def run(
         self,
@@ -332,7 +332,7 @@ class SpikeDetectionPipeline:
             h_opt,
             w_opt,
             spikes_opt,
-            threshold_opt,
+            thresholds_opt,
             assignments_opt,
         ) = self.parallel_processing(
             preprocessed_data=line_length_matrix, channel_names=channel_names
@@ -353,8 +353,8 @@ class SpikeDetectionPipeline:
         basis_functions: List[BasisFunction] = []
         coefficient_functions: List[CoefficientsFunction] = []
 
-        for idx, (bf, sdf, spikes_idx, assignments_idx) in enumerate(
-            zip(w_opt.T, h_opt, spikes_opt, assignments_opt)
+        for idx, (bf, sdf, spikes_idx, threshold_idx, assignments_idx) in enumerate(
+            zip(w_opt.T, h_opt, spikes_opt, thresholds_opt, assignments_opt)
         ):
             # Create BasisFunction
             label_bf = f"W{idx + 1}"
@@ -374,9 +374,9 @@ class SpikeDetectionPipeline:
                 unique_id=unique_id_sdf,
                 times=times,
                 data_array=sdf,
-                detected_events_on=spikes_opt.get(spikes_idx)["spikes_on"],
-                detected_events_off=spikes_opt.get(spikes_idx)["spikes_off"],
-                event_threshold=threshold_opt,
+                detected_events_on=spikes_opt.get(spikes_idx)["events_on"],
+                detected_events_off=spikes_opt.get(spikes_idx)["events_off"],
+                event_threshold=thresholds_opt.get(threshold_idx),
                 codes_for_spikes=bool(assignments_opt.get(assignments_idx)),
             )
 
