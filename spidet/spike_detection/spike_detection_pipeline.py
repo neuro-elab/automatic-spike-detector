@@ -211,7 +211,7 @@ class SpikeDetectionPipeline:
         h_matrices = [h_best for _, _, h_best, _, _, _, _ in results]
         w_matrices = [w_best for _, _, _, w_best, _, _, _ in results]
         metrics = [metrics for metrics, _, _, _, _, _, _ in results]
-        spike_annotations = [
+        event_annotations = [
             spike_annotations for _, _, _, _, spike_annotations, _, _ in results
         ]
         thresholds = [threshold for _, _, _, _, _, threshold, _ in results]
@@ -224,7 +224,7 @@ class SpikeDetectionPipeline:
         idx_opt = k_opt - self.rank_range[0]
         h_opt = h_matrices[idx_opt]
         w_opt = w_matrices[idx_opt]
-        spikes_opt = spike_annotations[idx_opt]
+        events_opt = event_annotations[idx_opt]
         thresholds_opt = thresholds[idx_opt]
         assignments_opt = cluster_assignments[idx_opt]
 
@@ -249,10 +249,10 @@ class SpikeDetectionPipeline:
         metrics_path = os.path.join(self.results_dir, "metrics.csv")
         metrics_df.to_csv(metrics_path, index=False)
 
-        # Saving H and W matrices, spike annotations and line length matrix
+        # Saving H and W matrices, event annotations and line length matrix
         if self.save_nmf_matrices:
             logger.debug(
-                f"Saving LineLength and Consensus, W, H matrices and corresponding spike annotations for ranks {rank_list}"
+                f"Saving LineLength and Consensus, W, H matrices and corresponding event annotations for ranks {rank_list}"
             )
 
             # Saving line length
@@ -277,31 +277,31 @@ class SpikeDetectionPipeline:
                     delimiter=",",
                 )
 
-                # Saving spike annotations
-                spikes = spike_annotations[idx]
+                # Saving event annotations
+                spikes = event_annotations[idx]
                 headers = []
-                spike_times = []
+                event_times = []
                 max_length = 0
                 for h_idx in spikes.keys():
-                    spike_times_on = spikes.get(h_idx).get("events_on")
-                    spike_times_off = spikes.get(h_idx).get("events_off")
+                    event_times_on = spikes.get(h_idx).get("events_on")
+                    event_times_off = spikes.get(h_idx).get("events_off")
 
-                    if len(spike_times_on) > max_length:
-                        max_length = len(spike_times_on)
+                    if len(event_times_on) > max_length:
+                        max_length = len(event_times_on)
 
-                    spike_times.append(spike_times_on)
-                    spike_times.append(spike_times_off)
+                    event_times.append(event_times_on)
+                    event_times.append(event_times_off)
                     headers.extend(
-                        [f"h{h_idx + 1}_spikes_on", f"h{h_idx + 1}_spikes_off"]
+                        [f"h{h_idx + 1}_events_on", f"h{h_idx + 1}_events_off"]
                     )
 
-                df_spike_times = pd.DataFrame(spike_times)
+                df_spike_times = pd.DataFrame(event_times)
                 df_spike_times = df_spike_times.transpose()
                 df_spike_times.columns = headers
 
-                df_spike_times.to_csv(f"{saving_path}/spike_annotations.csv")
+                df_spike_times.to_csv(f"{saving_path}/event_annotations.csv")
 
-        return h_opt, w_opt, spikes_opt, thresholds_opt, assignments_opt
+        return h_opt, w_opt, events_opt, thresholds_opt, assignments_opt
 
     def run(
         self,
