@@ -69,8 +69,8 @@ if __name__ == "__main__":
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channel_paths = CHANNEL_NAMES_005
-    leads = LEAD_PREFIXES_005
+    channel_paths = CHANNELS_EL010_FIF
+    leads = PREFIXES_EL010_FIF
 
     multiprocessing.freeze_support()
 
