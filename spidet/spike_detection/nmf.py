@@ -39,7 +39,10 @@ class Nmf:
         return coph
 
     def nmf_run(
-        self, preprocessed_data: np.ndarray, n_runs: int
+        self,
+        preprocessed_data: np.ndarray,
+        n_runs: int,
+        use_sparsness_constraint: bool = False,
     ) -> Tuple[Dict, np.ndarray, np.ndarray, np.ndarray]:
         data_matrix = preprocessed_data
         consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
@@ -48,10 +51,16 @@ class Nmf:
         h_best = None
         w_best = None
 
-        for n in range(n_runs):
+        if use_sparsness_constraint:
+            nmf = nimfa.Snmf(
+                data_matrix.T, rank=self.rank, seed="random_vcol", max_iter=10
+            )
+        else:
             nmf = nimfa.Nmf(
                 data_matrix.T, rank=self.rank, seed="random_vcol", max_iter=10
             )
+
+        for n in range(n_runs):
             logger.debug(
                 f"Rank {self.rank}, Run {n + 1}/{n_runs}: Perform matrix factorization"
             )

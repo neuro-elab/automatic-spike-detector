@@ -29,6 +29,7 @@ class SpikeDetectionPipeline:
         file_path: str,
         results_dir: str = None,
         save_nmf_matrices: bool = False,
+        use_sparsness_constraint: bool = False,
         bad_times: np.ndarray = None,
         nmf_runs: int = 100,
         rank_range: Tuple[int, int] = (2, 10),

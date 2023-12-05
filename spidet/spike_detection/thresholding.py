@@ -30,6 +30,12 @@ class ThresholdGenerator:
                 "Cannot determine involved channels as preprocessed data is None"
             )
             return np.array([]), events_on, events_off
+        if len(events_on) == 0:
+            logger.debug(
+                "Cannot determine involved channels as as no events were found"
+            )
+            return np.array([]), events_on, events_off
+
         nr_events = len(events_on)
 
         # Return empty arrays if no events available
@@ -239,22 +245,23 @@ class ThresholdGenerator:
             # Likewise, if gaps between events are < 40 ms, they are considered the same event
             gaps = events_on[1:] - events_off[:-1]
             gaps_mask = gaps >= 0.04 * self.sfreq
-            events_on = events_on[np.append(1, gaps_mask).nonzero()[0]]
-            events_off = events_off[np.append(gaps_mask, 1).nonzero()[0]]
+            if not len(events_on) == 0:
+                events_on = events_on[np.append(1, gaps_mask).nonzero()[0]]
+                events_off = events_off[np.append(gaps_mask, 1).nonzero()[0]]
 
-            # Add +/- 40 ms on either side of the events, zeroing out any negative values
-            # and upper bounding values by maximum time point
-            events_on = np.maximum(0, events_on - 0.04 * self.sfreq).astype(int)
-            events_off = np.minimum(
-                len(event_mask), events_off + 0.04 * self.sfreq
-            ).astype(int)
+                # Add +/- 40 ms on either side of the events, zeroing out any negative values
+                # and upper bounding values by maximum time point
+                events_on = np.maximum(0, events_on - 0.04 * self.sfreq).astype(int)
+                events_off = np.minimum(
+                    len(event_mask), events_off + 0.04 * self.sfreq
+                ).astype(int)
 
-            # Determine which channels were involved in measuring which events
-            (
-                channel_event_assoc,
-                events_on,
-                events_off,
-            ) = self.__determine_involved_channels(events_on, events_off)
+                # Determine which channels were involved in measuring which events
+                (
+                    channel_event_assoc,
+                    events_on,
+                    events_off,
+                ) = self.__determine_involved_channels(events_on, events_off)
 
             events.update(
                 {
