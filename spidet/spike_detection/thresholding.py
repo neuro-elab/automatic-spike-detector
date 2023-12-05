@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any, List
 
 import numpy as np
 from loguru import logger
@@ -7,25 +7,30 @@ from loguru import logger
 class ThresholdGenerator:
     def __init__(
         self,
-        h_matrix: np.ndarray,
+        detection_function_matrix: np.ndarray,
         preprocessed_data: np.ndarray = None,
         sfreq: int = 50,
         z_threshold: int = 10,
     ):
+        self.detection_function_matrix = (
+            detection_function_matrix
+            if len(detection_function_matrix.shape) > 1
+            else detection_function_matrix[np.newaxis, :]
+        )
         self.preprocessed_data = preprocessed_data
-        self.h_matrix = h_matrix
         self.sfreq = sfreq
         self.z_threshold = z_threshold
+        self.thresholds = dict()
 
     def __determine_involved_channels(
-        self, spikes_on: np.ndarray, spikes_off: np.ndarray
+        self, events_on: np.ndarray, events_off: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         if self.preprocessed_data is None:
             logger.warning(
                 "Cannot determine involved channels as preprocessed data is None"
             )
-            return np.array([]), spikes_on, spikes_off
-        nr_events = len(spikes_on)
+            return np.array([]), events_on, events_off
+        nr_events = len(events_on)
 
         # Return empty arrays if no events available
         if nr_events == 0:
@@ -36,11 +41,11 @@ class ThresholdGenerator:
         # Calculate background
         background = np.zeros((self.preprocessed_data.shape[1]))
 
-        if spikes_on[0] > 1:
-            background[: spikes_on[0]] = 1
+        if events_on[0] > 1:
+            background[: events_on[0]] = 1
 
         for idx in range(nr_events - 1):
-            background[spikes_off[idx] : spikes_on[idx + 1]] = 1
+            background[events_off[idx] : events_on[idx + 1]] = 1
 
         # TODO: check why np.median returns all zeros
         # Get mean and standard deviation of background for each channel
@@ -54,7 +59,7 @@ class ThresholdGenerator:
         # For each event determine the involved channels
         for event in range(nr_events):
             event_window = self.preprocessed_data[
-                :, spikes_on[event] : spikes_off[event]
+                :, events_on[event] : events_off[event]
             ]
 
             # Calculate z-scores for channels along the event window
@@ -80,32 +85,42 @@ class ThresholdGenerator:
 
         if nr_channels > 50:
             # For large nr of channels, only consider events associated with multiple channels
-            relevant_channels = [
+            relevant_events = [
                 event
                 for event in range(nr_events)
                 if np.sum(channels_involved[event]) > 1
             ]
         else:
             # Remove events not associated with any channel
-            relevant_channels = [
+            relevant_events = [
                 event
                 for event in range(nr_events)
                 if np.sum(channels_involved[event]) > 0
             ]
 
         return (
-            channels_involved[relevant_channels, :],
-            spikes_on[relevant_channels],
-            spikes_off[relevant_channels],
+            channels_involved[relevant_events, :],
+            events_on[relevant_events],
+            events_off[relevant_events],
         )
 
-    def generate_threshold(self) -> float:
+    def generate_individual_thresholds(self) -> None:
+        for idx, detection_function in enumerate(self.detection_function_matrix):
+            threshold = self.generate_threshold(data=detection_function)
+            self.thresholds.update({idx: threshold})
+
+    def generate_threshold(
+        self, data: np.ndarray[Any, np.dtype[float]] = None
+    ) -> float:
         # TODO: add doc
+        # Determine data to compute threshold for
+        data = data if data is not None else self.detection_function_matrix
+
         # Calculate number of bins
-        nr_bins = min(round(0.1 * self.h_matrix.shape[1]), 1000)
+        nr_bins = min(round(0.1 * data.shape[-1]), 1000)
 
         # Create histogram of data_matrix
-        hist, bin_edges = np.histogram(self.h_matrix, bins=nr_bins)
+        hist, bin_edges = np.histogram(data, bins=nr_bins)
 
         # TODO: check whether disregard bin 0 (Epitome)
         # Get rid of bin 0
@@ -192,61 +207,65 @@ class ThresholdGenerator:
 
         return threshold
 
-    def find_spikes(self, threshold: float) -> Dict[(int, Dict)]:
+    def find_events(self, threshold: float = None) -> Dict[(int, Dict)]:
         # TODO: add doc
+        # Process rows sequentially
+        events = dict()
+        for idx, detection_function in enumerate(self.detection_function_matrix):
+            # Determine threshold
+            threshold = threshold if threshold is not None else self.thresholds.get(idx)
 
-        # Create spike mask indicating whether specific time point belongs to spike
-        spike_mask = self.h_matrix > threshold
+            # Create event mask indicating whether specific time point belongs to event
+            event_mask = detection_function > threshold
 
-        # Process rows of H sequentially
-        spikes = dict()
-        for idx, h_row in enumerate(spike_mask):
-            # Find starting time points of spikes
-            spikes_on = np.array(np.diff(np.append(0, h_row), 1) == 1).nonzero()[0]
+            # Find starting time points of events
+            events_on = np.array(np.diff(np.append(0, event_mask), 1) == 1).nonzero()[0]
 
-            # Find ending time points of spikes (i.e. blocks of 1s)
-            spikes_off = np.array(np.diff(np.append(0, h_row), 1) == -1).nonzero()[0]
+            # Find ending time points of events (i.e. blocks of 1s)
+            events_off = np.array(np.diff(np.append(0, event_mask), 1) == -1).nonzero()[
+                0
+            ]
 
-            # Correct for any starting spike not ending within recording period
-            if len(spikes_on) > len(spikes_off):
-                spikes_on = spikes_on[:-1]
+            # Correct for any starting event not ending within recording period
+            if len(events_on) > len(events_off):
+                events_on = events_on[:-1]
 
-            spike_durations = spikes_off - spikes_on
+            event_durations = events_off - events_on
 
             # Consider only events having a duration of at least 20 ms
-            spikes_on = spikes_on[spike_durations >= 0.02 * self.sfreq]
-            spikes_off = spikes_off[spike_durations >= 0.02 * self.sfreq]
+            events_on = events_on[event_durations >= 0.02 * self.sfreq]
+            events_off = events_off[event_durations >= 0.02 * self.sfreq]
 
             # Likewise, if gaps between events are < 40 ms, they are considered the same event
-            gaps = spikes_on[1:] - spikes_off[:-1]
+            gaps = events_on[1:] - events_off[:-1]
             gaps_mask = gaps >= 0.04 * self.sfreq
-            spikes_on = spikes_on[np.append(1, gaps_mask).nonzero()[0]]
-            spikes_off = spikes_off[np.append(gaps_mask, 1).nonzero()[0]]
+            events_on = events_on[np.append(1, gaps_mask).nonzero()[0]]
+            events_off = events_off[np.append(gaps_mask, 1).nonzero()[0]]
 
             # Add +/- 40 ms on either side of the events, zeroing out any negative values
             # and upper bounding values by maximum time point
-            spikes_on = np.maximum(0, spikes_on - 0.04 * self.sfreq).astype(int)
-            spikes_off = np.minimum(len(h_row), spikes_off + 0.04 * self.sfreq).astype(
-                int
-            )
+            events_on = np.maximum(0, events_on - 0.04 * self.sfreq).astype(int)
+            events_off = np.minimum(
+                len(event_mask), events_off + 0.04 * self.sfreq
+            ).astype(int)
 
             # Determine which channels were involved in measuring which events
             (
                 channel_event_assoc,
-                spikes_on,
-                spikes_off,
-            ) = self.__determine_involved_channels(spikes_on, spikes_off)
+                events_on,
+                events_off,
+            ) = self.__determine_involved_channels(events_on, events_off)
 
-            spikes.update(
+            events.update(
                 {
                     idx: dict(
                         {
-                            "spikes_on": spikes_on,
-                            "spikes_off": spikes_off,
+                            "events_on": events_on,
+                            "events_off": events_off,
                             "channels_involved": channel_event_assoc,
                         }
                     )
                 }
             )
 
-        return spikes
+        return events

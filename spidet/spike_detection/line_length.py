@@ -5,11 +5,12 @@ import numpy as np
 from loguru import logger
 from scipy.signal.windows import hamming
 
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.DetectionFunction import DetectionFunction
 from spidet.domain.Trace import Trace
 from spidet.load.data_loading import DataLoader
 from spidet.preprocess.preprocessing import apply_preprocessing_steps
 from spidet.preprocess.resampling import resample_data
+from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 
 
@@ -280,7 +281,7 @@ class LineLength:
         n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
-    ) -> SpikeDetectionFunction:
+    ) -> DetectionFunction:
         # Compute line length for each channel (done in parallel)
         start_timestamp, _, line_length = self.apply_parallel_line_length_pipeline(
             notch_freq=notch_freq,
@@ -302,13 +303,23 @@ class LineLength:
             sfreq=line_length_freq,
         )
 
+        # Generate threshold and detect periods
+        threshold_generator = ThresholdGenerator(
+            detection_function_matrix=std_line_length, sfreq=line_length_freq
+        )
+        threshold = threshold_generator.generate_threshold()
+        detected_periods = threshold_generator.find_events(threshold)
+
         # Create unique id
         filename = self.file_path[self.file_path.rfind("/") + 1 :]
         unique_id = f"{filename[:filename.rfind('.')]}_std_line_length"
 
-        return SpikeDetectionFunction(
+        return DetectionFunction(
             label="Std Line Length",
             unique_id=unique_id,
             times=times,
             data_array=std_line_length,
+            detected_events_on=detected_periods.get(0)["events_on"],
+            detected_events_off=detected_periods.get(0)["events_off"],
+            event_threshold=threshold,
         )

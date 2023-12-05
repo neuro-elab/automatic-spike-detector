@@ -1,6 +1,8 @@
+from typing import List
+
 import mne
 import numpy as np
-from charset_normalizer.md import List
+
 from mne.io import RawArray
 
 

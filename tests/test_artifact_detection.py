@@ -14,6 +14,8 @@ from spidet.utils.variables import (
     LEAD_PREFIXES_EL003,
     DATASET_PATHS_EL003,
     LEAD_PREFIXES_SZ2,
+    CHANNEL_NAMES_005,
+    LEAD_PREFIXES_005,
 )
 
 if __name__ == "__main__":
@@ -51,9 +53,9 @@ if __name__ == "__main__":
     artifacts: Artifacts = artifact_detector.run(
         file_path=file,
         bipolar_reference=False,
-        leads=LEAD_PREFIXES_007,
+        leads=LEAD_PREFIXES_005,
         trigger_times=trigger_times,
-        channel_paths=DATASET_PATHS_007,
+        channel_paths=CHANNEL_NAMES_005,
         detect_stimulation_artifacts=True,
     )
 

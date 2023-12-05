@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.DetectionFunction import DetectionFunction
 from spidet.spike_detection.line_length import LineLength
 from spidet.utils import logging_utils
 from spidet.utils.variables import (
@@ -15,6 +15,10 @@ from spidet.utils.variables import (
     DATASET_PATHS_EL003,
     LEAD_PREFIXES_EL003,
     DATASET_PATHS_EL003_BIP,
+    CHANNEL_NAMES_005,
+    LEAD_PREFIXES_005,
+    CHANNELS_EL010_FIF,
+    PREFIXES_EL010_FIF,
 )
 
 if __name__ == "__main__":
@@ -44,16 +48,14 @@ if __name__ == "__main__":
     # Instantiate a LineLength instance
     line_length = LineLength(
         file_path=file,
-        dataset_paths=DATASET_PATHS_EL003_BIP,
+        dataset_paths=CHANNELS_EL010_FIF,
         bipolar_reference=False,
-        leads=LEAD_PREFIXES_EL003,
+        leads=PREFIXES_EL010_FIF,
         bad_times=bad_times,
     )
 
     # Perform line length steps to compute unique line length
-    spike_detection_function: SpikeDetectionFunction = (
-        line_length.compute_unique_line_length()
-    )
+    detection_function: DetectionFunction = line_length.compute_unique_line_length()
 
     # Perform line length steps to compute line length
     (
@@ -70,6 +72,6 @@ if __name__ == "__main__":
     np.savetxt(data_path, line_length_matrix, delimiter=",")
 
     data_path = os.path.join(filename_for_saving, "std_line_length.csv")
-    np.savetxt(data_path, spike_detection_function.data_array, delimiter=",")
+    np.savetxt(data_path, detection_function.data_array, delimiter=",")
 
     print("DONE preprocess")
