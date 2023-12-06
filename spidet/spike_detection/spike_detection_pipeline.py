@@ -37,7 +37,8 @@ class SpikeDetectionPipeline:
     ):
         self.file_path = file_path
         self.results_dir: str = self.__create_results_dir(results_dir)
-        self.save_nmf_matrices = save_nmf_matrices
+        self.save_nmf_matrices: bool = save_nmf_matrices
+        self.use_sparsness_constraint: bool = use_sparsness_constraint
         self.bad_times = bad_times
         self.nmf_runs: int = nmf_runs
         self.rank_range: Tuple[int, int] = rank_range
@@ -101,8 +102,8 @@ class SpikeDetectionPipeline:
 
         return areas, delta_k, delta_y, k_opt
 
-    @staticmethod
     def perform_nmf_steps_for_rank(
+        self,
         preprocessed_data: np.ndarray,
         rank: int,
         n_runs: int,
@@ -123,7 +124,9 @@ class SpikeDetectionPipeline:
         #####################
 
         # Instantiate nmf classifier
-        nmf_classifier = Nmf(rank=rank)
+        nmf_classifier = Nmf(
+            rank=rank, use_sparsness_constraint=self.use_sparsness_constraint
+        )
 
         # Run NMF consensus clustering for specified rank and number of runs (default = 100)
         metrics, consensus, h_best, w_best = nmf_classifier.nmf_run(

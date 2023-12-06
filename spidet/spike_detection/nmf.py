@@ -7,8 +7,9 @@ from scipy.cluster.hierarchy import linkage, cophenet
 
 
 class Nmf:
-    def __init__(self, rank: int):
+    def __init__(self, rank: int, use_sparsness_constraint: bool = False):
         self.rank = rank
+        self.use_sparsness_constraint = use_sparsness_constraint
 
     def __calculate_cophenetic_corr(self, A: np.ndarray) -> np.ndarray:
         """
@@ -42,7 +43,6 @@ class Nmf:
         self,
         preprocessed_data: np.ndarray,
         n_runs: int,
-        use_sparsness_constraint: bool = False,
     ) -> Tuple[Dict, np.ndarray, np.ndarray, np.ndarray]:
         data_matrix = preprocessed_data
         consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
@@ -51,7 +51,7 @@ class Nmf:
         h_best = None
         w_best = None
 
-        if use_sparsness_constraint:
+        if self.use_sparsness_constraint:
             nmf = nimfa.Snmf(
                 data_matrix.T, rank=self.rank, seed="random_vcol", max_iter=10
             )

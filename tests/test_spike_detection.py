@@ -152,6 +152,7 @@ if __name__ == "__main__":
     spike_detection_pipeline = SpikeDetectionPipeline(
         file_path=file,
         save_nmf_matrices=True,
+        use_sparsness_constraint=True,
         bad_times=bad_times,
         nmf_runs=runs_per_rank,
         rank_range=(k_min, k_max),
