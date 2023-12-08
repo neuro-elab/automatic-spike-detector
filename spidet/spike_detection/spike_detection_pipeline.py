@@ -35,10 +35,10 @@ class SpikeDetectionPipeline:
         rank_range: Tuple[int, int] = (2, 10),
         line_length_freq: int = 50,
     ):
+        self.use_sparsness_constraint: bool = use_sparsness_constraint
         self.file_path = file_path
         self.results_dir: str = self.__create_results_dir(results_dir)
         self.save_nmf_matrices: bool = save_nmf_matrices
-        self.use_sparsness_constraint: bool = use_sparsness_constraint
         self.bad_times = bad_times
         self.nmf_runs: int = nmf_runs
         self.rank_range: Tuple[int, int] = rank_range
@@ -58,6 +58,8 @@ class SpikeDetectionPipeline:
             results_dir = os.path.join(
                 Path.home(), filename_for_saving + "_" + timestamp
             )
+
+        results_dir = results_dir + "_snmf" if self.use_sparsness_constraint else "_nmf"
         os.makedirs(results_dir, exist_ok=True)
         return results_dir
 
