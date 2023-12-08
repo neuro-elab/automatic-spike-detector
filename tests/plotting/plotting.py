@@ -11,6 +11,10 @@ from spidet.load.data_loading import DataLoader
 from spidet.utils.variables import (
     LEAD_PREFIXES_008,
     DATASET_PATHS_008,
+    LEAD_PREFIXES_005,
+    CHANNEL_NAMES_005,
+    DATASET_PATHS_EL003,
+    LEAD_PREFIXES_EL003,
 )
 from spidet.utils import plotting_utils
 
@@ -31,16 +35,16 @@ if __name__ == "__main__":
     annotations: str = parser.parse_args().annotations
 
     # Set plotting variables
-    plot_h: bool = True
+    plot_h: bool = False
     plot_w: bool = False
     plot_line_length: bool = True
     plot_seizures = False
-    plot_unique_line_length = False
-    plot_metrics: bool = True
+    plot_unique_line_length = True
+    plot_metrics: bool = False
 
     # Define data set
-    leads = LEAD_PREFIXES_008
-    datasets = DATASET_PATHS_008
+    leads = LEAD_PREFIXES_005
+    datasets = CHANNEL_NAMES_005
 
     # Set seizure params
     offset_gaps = [
@@ -77,13 +81,13 @@ if __name__ == "__main__":
     )
 
     # Set start time of the recording
-    start_time_recording: datetime = datetime(2023, 5, 10, 22, 00, 38)
-    # start_time_recording: datetime = datetime(2023, 2, 15, 1, 20, 28)
+    # start_time_recording: datetime = datetime(2023, 5, 10, 22, 00, 38)
+    start_time_recording: datetime = datetime(2022, 6, 25, 10, 27, 57)
 
     # Set params for single plotting periods
-    offset = timedelta(hours=0, minutes=0, seconds=0)
+    offset = timedelta(hours=0, minutes=6, seconds=0)
     duration = 2 * 60
-    display_all = True
+    display_all = False
     y_lim = 1e-9
 
     # Get spike annotations if available
@@ -224,6 +228,16 @@ if __name__ == "__main__":
                 offset=offset,
                 duration=duration,
                 spike_annotations=spike_times,
+            )
+
+        if plot_unique_line_length:
+            plotting_utils.plot_std_line_length(
+                folder,
+                std_line_length,
+                start_time_recording=start_time_recording,
+                display_all=display_all,
+                offset=offset,
+                duration=duration,
             )
 
         # plot H matrices

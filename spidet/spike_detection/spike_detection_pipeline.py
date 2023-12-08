@@ -259,9 +259,15 @@ class SpikeDetectionPipeline:
                 f"Saving LineLength and Consensus, W, H matrices and corresponding event annotations for ranks {rank_list}"
             )
 
-            # Saving line length
+            # Saving line length and std line length
             np.savetxt(
                 f"{self.results_dir}/line_length.csv", data_matrix, delimiter=","
+            )
+
+            np.savetxt(
+                f"{self.results_dir}/std_line_length.csv",
+                np.std(data_matrix, axis=0),
+                delimiter=",",
             )
 
             for idx in range(nr_ranks):
