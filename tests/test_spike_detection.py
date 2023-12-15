@@ -17,6 +17,7 @@ from spidet.utils.variables import (
     DATASET_PATHS_007,
     LEAD_PREFIXES_007,
     DATASET_PATHS_008,
+    DATASET_PATHS_BIP_008,
     LEAD_PREFIXES_008,
     DATASET_PATHS_SZ2,
     LEAD_PREFIXES_SZ2,
@@ -27,6 +28,7 @@ from spidet.utils.variables import (
     PREFIXES_EL010_FIF,
     CHANNEL_NAMES_005,
     LEAD_PREFIXES_005,
+    DATASET_PATHS_BIP_005,
 )
 from spidet.utils import logging_utils
 
@@ -91,12 +93,12 @@ if __name__ == "__main__":
 
     # Channels and leads
     channel_paths = (
-        read_csv(ch_names_file) if ch_names_file is not None else CHANNELS_EL010_FIF
+        read_csv(ch_names_file) if ch_names_file is not None else DATASET_PATHS_BIP_005
     )
     leads = (
         read_csv(ch_prefixes_file)
         if ch_prefixes_file is not None
-        else PREFIXES_EL010_FIF
+        else LEAD_PREFIXES_005
     )
 
     multiprocessing.freeze_support()

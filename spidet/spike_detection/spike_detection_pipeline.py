@@ -59,7 +59,11 @@ class SpikeDetectionPipeline:
                 Path.home(), filename_for_saving + "_" + timestamp
             )
 
-        results_dir = results_dir + "_snmf" if self.use_sparsness_constraint else "_nmf"
+        results_dir = (
+            results_dir + "_nmfsc"
+            if self.use_sparsness_constraint
+            else results_dir + "_nmf"
+        )
         os.makedirs(results_dir, exist_ok=True)
         return results_dir
 

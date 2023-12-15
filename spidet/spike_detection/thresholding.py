@@ -164,7 +164,8 @@ class ThresholdGenerator:
         modes = np.nonzero(np.diff(np.sign(first_diff), 1) == -2)[0][:2]
 
         # Get index of first mode that is at least 10 dp to the right
-        idx_mode = modes[modes > 9][0]
+        candidates = modes[np.where((modes > 9) & (modes < len(bin_edges) / 10))]
+        idx_mode = modes[0] if len(candidates) == 0 else candidates[0]
 
         # Index of first inflection point to the right of the mode
         idx_first_inf = np.argmin(first_diff_smoothed[idx_mode:])
@@ -245,6 +246,7 @@ class ThresholdGenerator:
             # Likewise, if gaps between events are < 40 ms, they are considered the same event
             gaps = events_on[1:] - events_off[:-1]
             gaps_mask = gaps >= 0.04 * self.sfreq
+            channel_event_assoc = []
             if not len(events_on) == 0:
                 events_on = events_on[np.append(1, gaps_mask).nonzero()[0]]
                 events_off = events_off[np.append(gaps_mask, 1).nonzero()[0]]
