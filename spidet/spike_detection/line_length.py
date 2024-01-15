@@ -262,39 +262,48 @@ class LineLength:
 
         # Load the eeg traces from the given file
         data_loader = DataLoader()
-        traces: List[Trace] = data_loader.read_file(
-            self.file_path,
-            self.dataset_paths,
-            self.exclude,
-            self.bipolar_reference,
-            self.leads,
-        )
+        start_timestamp = None
+        labels = []
+        line_length_list = []
 
-        # Start time of the recording
-        start_timestamp = traces[0].start_timestamp
-
-        # Using all available cores for process pool
-        n_cores = multiprocessing.cpu_count()
-
-        with multiprocessing.Pool(processes=n_cores) as pool:
-            line_length = pool.starmap(
-                self.line_length_pipeline,
-                [
-                    (
-                        data,
-                        notch_freq,
-                        resampling_freq,
-                        bandpass_cutoff_low,
-                        bandpass_cutoff_high,
-                    )
-                    for data in np.array_split(traces, n_processes)
-                ],
+        # Sequential data loading due to memory limitations
+        for channel_set in np.array_split(self.dataset_paths, n_processes):
+            traces: List[Trace] = data_loader.read_file(
+                self.file_path,
+                list(channel_set),
+                self.exclude,
+                self.bipolar_reference,
+                self.leads,
             )
+            # Extract the channel names
+            labels.extend([trace.label for trace in traces])
 
-        # Combine results from parallel processing
-        line_length_all = np.concatenate(line_length, axis=0)
+            # Start time of the recording
+            start_timestamp = traces[0].start_timestamp
 
-        return start_timestamp, [trace.label for trace in traces], line_length_all
+            # Using all available cores for process pool
+            n_cores = multiprocessing.cpu_count()
+
+            with multiprocessing.Pool(processes=n_cores) as pool:
+                line_length = pool.starmap(
+                    self.line_length_pipeline,
+                    [
+                        (
+                            data,
+                            notch_freq,
+                            resampling_freq,
+                            bandpass_cutoff_low,
+                            bandpass_cutoff_high,
+                        )
+                        for data in np.array_split(traces, n_processes)
+                    ],
+                )
+
+            # Combine results from parallel processing
+            line_length_subset = np.concatenate(line_length, axis=0)
+            line_length_list.append(line_length_subset)
+
+        return start_timestamp, labels, np.concatenate(line_length_list, axis=0)
 
     def compute_unique_line_length(
         self,

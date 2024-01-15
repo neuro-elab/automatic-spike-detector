@@ -11,7 +11,7 @@ class Nmfsc:
         H=None,
         rank=30,
         max_iter=30,
-        min_residuals=1e-5,
+        min_residuals=1e-4,
         n_run=1,
         version="l",
         sH=0.25,
@@ -70,6 +70,7 @@ class Nmfsc:
 
             if np.all(v >= 0):
                 # Found solution
+                # print(f"found solution after j={j} iterations")
                 break
 
             j = j + 1
