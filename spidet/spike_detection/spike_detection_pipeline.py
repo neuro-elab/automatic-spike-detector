@@ -29,14 +29,16 @@ class SpikeDetectionPipeline:
         file_path: str,
         results_dir: str = None,
         save_nmf_matrices: bool = False,
+        use_sparsness_constraint: bool = False,
         bad_times: np.ndarray = None,
         nmf_runs: int = 100,
         rank_range: Tuple[int, int] = (2, 10),
         line_length_freq: int = 50,
     ):
+        self.use_sparsness_constraint: bool = use_sparsness_constraint
         self.file_path = file_path
         self.results_dir: str = self.__create_results_dir(results_dir)
-        self.save_nmf_matrices = save_nmf_matrices
+        self.save_nmf_matrices: bool = save_nmf_matrices
         self.bad_times = bad_times
         self.nmf_runs: int = nmf_runs
         self.rank_range: Tuple[int, int] = rank_range
@@ -56,6 +58,12 @@ class SpikeDetectionPipeline:
             results_dir = os.path.join(
                 Path.home(), filename_for_saving + "_" + timestamp
             )
+
+        results_dir = (
+            results_dir + "_nmfsc"
+            if self.use_sparsness_constraint
+            else results_dir + "_nmf"
+        )
         os.makedirs(results_dir, exist_ok=True)
         return results_dir
 
@@ -100,8 +108,8 @@ class SpikeDetectionPipeline:
 
         return areas, delta_k, delta_y, k_opt
 
-    @staticmethod
     def perform_nmf_steps_for_rank(
+        self,
         preprocessed_data: np.ndarray,
         rank: int,
         n_runs: int,
@@ -122,7 +130,9 @@ class SpikeDetectionPipeline:
         #####################
 
         # Instantiate nmf classifier
-        nmf_classifier = Nmf(rank=rank)
+        nmf_classifier = Nmf(
+            rank=rank, use_sparsness_constraint=self.use_sparsness_constraint
+        )
 
         # Run NMF consensus clustering for specified rank and number of runs (default = 100)
         metrics, consensus, h_best, w_best = nmf_classifier.nmf_run(
@@ -255,9 +265,15 @@ class SpikeDetectionPipeline:
                 f"Saving LineLength and Consensus, W, H matrices and corresponding event annotations for ranks {rank_list}"
             )
 
-            # Saving line length
+            # Saving line length and std line length
             np.savetxt(
                 f"{self.results_dir}/line_length.csv", data_matrix, delimiter=","
+            )
+
+            np.savetxt(
+                f"{self.results_dir}/std_line_length.csv",
+                np.std(data_matrix, axis=0),
+                delimiter=",",
             )
 
             for idx in range(nr_ranks):

@@ -2,6 +2,7 @@ import argparse
 import multiprocessing
 import re
 import time
+import csv
 from typing import List
 
 import numpy as np
@@ -16,6 +17,7 @@ from spidet.utils.variables import (
     DATASET_PATHS_007,
     LEAD_PREFIXES_007,
     DATASET_PATHS_008,
+    DATASET_PATHS_BIP_008,
     LEAD_PREFIXES_008,
     DATASET_PATHS_SZ2,
     LEAD_PREFIXES_SZ2,
@@ -26,6 +28,7 @@ from spidet.utils.variables import (
     PREFIXES_EL010_FIF,
     CHANNEL_NAMES_005,
     LEAD_PREFIXES_005,
+    DATASET_PATHS_BIP_005,
 )
 from spidet.utils import logging_utils
 
@@ -43,6 +46,16 @@ def get_bipolar_channel_names(leads: List[str], channel_names: List[str]) -> Lis
     return bipolar_ch_names
 
 
+def read_csv(file_path: str) -> List[str]:
+    with open(file_path, newline="") as csvfile:
+        rows = csv.reader(csvfile, delimiter=",", quotechar='"')
+        items = []
+        for row in rows:
+            items.extend(row)
+
+    return items
+
+
 if __name__ == "__main__":
     # parse cli args
     parser = argparse.ArgumentParser()
@@ -58,19 +71,35 @@ if __name__ == "__main__":
     parser.add_argument("--bt", help="path to bad times file", required=False)
     parser.add_argument("--bc", help="path to bad channels file", required=False)
     parser.add_argument("--labels", help="path labels file", required=False)
+    parser.add_argument("--v", help="nmf version to use", required=True)
+    parser.add_argument(
+        "--ch_names", help="file containing channel names", required=False
+    )
+    parser.add_argument(
+        "--ch_prefixes", help="file containing channel prefixes", required=False
+    )
 
     file: str = parser.parse_args().file
     bipolar_reference: bool = parser.parse_args().br
     bad_times_file: str = parser.parse_args().bt
     bad_channels_file: str = parser.parse_args().bc
     labels_file: str = parser.parse_args().labels
+    nmf_version: str = parser.parse_args().v
+    ch_names_file: str = parser.parse_args().ch_names
+    ch_prefixes_file: str = parser.parse_args().ch_prefixes
 
     # Configure logger
     logging_utils.add_logger_with_process_name()
 
     # Channels and leads
-    channel_paths = CHANNELS_EL010_FIF
-    leads = PREFIXES_EL010_FIF
+    channel_paths = (
+        read_csv(ch_names_file) if ch_names_file is not None else DATASET_PATHS_BIP_005
+    )
+    leads = (
+        read_csv(ch_prefixes_file)
+        if ch_prefixes_file is not None
+        else LEAD_PREFIXES_005
+    )
 
     multiprocessing.freeze_support()
 
@@ -152,6 +181,7 @@ if __name__ == "__main__":
     spike_detection_pipeline = SpikeDetectionPipeline(
         file_path=file,
         save_nmf_matrices=True,
+        use_sparsness_constraint=False if nmf_version == "nmf" else True,
         bad_times=bad_times,
         nmf_runs=runs_per_rank,
         rank_range=(k_min, k_max),
