@@ -12,9 +12,9 @@ from spidet.domain.Nmfsc import Nmfsc
 
 
 class Nmf:
-    def __init__(self, rank: int, use_sparsness_constraint: bool = False):
+    def __init__(self, rank: int, sparseness: float = 0.0):
         self.rank = rank
-        self.use_sparsness_constraint = use_sparsness_constraint
+        self.sparseness = float(sparseness)
 
     def __calculate_cophenetic_corr(self, A: np.ndarray) -> np.ndarray:
         """
@@ -56,18 +56,18 @@ class Nmf:
         h_best = None
         w_best = None
 
-        if not self.use_sparsness_constraint:
+        if self.sparseness == 0.0:
             nmf = nimfa.Nmf(
                 data_matrix.T, rank=self.rank, seed="random_vcol", max_iter=10
             )
         else:
-            nmf = Nmfsc(data_matrix, rank=self.rank, max_iter=10)
+            nmf = Nmfsc(data_matrix, rank=self.rank, max_iter=10, sW=self.sparseness)
 
         for n in range(n_runs):
             logger.debug(
                 f"Rank {self.rank}, Run {n + 1}/{n_runs}: Perform matrix factorization"
             )
-            if self.use_sparsness_constraint:
+            if self.sparseness != 0.0:
                 fit = nmf()
                 consensus += fit.connectivity()
                 obj[n] = fit.final_obj
