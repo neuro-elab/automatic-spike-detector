@@ -93,12 +93,12 @@ if __name__ == "__main__":
 
     # Channels and leads
     channel_paths = (
-        read_csv(ch_names_file) if ch_names_file is not None else DATASET_PATHS_BIP_005
+        read_csv(ch_names_file) if ch_names_file is not None else DATASET_PATHS_BIP_008
     )
     leads = (
         read_csv(ch_prefixes_file)
         if ch_prefixes_file is not None
-        else LEAD_PREFIXES_005
+        else LEAD_PREFIXES_008
     )
 
     multiprocessing.freeze_support()
@@ -177,27 +177,35 @@ if __name__ == "__main__":
     else:
         channels_included = channel_paths
 
-    # Initialize spike detection pipeline
-    spike_detection_pipeline = SpikeDetectionPipeline(
-        file_path=file,
-        save_nmf_matrices=True,
-        use_sparsness_constraint=False if nmf_version == "nmf" else True,
-        bad_times=bad_times,
-        nmf_runs=runs_per_rank,
-        rank_range=(k_min, k_max),
-    )
+    for sparseness in [0.0]:
+        sparseness = sparseness * 100
+        # Initialize spike detection pipeline
+        spike_detection_pipeline = SpikeDetectionPipeline(
+            file_path=file,
+            save_nmf_matrices=True,
+            sparseness=sparseness,  # if nmf_version == "nmf" else True,
+            bad_times=bad_times,
+            nmf_runs=runs_per_rank,
+            rank_range=(k_min, k_max),
+        )
 
-    # Run spike detection pipeline
-    start = time.time()
-    basis_functions, spike_detection_functions = spike_detection_pipeline.run(
-        channel_paths=channels_included,
-        exclude=exclude,
-        bipolar_reference=bipolar_reference,
-        leads=leads,
-    )
-    end = time.time()
-    logger.debug(f"Finished nmf in {end - start} seconds")
+        # Run spike detection pipeline
+        start = time.time()
+        logger.debug(
+            f"\n\n##########################################################################"
+        )
+        logger.debug(
+            f"File: {file}; Start nmf for sparseness {sparseness}; Start time is {start}"
+        )
+        basis_functions, spike_detection_functions = spike_detection_pipeline.run(
+            channel_paths=channels_included,
+            exclude=exclude,
+            bipolar_reference=bipolar_reference,
+            leads=leads,
+        )
+        end = time.time()
+        logger.debug(f"Finished nmf in {end - start} seconds")
 
-    logger.debug(
-        f"Results:\n Basis Functions: {basis_functions}\n Spike Detection Functions: {spike_detection_functions}"
-    )
+        logger.debug(
+            f"Results:\n Basis Functions: {basis_functions}\n Spike Detection Functions: {spike_detection_functions}"
+        )
