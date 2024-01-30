@@ -1,14 +1,16 @@
 import multiprocessing
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 import numpy as np
 from loguru import logger
+from scipy.signal.windows import hann
 
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.DetectionFunction import DetectionFunction
 from spidet.domain.Trace import Trace
 from spidet.load.data_loading import DataLoader
 from spidet.preprocess.preprocessing import apply_preprocessing_steps
 from spidet.preprocess.resampling import resample_data
+from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 
 
@@ -17,29 +19,93 @@ class LineLength:
         self,
         file_path: str,
         dataset_paths: List[str] = None,
+        exclude: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
         bad_times: np.ndarray = None,
     ):
         self.file_path = file_path
         self.dataset_paths = dataset_paths
+        self.exclude = exclude
         self.bipolar_reference = bipolar_reference
         self.leads = leads
         self.bad_times = bad_times
         self.line_length_window: int = 40
         self.line_length_freq: int = 50
 
-    def zero_out_bad_times(self, data: np.ndarray, orig_length: int) -> np.ndarray:
-        for row in range(self.bad_times.shape[0]):
-            bad_times_on = np.rint(
-                self.bad_times[row, 0] / orig_length * data.shape[1]
-            ).astype(int)
-            bad_times_off = np.rint(
-                self.bad_times[row, 1] / orig_length * data.shape[1]
-            ).astype(int)
-            data[:, bad_times_on:bad_times_off] = 0
+    def dampen_bad_times(
+        self,
+        data: np.ndarray[Any, np.dtype[np.float64]],
+        sfreq: int,
+        orig_sfreq: int,
+        window_length: int = 100,
+    ) -> np.ndarray:
+        """
+        Dampens bad times within preprocessed EEG data by setting values of bad times intervals to zero
+        and applying hann windows (https://en.wikipedia.org/wiki/Hann_function) around starting and ending
+        points in order to get smoothed transitions
 
-        return data
+        Parameters
+        ----------
+        data : numpy.ndarray[Any, np.dtype[np.float64]]
+            The preprocessed EEG data.
+
+        sfreq : int
+            The sampling frequency of the preprocessed EEG data.
+
+        orig_sfreq : int
+            The sampling frequency of the original EEG data.
+
+        window_length : int
+            The length of the smoothed transition periods in ms
+
+        Returns
+        -------
+        smoothed_data : numpy.ndarray[Any, np.dtype[np.float64]]
+            The preprocessed EEG data wih artifacts being zeroed and having smoothed transition periods.
+
+        """
+        if len(self.bad_times.shape) == 1:
+            self.bad_times = self.bad_times[np.newaxis, :]
+
+        self.bad_times = np.rint(self.bad_times * sfreq / orig_sfreq).astype(int)
+
+        # Create window
+        window = 2 * np.rint(window_length / 1000 * sfreq).astype(int)
+
+        # Make window length even
+        window = window if window % 2 == 0 else window + 1
+
+        # Create hanning window
+        hann_w = 1 - hann(window)
+
+        left_hann = hann_w[0 : int(window / 2)]
+        right_hann = hann_w[int(window / 2) + 1 :]
+
+        # Bound to limits
+        self.bad_times[:, 0] = np.maximum(
+            1 + window / 2, self.bad_times[:, 0] - window / 2
+        )
+        self.bad_times[:, 1] = np.minimum(
+            data.shape[1] - window / 2, self.bad_times[:, 1] + window / 2
+        )
+
+        # Create the hann mask matrix
+        hann_mask = np.ones(data.shape)
+        for event_idx in range(self.bad_times.shape[0]):
+            hann_mask[
+                :,
+                int(self.bad_times[event_idx, 0] - window / 2) : int(
+                    self.bad_times[event_idx, 1] + window / 2
+                ),
+            ] = np.hstack(
+                (
+                    left_hann,
+                    np.zeros((np.diff(self.bad_times[event_idx]).astype(int)[0] + 1)),
+                    right_hann,
+                )
+            )
+        return hann_mask * data
 
     def compute_line_length(self, eeg_data: np.array, sfreq: int):
         """
@@ -153,6 +219,13 @@ class LineLength:
             bandpass_cutoff_high=bandpass_cutoff_high,
         )
 
+        # Zero out bad times if any
+        if self.bad_times is not None:
+            logger.debug("Dampening bad times on preprocessed EEG with hann windows")
+            preprocessed = self.dampen_bad_times(
+                data=preprocessed, sfreq=resampling_freq, orig_sfreq=traces[0].sfreq
+            )
+
         # Compute line length
         logger.debug("Apply line length computations")
         line_length = self.compute_line_length(
@@ -189,42 +262,48 @@ class LineLength:
 
         # Load the eeg traces from the given file
         data_loader = DataLoader()
-        traces: List[Trace] = data_loader.read_file(
-            self.file_path, self.dataset_paths, self.bipolar_reference, self.leads
-        )
+        start_timestamp = None
+        labels = []
+        line_length_list = []
 
-        # Start time of the recording
-        start_timestamp = traces[0].start_timestamp
-
-        # Using all available cores for process pool
-        n_cores = multiprocessing.cpu_count()
-
-        with multiprocessing.Pool(processes=n_cores) as pool:
-            line_length = pool.starmap(
-                self.line_length_pipeline,
-                [
-                    (
-                        data,
-                        notch_freq,
-                        resampling_freq,
-                        bandpass_cutoff_low,
-                        bandpass_cutoff_high,
-                    )
-                    for data in np.array_split(traces, n_processes)
-                ],
+        # Sequential data loading due to memory limitations
+        for channel_set in np.array_split(self.dataset_paths, n_processes):
+            traces: List[Trace] = data_loader.read_file(
+                self.file_path,
+                list(channel_set),
+                self.exclude,
+                self.bipolar_reference,
+                self.leads,
             )
+            # Extract the channel names
+            labels.extend([trace.label for trace in traces])
 
-        # Combine results from parallel processing
-        line_length_all = np.concatenate(line_length, axis=0)
+            # Start time of the recording
+            start_timestamp = traces[0].start_timestamp
 
-        # Zero out bad times if any
-        if self.bad_times is not None:
-            logger.debug("Zeroing out bad times on line length")
-            line_length_all = self.zero_out_bad_times(
-                data=line_length_all, orig_length=len(traces[0].data)
-            )
+            # Using all available cores for process pool
+            n_cores = multiprocessing.cpu_count()
 
-        return start_timestamp, [trace.label for trace in traces], line_length_all
+            with multiprocessing.Pool(processes=n_cores) as pool:
+                line_length = pool.starmap(
+                    self.line_length_pipeline,
+                    [
+                        (
+                            data,
+                            notch_freq,
+                            resampling_freq,
+                            bandpass_cutoff_low,
+                            bandpass_cutoff_high,
+                        )
+                        for data in np.array_split(traces, n_processes)
+                    ],
+                )
+
+            # Combine results from parallel processing
+            line_length_subset = np.concatenate(line_length, axis=0)
+            line_length_list.append(line_length_subset)
+
+        return start_timestamp, labels, np.concatenate(line_length_list, axis=0)
 
     def compute_unique_line_length(
         self,
@@ -235,7 +314,7 @@ class LineLength:
         n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
-    ) -> SpikeDetectionFunction:
+    ) -> DetectionFunction:
         # Compute line length for each channel (done in parallel)
         start_timestamp, _, line_length = self.apply_parallel_line_length_pipeline(
             notch_freq=notch_freq,
@@ -257,13 +336,23 @@ class LineLength:
             sfreq=line_length_freq,
         )
 
+        # Generate threshold and detect periods
+        threshold_generator = ThresholdGenerator(
+            detection_function_matrix=std_line_length, sfreq=line_length_freq
+        )
+        threshold = threshold_generator.generate_threshold()
+        detected_periods = threshold_generator.find_events(threshold)
+
         # Create unique id
         filename = self.file_path[self.file_path.rfind("/") + 1 :]
         unique_id = f"{filename[:filename.rfind('.')]}_std_line_length"
 
-        return SpikeDetectionFunction(
+        return DetectionFunction(
             label="Std Line Length",
             unique_id=unique_id,
             times=times,
             data_array=std_line_length,
+            detected_events_on=detected_periods.get(0)["events_on"],
+            detected_events_off=detected_periods.get(0)["events_off"],
+            event_threshold=threshold,
         )

@@ -1,6 +1,7 @@
 import argparse
 
 from spidet.utils import file_utils
+from spidet.utils.variables import LEAD_PREFIXES_EL010, DATASET_PATHS_EL010
 
 if __name__ == "__main__":
     # parse cli args
@@ -8,9 +9,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--file", help="full path to file to be converted", required=True
     )
-    parser.add_argument("--save", help="path to where to save the file", required=True)
 
     file: str = parser.parse_args().file
-    save: str = parser.parse_args().save
 
-    file_utils.convert_fif_to_edf(file_path=file, save_path=save)
+    file_utils.filter_leads_and_re_reference(
+        file_path=file, channel_paths=DATASET_PATHS_EL010, leads=LEAD_PREFIXES_EL010
+    )

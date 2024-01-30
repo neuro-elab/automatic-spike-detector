@@ -1,14 +1,20 @@
 from typing import Tuple, Dict
 
 import nimfa
+from nimfa.utils.linalg import *
 import numpy as np
 from loguru import logger
 from scipy.cluster.hierarchy import linkage, cophenet
+from sklearn.decomposition import NMF
+from sklearn.preprocessing import normalize
+
+from spidet.domain.Nmfsc import Nmfsc
 
 
 class Nmf:
-    def __init__(self, rank: int):
+    def __init__(self, rank: int, sparseness: float = 0.0):
         self.rank = rank
+        self.sparseness = float(sparseness)
 
     def __calculate_cophenetic_corr(self, A: np.ndarray) -> np.ndarray:
         """
@@ -39,7 +45,9 @@ class Nmf:
         return coph
 
     def nmf_run(
-        self, preprocessed_data: np.ndarray, n_runs: int
+        self,
+        preprocessed_data: np.ndarray,
+        n_runs: int,
     ) -> Tuple[Dict, np.ndarray, np.ndarray, np.ndarray]:
         data_matrix = preprocessed_data
         consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
@@ -48,23 +56,39 @@ class Nmf:
         h_best = None
         w_best = None
 
-        for n in range(n_runs):
+        if self.sparseness == 0.0:
             nmf = nimfa.Nmf(
                 data_matrix.T, rank=self.rank, seed="random_vcol", max_iter=10
             )
+        else:
+            nmf = Nmfsc(data_matrix, rank=self.rank, max_iter=10, sW=self.sparseness)
+
+        for n in range(n_runs):
             logger.debug(
                 f"Rank {self.rank}, Run {n + 1}/{n_runs}: Perform matrix factorization"
             )
-            fit = nmf()
-            consensus += fit.fit.connectivity()
-            obj[n] = fit.fit.final_obj
-            if obj[n] < lowest_obj:
-                logger.debug(
-                    f"Rank {self.rank}, Run {n + 1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
-                )
-                lowest_obj = obj[n]
-                w_best = np.array(fit.fit.coef().T)
-                h_best = np.array(fit.fit.basis().T)
+            if self.sparseness != 0.0:
+                fit = nmf()
+                consensus += fit.connectivity()
+                obj[n] = fit.final_obj
+                if obj[n] < lowest_obj:
+                    logger.debug(
+                        f"Rank {self.rank}, Run {n + 1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
+                    )
+                    lowest_obj = obj[n]
+                    w_best = np.array(fit.basis())
+                    h_best = np.array(fit.coef())
+            else:
+                fit = nmf()
+                consensus += fit.fit.connectivity()
+                obj[n] = fit.fit.final_obj
+                if obj[n] < lowest_obj:
+                    logger.debug(
+                        f"Rank {self.rank}, Run {n + 1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
+                    )
+                    lowest_obj = obj[n]
+                    w_best = np.array(fit.fit.coef().T)
+                    h_best = np.array(fit.fit.basis().T)
 
         consensus /= n_runs
         coph = self.__calculate_cophenetic_corr(consensus)

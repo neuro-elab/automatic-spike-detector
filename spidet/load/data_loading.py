@@ -1,3 +1,5 @@
+import os.path
+import re
 from typing import List, Tuple
 
 import h5py
@@ -7,8 +9,12 @@ from h5py import Dataset, File
 from loguru import logger
 from mne.io import RawArray
 
-from spidet.domain.SpikeDetectionFunction import SpikeDetectionFunction
+from spidet.domain.CoefficentsFunction import CoefficientsFunction
+from spidet.domain.FunctionType import FunctionType
+from spidet.domain.DetectionFunction import DetectionFunction
 from spidet.domain.Trace import Trace
+from spidet.spike_detection.clustering import BasisFunctionClusterer
+from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 
 # Supported file formats
@@ -16,8 +22,8 @@ HDF5 = "h5"
 EDF = "edf"
 FIF = "fif"
 
-# Other variables
-LABEL_STD_LL = "Std_LL"
+# Other constants
+LABEL_STD_LL = "Std_Line_Length"
 H_KEYWORD = "H_best"
 
 
@@ -26,6 +32,8 @@ class DataLoader:
     def extract_channel_names(channel_paths: List[str]) -> List[str]:
         return [
             channel_path[channel_path.rfind("/") + 1 :]
+            if "/" in channel_path
+            else channel_path
             for channel_path in channel_paths
         ]
 
@@ -40,16 +48,31 @@ class DataLoader:
     def get_anodes_and_cathodes(
         leads: List[str], channel_names: List[str]
     ) -> Tuple[List[str], List[str]]:
+        # Sort channels
+        sorted_channels = []
+        for prefix in leads:
+            prefix_channels = list(
+                filter(lambda name: name.startswith(prefix), channel_names)
+            )
+            prefix_channels_sorted = sorted(
+                prefix_channels, key=lambda s: int(re.search(r"\d+", s).group())
+            )
+            sorted_channels.extend(prefix_channels_sorted)
+
         anodes, cathodes = [], []
         for prefix in leads:
             channels = list(
                 filter(
-                    lambda channel_name: channel_name.startswith(prefix), channel_names
+                    lambda channel_name: channel_name.startswith(prefix),
+                    sorted_channels,
                 )
             )
             for idx in range(len(channels) - 1):
-                anodes.append(channels[idx])
-                cathodes.append(channels[idx + 1])
+                ch_nr_anode = int(channels[idx].split(prefix)[-1])
+                ch_nr_cathode = int(channels[idx + 1].split(prefix)[-1])
+                if ch_nr_anode + 1 == ch_nr_cathode:
+                    anodes.append(channels[idx])
+                    cathodes.append(channels[idx + 1])
 
         return anodes, cathodes
 
@@ -106,6 +129,7 @@ class DataLoader:
         self,
         path: str,
         channel_paths: List[str] = None,
+        exclude: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
     ) -> List[Trace]:
@@ -151,7 +175,7 @@ class DataLoader:
             return self.read_h5_file(path, channel_paths, bipolar_reference, leads)
         elif file_format in [EDF, FIF]:
             return self.read_edf_or_fif_file(
-                path, file_format, channel_paths, bipolar_reference, leads
+                path, file_format, channel_paths, exclude, bipolar_reference, leads
             )
         else:
             raise Exception(
@@ -204,7 +228,20 @@ class DataLoader:
         h5_file = h5py.File(file_path, "r")
 
         # Extract the raw datasets from the hdf5 file
-        raw_traces: List[Dataset] = [h5_file.get(path) for path in channel_paths]
+        raw_traces: List[Dataset] = list(
+            filter(
+                lambda dataset: dataset is not None,
+                [h5_file.get(path) for path in channel_paths],
+            )
+        )
+
+        # Only include channel paths for which there exists a dataset in the file
+        relevant_channel_names = [trace.name for trace in raw_traces]
+        relevant_channel_paths = []
+        for channel_name in relevant_channel_names:
+            relevant_channel_paths.extend(
+                list(filter(lambda path: channel_name in path, channel_paths))
+            )
 
         # Extract start timestamps for datasets
         start_timestamps: List[float] = [
@@ -212,7 +249,7 @@ class DataLoader:
         ]
 
         # Extract channel names from the dataset paths
-        channel_names = self.extract_channel_names(channel_paths)
+        channel_names = self.extract_channel_names(relevant_channel_paths)
 
         # Extract frequencies from datasets
         frequencies: List[float] = [
@@ -234,6 +271,7 @@ class DataLoader:
             )
             raw = self.generate_bipolar_references(raw, leads)
             raw_traces = raw.get_data()
+            channel_names = raw.ch_names
 
         return [
             self.create_trace(label, data, freq, ts)
@@ -247,9 +285,10 @@ class DataLoader:
         file_path: str,
         file_format: str,
         channel_paths: List[str],
+        exclude: List[str] = None,
         bipolar_reference: bool = False,
         leads: List[str] = None,
-    ):
+    ) -> List[Trace]:
         """
         Loads a file in either FIF or EDF format and transforms its content to a list of Trace objects.
         Provides the option to perform bipolar referencing for channels within a lead,
@@ -280,12 +319,16 @@ class DataLoader:
         List[Trace]
             A list of Trace objects representing the content of the file.
         """
+        exclude = exclude if exclude is not None else list()
         raw: RawArray = (
             mne.io.read_raw_fif(file_path, preload=True, verbose=False)
             if file_format == FIF
-            else mne.io.read_raw_edf(file_path, preload=True, verbose=False)
+            else mne.io.read_raw_edf(
+                file_path, exclude=exclude, preload=True, verbose=False
+            )
         )
 
+        logger.debug(f"Beginning of the recording: {raw.info['meas_date']}")
         if channel_paths is not None:
             channel_names = self.extract_channel_names(channel_paths)
             raw = raw.pick(channel_names)
@@ -301,35 +344,85 @@ class DataLoader:
         ]
 
     @staticmethod
-    def load_spike_detection_functions(
+    def load_detection_functions(
         file_path: str, start_timestamp: float, sfreq: int = 50
-    ) -> List[SpikeDetectionFunction]:
-        logger.debug(f"Loading spike detection functions {file_path}")
+    ) -> List[DetectionFunction]:
+        logger.debug(f"Loading detection functions {file_path}")
+        # Determine function type
+        function_type = FunctionType.from_file_path(file_path)
+
+        # Load data matrix
         data_matrix = np.genfromtxt(file_path, delimiter=",")
+
+        if FunctionType.STD_LINE_LENGTH == function_type:
+            sorted_detection_functions = data_matrix[np.newaxis, :]
+
+            # Create unique id prefix
+            path, file = os.path.split(file_path)
+            unique_id_prefix = path[path.rfind("/") + 1 :]
+
+        else:
+            # Clustering
+            kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
+            (
+                _,
+                sorted_detection_functions,
+                cluster_assignments,
+            ) = kmeans.cluster_and_sort(h_matrix=data_matrix)
+
+            # Create unique id prefix
+            rank = file_path[file_path.find("/k=") + 3]
+            dir_path = file_path[: file_path.find("/k=")]
+            unique_id_prefix = f"{dir_path[dir_path.rfind('/') + 1:]}_rank_{rank}"
 
         # Compute times for x-axis
         times = compute_rescaled_timeline(
             start_timestamp=start_timestamp,
-            length=data_matrix.shape[1],
+            length=sorted_detection_functions.shape[1],
             sfreq=sfreq,
         )
 
-        # Create unique id prefix
-        rank = file_path[file_path.find("/k=") + 1]
-        dir_path = file_path[: file_path.find("/k=")]
-        unique_id_prefix = f"{dir_path[dir_path.rfind('/') + 1:]}_rank_{rank}"
-
         # Create return objects
-        spike_detection_functions: List[SpikeDetectionFunction] = []
+        detection_functions: List[DetectionFunction] = []
 
-        for idx, sdf in enumerate(data_matrix):
-            # Create SpikeDetectionFunction
-            label_sdf = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
-            unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
-            spike_detection_fct = SpikeDetectionFunction(
-                label=label_sdf, unique_id=unique_id_sdf, times=times, data_array=sdf
+        for idx, df in enumerate(sorted_detection_functions):
+            # Create DetectionFunction
+            label_df = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
+            unique_id_df = f"{unique_id_prefix}_{label_df}"
+
+            # Generate threshold and find spikes
+            threshold_generator = ThresholdGenerator(
+                detection_function_matrix=df, sfreq=sfreq
             )
+            threshold = threshold_generator.generate_threshold()
+            spikes = threshold_generator.find_events(threshold)
 
-            spike_detection_functions.append(spike_detection_fct)
+            if FunctionType.STD_LINE_LENGTH == function_type:
+                detection_fct = DetectionFunction(
+                    label=label_df,
+                    unique_id=unique_id_df,
+                    times=times,
+                    data_array=df,
+                    detected_events_on=spikes.get(0)["events_on"],
+                    detected_events_off=spikes.get(0)["events_off"],
+                    event_threshold=threshold,
+                )
+            elif FunctionType.H_COEFFICIENTS == function_type:
+                detection_fct = CoefficientsFunction(
+                    label=label_df,
+                    unique_id=unique_id_df,
+                    times=times,
+                    data_array=df,
+                    detected_events_on=spikes.get(0)["events_on"],
+                    detected_events_off=spikes.get(0)["events_off"],
+                    event_threshold=threshold,
+                    codes_for_spikes=bool(cluster_assignments.get(idx)),
+                )
+            else:
+                raise Exception(
+                    f"Function type {function_type} currently not supported by this service"
+                )
 
-        return spike_detection_functions
+            detection_functions.append(detection_fct)
+
+        return detection_functions

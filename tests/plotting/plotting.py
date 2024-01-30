@@ -3,11 +3,19 @@ import os
 from datetime import datetime, timedelta
 
 import numpy as np
+import pandas as pd
 from loguru import logger
 from numpy import genfromtxt
 
 from spidet.load.data_loading import DataLoader
-from tests.variables import LEAD_PREFIXES_EL010, LABELS_EL010, LEAD_PREFIXES_AJ
+from spidet.utils.variables import (
+    LEAD_PREFIXES_008,
+    DATASET_PATHS_008,
+    LEAD_PREFIXES_005,
+    CHANNEL_NAMES_005,
+    DATASET_PATHS_EL003,
+    LEAD_PREFIXES_EL003,
+)
 from spidet.utils import plotting_utils
 
 SZ_LABEL = "Sz"
@@ -19,7 +27,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--folder", help="folder where the results reside", required=True
     )
+    parser.add_argument(
+        "--annotations", help="path to annotations file", required=False
+    )
+
     folder: str = parser.parse_args().folder
+    annotations: str = parser.parse_args().annotations
 
     # Set plotting variables
     plot_h: bool = True
@@ -27,6 +40,11 @@ if __name__ == "__main__":
     plot_line_length: bool = False
     plot_seizures = False
     plot_unique_line_length = False
+    plot_metrics: bool = False
+
+    # Define data set
+    leads = LEAD_PREFIXES_005
+    datasets = CHANNEL_NAMES_005
 
     # Set seizure params
     offset_gaps = [
@@ -50,7 +68,6 @@ if __name__ == "__main__":
     }
 
     # Set labels if known
-
     rank_labels_idx = dict(
         {
             4: dict({3: SZ_LABEL}),
@@ -64,17 +81,38 @@ if __name__ == "__main__":
     )
 
     # Set start time of the recording
-    start_time_recording: datetime = datetime(2020, 8, 15, 20, 0, 0)
+    # start_time_recording: datetime = datetime(2023, 5, 10, 22, 00, 38)
+    start_time_recording: datetime = datetime(2022, 6, 25, 10, 27, 56)
 
     # Set params for single plotting periods
-    offset = timedelta(hours=2, minutes=18)
+    offset = timedelta(hours=0, minutes=6, seconds=0)
     duration = 2 * 60
-    display_all = False
+    display_all = True
     y_lim = 1e-9
+
+    # Get spike annotations if available
+    if annotations is not None:
+        df_annotations = pd.read_csv(annotations)
+        df_annotations["description"] = df_annotations["description"].str.lower()
+        spike_times = list(
+            (
+                df_annotations[df_annotations["description"].str.startswith("x")][
+                    "onset"
+                ]
+            ).values
+        )
+        spike_times = list(
+            map(
+                lambda spike: datetime.strptime(spike, "%Y-%m-%d %H:%M:%S.%f"),
+                spike_times,
+            )
+        )
+    else:
+        spike_times = None
 
     # Get list of channel names
     anodes, cathodes = DataLoader().get_anodes_and_cathodes(
-        LEAD_PREFIXES_EL010, LABELS_EL010
+        leads, DataLoader().extract_channel_names(datasets)
     )
     channel_names = [anode + "-" + cathode for anode, cathode in zip(anodes, cathodes)]
 
@@ -103,6 +141,11 @@ if __name__ == "__main__":
             channel_names=channel_names,
             rank_labels_idx=rank_labels_idx,
         )
+
+    # PLot metrics
+    if plot_metrics:
+        metrics = pd.read_csv(os.path.join(folder, "metrics.csv"))
+        plotting_utils.plot_metrics(metrics, folder)
 
     # Get line length eeg if necessary
     if plot_line_length:
@@ -142,7 +185,7 @@ if __name__ == "__main__":
                         folder,
                         line_length_eeg,
                         channel_names,
-                        # prefix_brain_regions=["Hip1"],
+                        lead_prefixes=leads,
                         start_time_recording=start_time_recording,
                         offset=start_offset,
                         duration=dur,
@@ -179,6 +222,18 @@ if __name__ == "__main__":
                 folder,
                 line_length_eeg,
                 channel_names,
+                lead_prefixes=leads,
+                start_time_recording=start_time_recording,
+                display_all=display_all,
+                offset=offset,
+                duration=duration,
+                spike_annotations=spike_times,
+            )
+
+        if plot_unique_line_length:
+            plotting_utils.plot_std_line_length(
+                folder,
+                std_line_length,
                 start_time_recording=start_time_recording,
                 display_all=display_all,
                 offset=offset,
@@ -194,5 +249,6 @@ if __name__ == "__main__":
                 display_all=display_all,
                 offset=offset,
                 duration=duration,
+                spike_annotations=spike_times,
                 # rank_labels_idx=rank_labels_idx,
             )
