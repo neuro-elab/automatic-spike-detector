@@ -47,3 +47,7 @@ tzdata==2023.3
 urllib3==2.0.4
 virtualenv==20.24.4
 silx~=1.1.2
+numpydoc==1.5.0
+pydata-sphinx-theme==0.13.3
+sphinx-design
+sphinx-copybutton
