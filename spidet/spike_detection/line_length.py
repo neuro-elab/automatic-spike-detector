@@ -163,7 +163,8 @@ class LineLength:
 
         References
         ----------
-        .. [1] Koolen, N., Jansen, K., Vervisch, J., Matic, V., De Vos, M., Naulaers, G., & Van Huffel, S. (2014).
+        .. [1]
+        Koolen, N., Jansen, K., Vervisch, J., Matic, V., De Vos, M., Naulaers, G., & Van Huffel, S. (2014).
         Line length as a robust method to detect high-activity events:
         Automated burst detection in premature EEG recordings.
         Clinical Neurophysiology, 125(10), 1985–1994. https://doi.org/https://doi.org/10.1016/j.clinph.2014.02.015
