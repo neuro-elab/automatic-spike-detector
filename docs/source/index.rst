@@ -11,7 +11,7 @@ Welcome to automatic-spike-detection's documentation!
     .. grid-item-card::
 
         Documentation
-        ^^^^^^^^^^
+        ^^^^^^^^^^^^^
 
         The documentation provides in-depth information on the functionalities of the API.
 

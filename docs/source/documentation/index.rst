@@ -1,8 +1,8 @@
 .. module:: automatic-spike-detection
 
-=======================================
-Automatic-spike-detection Documentation
-=======================================
+=============
+Documentation
+=============
 
 .. toctree::
     :maxdepth: 2
