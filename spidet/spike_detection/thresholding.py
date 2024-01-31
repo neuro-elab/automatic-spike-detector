@@ -135,8 +135,8 @@ class ThresholdGenerator:
         Computes the threshold for each individual activation function based on
         :func:`~spidet.spike_detection.ThresholdGenerator.generate_threshold`
         """
-        for idx, detection_function in enumerate(self.activation_function_matrix):
-            threshold = self.generate_threshold(data=detection_function)
+        for idx, activation_function in enumerate(self.activation_function_matrix):
+            threshold = self.generate_threshold(data=activation_function)
             self.thresholds.update({idx: threshold})
 
     def generate_threshold(
@@ -282,12 +282,12 @@ class ThresholdGenerator:
         """
         # Process rows sequentially
         events = dict()
-        for idx, detection_function in enumerate(self.activation_function_matrix):
+        for idx, activation_function in enumerate(self.activation_function_matrix):
             # Determine threshold
             threshold = threshold if threshold is not None else self.thresholds.get(idx)
 
             # Create event mask indicating whether specific time point belongs to event
-            event_mask = detection_function > threshold
+            event_mask = activation_function > threshold
 
             # Find starting time points of events
             events_on = np.array(np.diff(np.append(0, event_mask), 1) == 1).nonzero()[0]

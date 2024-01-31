@@ -12,18 +12,22 @@ from sklearn.preprocessing import normalize
 from pathlib import Path
 
 from spidet.domain.BasisFunction import BasisFunction
-from spidet.domain.DetectionFunction import DetectionFunction
+from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.line_length import LineLength
 from spidet.spike_detection.nmf import Nmf
-from spidet.spike_detection.projecting import Projector
 from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 from spidet.utils.plotting_utils import plot_w_and_consensus_matrix
 
 
 class SpikeDetectionPipeline:
+    """
+    This class builds the heart of the automatic-spike-detection library. It provides an end-to-end
+    pipeline that takes in a path to file containing an iEEG recording and returns the
+    """
+
     def __init__(
         self,
         file_path: str,
@@ -156,16 +160,6 @@ class SpikeDetectionPipeline:
 
         threshold_generator.generate_individual_thresholds()
         spike_annotations = threshold_generator.find_events()
-
-        if execute:
-            #####################
-            #   PROJECTING      #
-            #####################
-
-            projector = Projector(h_matrix=sorted_h, w_matrix=sorted_w)
-            w_projection, data_projections = projector.find_and_project_peaks(
-                preprocessed_data
-            )
 
         return (
             metrics,
@@ -321,7 +315,7 @@ class SpikeDetectionPipeline:
         bipolar_reference: bool = False,
         exclude: List[str] = None,
         leads: List[str] = None,
-    ) -> Tuple[List[BasisFunction], List[DetectionFunction]]:
+    ) -> Tuple[List[BasisFunction], List[ActivationFunction]]:
         # Instantiate a LineLength instance
         line_length = LineLength(
             file_path=self.file_path,
@@ -378,7 +372,7 @@ class SpikeDetectionPipeline:
                 data_array=bf,
             )
 
-            # Create SpikeDetectionFunction
+            # Create ActivationFunction
             label_sdf = f"H{idx + 1}"
             unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
             coefficient_fct = CoefficientsFunction(

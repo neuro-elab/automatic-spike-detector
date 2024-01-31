@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from spidet.domain.DetectionFunction import DetectionFunction
+from spidet.domain.ActivationFunction import ActivationFunction
 
 
 @dataclass
-class CoefficientsFunction(DetectionFunction):
+class CoefficientsFunction(ActivationFunction):
     codes_for_spikes: bool

@@ -11,7 +11,7 @@ from mne.io import RawArray
 
 from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.domain.FunctionType import FunctionType
-from spidet.domain.DetectionFunction import DetectionFunction
+from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.domain.Trace import Trace
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.thresholding import ThresholdGenerator
@@ -344,11 +344,11 @@ class DataLoader:
         ]
 
     @staticmethod
-    def load_detection_functions(
+    def load_activation_functions(
         file_path: str, start_timestamp: float, sfreq: int = 50
-    ) -> List[DetectionFunction]:
+    ) -> List[ActivationFunction]:
         """
-        Loads a precomputed H matrix from a csv file and returns a list of DetectionFunctions.
+        Loads a precomputed H matrix from a csv file and returns a list of ActivationFunctions.
 
         Parameters
         ----------
@@ -364,10 +364,10 @@ class DataLoader:
 
         Returns
         -------
-        List[DetectionFunction]
-            A list of DetectionFunction objects representing the content of the H matrix.
+        List[ActivationFunction]
+            A list of ActivationFunction objects representing the content of the H matrix.
         """
-        logger.debug(f"Loading detection functions {file_path}")
+        logger.debug(f"Loading activation functions {file_path}")
         # Determine function type
         function_type = FunctionType.from_file_path(file_path)
 
@@ -375,7 +375,7 @@ class DataLoader:
         data_matrix = np.genfromtxt(file_path, delimiter=",")
 
         if FunctionType.STD_LINE_LENGTH == function_type:
-            sorted_detection_functions = data_matrix[np.newaxis, :]
+            sorted_activation_functions = data_matrix[np.newaxis, :]
 
             # Create unique id prefix
             path, file = os.path.split(file_path)
@@ -386,7 +386,7 @@ class DataLoader:
             kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
             (
                 _,
-                sorted_detection_functions,
+                sorted_activation_functions,
                 cluster_assignments,
             ) = kmeans.cluster_and_sort(h_matrix=data_matrix)
 
@@ -398,15 +398,15 @@ class DataLoader:
         # Compute times for x-axis
         times = compute_rescaled_timeline(
             start_timestamp=start_timestamp,
-            length=sorted_detection_functions.shape[1],
+            length=sorted_activation_functions.shape[1],
             sfreq=sfreq,
         )
 
         # Create return objects
-        detection_functions: List[DetectionFunction] = []
+        activation_functions: List[ActivationFunction] = []
 
-        for idx, df in enumerate(sorted_detection_functions):
-            # Create DetectionFunction
+        for idx, df in enumerate(sorted_activation_functions):
+            # Create ActivationFunction
             label_df = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
             unique_id_df = f"{unique_id_prefix}_{label_df}"
 
@@ -418,7 +418,7 @@ class DataLoader:
             spikes = threshold_generator.find_events(threshold)
 
             if FunctionType.STD_LINE_LENGTH == function_type:
-                detection_fct = DetectionFunction(
+                activation_fct = ActivationFunction(
                     label=label_df,
                     unique_id=unique_id_df,
                     times=times,
@@ -428,7 +428,7 @@ class DataLoader:
                     event_threshold=threshold,
                 )
             elif FunctionType.H_COEFFICIENTS == function_type:
-                detection_fct = CoefficientsFunction(
+                activation_fct = CoefficientsFunction(
                     label=label_df,
                     unique_id=unique_id_df,
                     times=times,
@@ -443,6 +443,6 @@ class DataLoader:
                     f"Function type {function_type} currently not supported by this service"
                 )
 
-            detection_functions.append(detection_fct)
+            activation_functions.append(activation_fct)
 
-        return detection_functions
+        return activation_functions

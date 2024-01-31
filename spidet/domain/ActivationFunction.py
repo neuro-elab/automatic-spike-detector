@@ -7,7 +7,7 @@ from spidet.domain.DetectedEvent import DetectedEvent
 
 
 @dataclass
-class DetectionFunction:
+class ActivationFunction:
     label: str
     unique_id: str
     times: np.ndarray[Any, np.dtype[float]]
