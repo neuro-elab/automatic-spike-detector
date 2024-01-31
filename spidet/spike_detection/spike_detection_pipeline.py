@@ -25,7 +25,11 @@ from spidet.utils.plotting_utils import plot_w_and_consensus_matrix
 class SpikeDetectionPipeline:
     """
     This class builds the heart of the automatic-spike-detection library. It provides an end-to-end
-    pipeline that takes in a path to file containing an iEEG recording and returns the
+    pipeline that takes in a path to a file containing an iEEG recording and returns periods of
+    abnormal activity. The pipeline is a multistep process that includes
+
+        1.  Reading the data from the provided file (supported file formats are .h5, .edf, .fif) and
+            transforming the data into set of ~spidet.domain.Trace objects
     """
 
     def __init__(
