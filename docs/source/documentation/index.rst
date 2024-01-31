@@ -1,4 +1,5 @@
-.. module:: documentation
+.. module:: spidet
+.. _doc:
 
 =============
 Documentation

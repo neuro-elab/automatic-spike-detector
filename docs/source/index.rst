@@ -18,7 +18,7 @@ Welcome to automatic-spike-detection's documentation!
         +++
 
         .. button-ref:: documentation
-            :ref-type: myst
+            :ref:`doc`
             :color: secondary
             :click-parent:
 
