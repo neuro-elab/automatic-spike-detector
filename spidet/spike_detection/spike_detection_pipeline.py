@@ -365,7 +365,7 @@ class SpikeDetectionPipeline:
     ) -> Tuple[List[BasisFunction], List[ActivationFunction]]:
         """
         This method triggers a complete run of the spike detection pipline with the arguments passed
-        to the :py:mod:`SpikeDetectionPipeline` at initialization.
+        to the :py:class:`SpikeDetectionPipeline` at initialization.
 
         Parameters
         ----------
