@@ -1,5 +1,4 @@
 .. module:: spidet
-.. _doc:
 
 =============
 Documentation
