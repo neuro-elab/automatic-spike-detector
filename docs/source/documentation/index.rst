@@ -1,4 +1,4 @@
-.. module:: spidet
+.. module:: documentation
 
 =============
 Documentation
