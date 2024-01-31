@@ -6,7 +6,7 @@
 Welcome to automatic-spike-detection's documentation!
 =====================================================
 
-.. grid:: 2
+.. grid::
 
     .. grid-item-card::
 
