@@ -275,7 +275,7 @@ class ThresholdGenerator:
         -------
         Dict[(int, Dict)]
             A nested dictionary containing the events for each activation function. A given activation function
-            in the dictionary can be accessed by its respective index in the :py:obj:`activation_function_matrix`.
+            in the dictionary can be accessed by its respective index in the :py:attr:`activation_function_matrix`.
             The events for a given activation function are represented by a dictionary containing two index arrays
             corresponding to the onset, accessible by the "events_on"-key, and offset,
             accessible by the "events_off"-key, indices of the events.
