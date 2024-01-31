@@ -58,6 +58,19 @@ class SpikeDetectionPipeline:
         If this parameter is non-zero, NMF is run with sparseness constraints.
 
     bad_times: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+        An optional N x 2 numpy array containing periods that must be excluded before applying
+        the line-length transformation. Each of th N rows in the array represents a period to be excluded,
+        defined by the start and end indices of the period in the original iEEG data.
+
+    nmf_runs: int
+        The number of nonnegative matrix factorization runs performed for each rank, default is 100.
+
+    rank_range: Tuple[int, int]
+        A tuple defining the range of ranks for which to perform the nonnegative matrix factorization,
+        default is (2, 5).
+
+    line_length_freq: int
+        the sampling frequency of the line-length transformed data, default is 50 hz.
     """
 
     def __init__(

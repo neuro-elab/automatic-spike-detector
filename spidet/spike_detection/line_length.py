@@ -41,20 +41,20 @@ class LineLength:
         window_length: int = 100,
     ) -> np.ndarray:
         """
-        Dampens bad times within preprocessed EEG data by setting values of bad times intervals to zero
+        Dampens bad times within preprocessed iEEG data by setting values of bad times intervals to zero
         and applying hann windows (https://en.wikipedia.org/wiki/Hann_function) around starting and ending
         points in order to get smoothed transitions
 
         Parameters
         ----------
         data : numpy.ndarray[Any, np.dtype[np.float64]]
-            The preprocessed EEG data.
+            The preprocessed iEEG data.
 
         sfreq : int
-            The sampling frequency of the preprocessed EEG data.
+            The sampling frequency of the preprocessed iEEG data.
 
         orig_sfreq : int
-            The sampling frequency of the original EEG data.
+            The sampling frequency of the original iEEG data.
 
         window_length : int
             The length of the smoothed transition periods in ms
@@ -62,7 +62,7 @@ class LineLength:
         Returns
         -------
         smoothed_data : numpy.ndarray[Any, np.dtype[np.float64]]
-            The preprocessed EEG data wih artifacts being zeroed and having smoothed transition periods.
+            The preprocessed iEEG data wih artifacts being zeroed and having smoothed transition periods.
 
         """
         if len(self.bad_times.shape) == 1:
