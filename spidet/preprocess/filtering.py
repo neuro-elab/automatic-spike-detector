@@ -34,21 +34,7 @@ def filter_signal(
     array-like
         Bandpass filtered zero-centered signal/-s at cut-off frequency 200 Hz.
     """
-    # TODO: remove nyq
-
-    # Nyquist frequency (i.e. half the sampling frequency)
-    nyq = sfreq / 2
-
-    # cut-off frequencies
-    f_l = cutoff_freq_low
-    f_h = cutoff_freq_high
-
-    # TODO: how should normalized freq be used with mne, if at all
-
-    # Normalize frequency
-    np.array([f_l, f_h]) / nyq
-
-    # create an iir (infinite impulse response) butterworth filter
+    # Create an iir (infinite impulse response) butterworth filter
     iir_params = dict(order=2, ftype="butter", btype="bandpass")
     iir_filter = mne.filter.create_filter(
         data,
@@ -60,11 +46,11 @@ def filter_signal(
         verbose=False,
     )
 
-    # forward-backward filter
+    # Forward-backward filter
     filtered_eeg = signal.sosfiltfilt(iir_filter["sos"], data)
 
     if zero_center:
-        # zero-center the data
+        # Zero-center the data
         filtered_eeg -= np.median(filtered_eeg, 1, keepdims=True)
 
     return filtered_eeg
