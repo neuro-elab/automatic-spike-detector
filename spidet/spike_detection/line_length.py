@@ -163,11 +163,10 @@ class LineLength:
 
         References
         ----------
-        See also
-        --------
-        :see: Line length as a robust method to detect high-activity events:
-              Automated burst detection in premature EEG recordings
-        (https://www.sciencedirect.com/science/article/pii/S1388245714001114?via%3Dihub).
+        .. [1] Koolen, N., Jansen, K., Vervisch, J., Matic, V., De Vos, M., Naulaers, G., & Van Huffel, S. (2014).
+        Line length as a robust method to detect high-activity events:
+        Automated burst detection in premature EEG recordings.
+        Clinical Neurophysiology, 125(10), 1985–1994. https://doi.org/https://doi.org/10.1016/j.clinph.2014.02.015
         """
         # shape of the data: number of channels x duration
         nr_channels, duration = np.shape(eeg_data)
