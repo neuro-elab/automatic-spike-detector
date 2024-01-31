@@ -55,12 +55,14 @@ class SpikeDetectionPipeline:
 
     sparseness: float
         A floating point number :math:`\in [0, 1]`.
-        If this parameter is non-zero, NMF is run with sparseness constraints.
+        If this parameter is non-zero, nonnegative matrix factorization is run with sparseness constraints.
 
     bad_times: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
         An optional N x 2 numpy array containing periods that must be excluded before applying
         the line-length transformation. Each of th N rows in the array represents a period to be excluded,
         defined by the start and end indices of the period in the original iEEG data.
+        The defined periods will be set to zero with the transitions being smoothed by applying a hanning window
+        to prevent spurious patterns.
 
     nmf_runs: int
         The number of nonnegative matrix factorization runs performed for each rank, default is 100.
@@ -70,7 +72,7 @@ class SpikeDetectionPipeline:
         default is (2, 5).
 
     line_length_freq: int
-        the sampling frequency of the line-length transformed data, default is 50 hz.
+        The sampling frequency of the line-length transformed data, default is 50 hz.
     """
 
     def __init__(
@@ -356,11 +358,38 @@ class SpikeDetectionPipeline:
 
     def run(
         self,
-        channel_paths: List[str],
+        channel_paths: List[str] = None,
         bipolar_reference: bool = False,
         exclude: List[str] = None,
         leads: List[str] = None,
     ) -> Tuple[List[BasisFunction], List[ActivationFunction]]:
+        """
+        This method triggers a complete run of the spike detection pipline with the arguments passed
+        to the :py:mod:`SpikeDetectionPipeline` at initialization.
+
+        Parameters
+        ----------
+        channel_paths: List[str]
+            A list of paths to the traces to be included within an h5 file. This is only necessary in the case
+            of h5 files.
+
+        bipolar_reference: bool
+            If True, the bipolar references of the included channels will be computed. If channels already are
+            in bipolar form this needs to be False.
+
+        exclude: List[str]
+            A list of channel names that need to be excluded. This only applies in the case of .edf and .fif files.
+
+        leads: List[str]
+            A list of the leads included. Only necessary if bipolar_reference is True, otherwise can be None.
+
+        Returns
+        -------
+        Tuple[List[BasisFunction], List[ActivationFunction]]
+            Two lists containing the :py:mod:`~spidet.domain.BasisFunction`
+            and :py:mod:`~spidet.domain.ActivationFunction`, where each activation function contains
+            the corresponding detected events.
+        """
         # Instantiate a LineLength instance
         line_length = LineLength(
             file_path=self.file_path,
