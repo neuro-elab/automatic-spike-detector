@@ -29,7 +29,12 @@ class SpikeDetectionPipeline:
     abnormal activity. The pipeline is a multistep process that includes
 
         1.  Reading the data from the provided file (supported file formats are .h5, .edf, .fif) and
-            transforming the data into set of :py:mod:`Trace` objects
+            transforming the data into a list of :py:mod:`Trace` objects.
+        2.  Performing the necessary preprocessing steps by means of the :py:mod:`preprocessing` module
+        3.  Applying the line-length transformation using the :py:mod:`line_length` module
+        4.  Performing Nonnegative Matrix Factorization to extract the most discriminating metappatterns,
+            done by the :py:mod:`nmf` module
+        5.  Computing periods of abnormal activity by means of the :py:mod:`thresholding` module
     """
 
     def __init__(
