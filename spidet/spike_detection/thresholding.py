@@ -8,6 +8,21 @@ class ThresholdGenerator:
     """
     This class is the primary entity for computing detected events on a given single activation function or
     set of activation functions.
+
+    Parameters
+    ----------
+    activation_function_matrix: numpy.ndarray[Any, np.dtype[numpy.float64]]
+        A single or set of activation functions for which to compute events
+
+    preprocessed_data: np.ndarray[Any, np.dtype[np.float64]]
+        The preprocessed iEEG data, produced by applying the preprocessing steps listed in the preprocessing section.
+
+    sfreq: int
+        The sampling frequency of the data contained in the activation functions, defaults to 50 Hz.
+
+    z_threshold: int
+        The z-threshold used for computing the channels involved in a particular event.
+
     """
 
     def __init__(
@@ -17,23 +32,6 @@ class ThresholdGenerator:
         sfreq: int = 50,
         z_threshold: int = 10,
     ):
-        """
-        Initialize the thresholder.
-
-        Parameters
-        ----------
-        activation_function_matrix: numpy.ndarray[Any, np.dtype[numpy.float64]]
-            A single or set of activation functions for which to compute events
-
-        preprocessed_data: np.ndarray[Any, np.dtype[np.float64]]
-            The preprocessed iEEG data, produced by applying the preprocessing steps listed in the preprocessing section.
-
-        sfreq: int
-            The sampling frequency of the data contained in the activation functions, defaults to 50 Hz.
-
-        z_threshold: int
-            The z-threshold used for computing the channels involved in a particular event.
-        """
         self.activation_function_matrix = (
             activation_function_matrix
             if len(activation_function_matrix.shape) > 1
