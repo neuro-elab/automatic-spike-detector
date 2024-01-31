@@ -159,7 +159,7 @@ class LineLength:
         -----
         The line length operation involves slicing the input data into evenly spaced intervals
         along the time axis and processing each block separately. It computes the summed absolute
-        difference of the data along consecutive time points over a predefined segment.
+        difference of the data along consecutive time points over a predefined segment. [1]_
 
         References
         ----------
