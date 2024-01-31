@@ -16,10 +16,13 @@ def resample_data(
     ----------
     sfreq : float
         Original frequency of the data.
+
     channel_names : list of str
         Labels of the channels.
+
     data : array-like
         Data to be resampled.
+
     resampling_freq : float
         Target resampling frequency.
 

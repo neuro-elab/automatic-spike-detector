@@ -412,7 +412,7 @@ class DataLoader:
 
             # Generate threshold and find spikes
             threshold_generator = ThresholdGenerator(
-                detection_function_matrix=df, sfreq=sfreq
+                activation_function_matrix=df, sfreq=sfreq
             )
             threshold = threshold_generator.generate_threshold()
             spikes = threshold_generator.find_events(threshold)

@@ -13,8 +13,10 @@ def rescale_data(
     ----------
     data_to_be_scaled : numpy.array
         Data to be scaled.
+
     original_data : numpy.array
         Original data.
+
     sfreq : float
         Sampling frequency of the channels in the original data.
 

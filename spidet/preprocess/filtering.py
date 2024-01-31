@@ -66,10 +66,13 @@ def notch_filter_signal(
     ----------
     eeg_data : array-like
         Data to be filtered.
+
     notch_frequency : float
         Frequency (and its harmonics) to filter.
+
     low_pass_freq : float
         Frequency above which the signal is ignored.
+
     sfreq : float
         Baseline frequency of the signal.
 

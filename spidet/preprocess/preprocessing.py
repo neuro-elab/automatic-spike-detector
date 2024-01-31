@@ -28,10 +28,13 @@ def apply_preprocessing_steps(
     ----------
     traces : List[Trace]
         The original iEEG data as a list of Traces objects. Each trace corresponds to the recording of single channel.
+
     notch_freq : int
         The frequency of the notch filter
+
     bandpass_cutoff_low : int
         Cut-off frequency at the lower end of the passband of the bandpass filter.
+
     bandpass_cutoff_high : int
         Cut-off frequency at the higher end of the passband of the bandpass filter.
 
@@ -40,7 +43,6 @@ def apply_preprocessing_steps(
     numpy.ndarray[Any, np.dtype[float]]
         2-dimensional numpy array containing the preprocessed data where the rows correspond to the input traces.
     """
-    # TODO add documentation, clean up
 
     # Extract channel names
     channel_names = [trace.label for trace in traces]

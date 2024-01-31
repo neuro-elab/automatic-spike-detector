@@ -6,6 +6,13 @@
 Welcome to automatic-spike-detection's documentation!
 =====================================================
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :titlesonly:
+
+   Documentation <documentation/index>
+
 .. grid:: 2
 
     .. grid-item-card::
@@ -20,15 +27,9 @@ Welcome to automatic-spike-detection's documentation!
         .. button-ref:: documentation
             :expand:
             :color: secondary
+            :click-parent:
 
             To the documentation
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :titlesonly:
-
-   documentation/index
 
 
 

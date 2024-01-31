@@ -338,7 +338,7 @@ class LineLength:
 
         # Generate threshold and detect periods
         threshold_generator = ThresholdGenerator(
-            detection_function_matrix=std_line_length, sfreq=line_length_freq
+            activation_function_matrix=std_line_length, sfreq=line_length_freq
         )
         threshold = threshold_generator.generate_threshold()
         detected_periods = threshold_generator.find_events(threshold)
