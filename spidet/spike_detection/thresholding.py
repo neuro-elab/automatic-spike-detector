@@ -262,7 +262,7 @@ class ThresholdGenerator:
         Computes the events for the activation functions in the activation_function_matrix, which was
         passed to the ThresholdGenerator at initialization. If the threshold argument is None,
         the computation is based on the thresholds generated for each activation function
-        by :py:func:`~spidet.spike_detection.ThresholdGenerator.generate_individual_thresholds`
+        by :py:func:`~generate_individual_thresholds`
 
         Parameters
         ----------
