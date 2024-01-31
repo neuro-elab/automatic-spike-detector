@@ -15,6 +15,37 @@ from spidet.utils.times_utils import compute_rescaled_timeline
 
 
 class LineLength:
+    """
+    This class provides all operations regarding the line-length transformation.
+
+    Parameters
+    ----------
+
+    file_path: str
+        Path to the file containing the iEEG data.
+
+    bad_times: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+        An optional N x 2 numpy array containing periods that must be excluded before applying
+        the line-length transformation. Each of th N rows in the array represents a period to be excluded,
+        defined by the start and end indices of the period in the original iEEG data.
+        The defined periods will be set to zero with the transitions being smoothed by applying a hanning window
+        to prevent spurious patterns.
+
+    dataset_paths: List[str]
+        A list of paths to the traces to be included within an h5 file. This is only necessary in the case
+        of h5 files.
+
+    bipolar_reference: bool
+        If True, the bipolar references of the included channels will be computed. If channels already are
+        in bipolar form this needs to be False.
+
+    exclude: List[str]
+        A list of channel names that need to be excluded. This only applies in the case of .edf and .fif files.
+
+    leads: List[str]
+        A list of the leads included. Only necessary if bipolar_reference is True, otherwise can be None.
+    """
+
     def __init__(
         self,
         file_path: str,

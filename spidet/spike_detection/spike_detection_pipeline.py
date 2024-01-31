@@ -162,7 +162,6 @@ class SpikeDetectionPipeline:
         preprocessed_data: np.ndarray,
         rank: int,
         n_runs: int,
-        execute: bool = False,
     ) -> Tuple[
         Dict,
         np.ndarray[Any, np.dtype[float]],
