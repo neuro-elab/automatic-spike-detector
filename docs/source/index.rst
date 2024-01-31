@@ -28,7 +28,6 @@ Welcome to automatic-spike-detection's documentation!
    :maxdepth: 2
    :hidden:
    :titlesonly:
-   :caption: Contents:
 
    documentation/index
 

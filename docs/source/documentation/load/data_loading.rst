@@ -2,4 +2,6 @@ data_loading
 ************
 
 .. automodule:: spidet.load.data_loading
-   :members:
+    :members:
+    :undoc-members:
+    :show-inheritance:
