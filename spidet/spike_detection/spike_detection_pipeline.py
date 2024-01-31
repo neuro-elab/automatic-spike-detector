@@ -35,6 +35,29 @@ class SpikeDetectionPipeline:
         4.  performing Nonnegative Matrix Factorization to extract the most discriminating metappatterns,
             done by the :py:mod:`~spidet.spike_detection.nmf` module and
         5.  computing periods of abnormal activity by means of the :py:mod:`~spidet.spike_detection.thresholding` module.
+
+    Parameters
+    ----------
+
+    file_path: str
+        Path to the file containing the iEEG data.
+
+    results_dir: str
+        Path to the directory where the folder containing the results of the spike detection run should be saved.
+        If None, the results folder will be saved in the user's home directory. By default, the results contain
+        the metrics representing the computation of the optimal rank and two plots for both the basis functions
+        and the consensus matrices of the different ranks.
+
+    save_nmf_matrices: bool
+        If True, in addition to the results saved by default, the W matrix containing the basis functions and
+        the H matrix containing the activation functions for each rank, the line-length transformed data and
+        the standard deviation of the line length are saved.
+
+    sparseness: float
+        A floating point number .. math:: \in [0, 1]
+        If this parameter is non-zero, NMF is run with sparseness constraints.
+
+    bad_times: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
     """
 
     def __init__(

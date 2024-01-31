@@ -11,10 +11,10 @@ class ThresholdGenerator:
 
     Parameters
     ----------
-    activation_function_matrix: numpy.ndarray[Any, np.dtype[numpy.float64]]
+    activation_function_matrix: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
         A single or set of activation functions for which to compute events
 
-    preprocessed_data: np.ndarray[Any, np.dtype[np.float64]]
+    preprocessed_data: np.ndarray[Any, numpy.dtype[numpy.float64]]
         The preprocessed iEEG data, produced by applying the preprocessing steps listed in the preprocessing section.
 
     sfreq: int
