@@ -18,7 +18,6 @@ Welcome to automatic-spike-detection's documentation!
         +++
 
         .. button-ref:: documentation
-            :expand:
             :color: secondary
             :click-parent:
 

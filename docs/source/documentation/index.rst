@@ -1,4 +1,4 @@
-.. module:: automatic-spike-detection
+.. module:: spidet
 
 =============
 Documentation
