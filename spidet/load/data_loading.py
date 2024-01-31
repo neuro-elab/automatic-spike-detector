@@ -28,6 +28,10 @@ H_KEYWORD = "H_best"
 
 
 class DataLoader:
+    """
+    This class provides the utilities concerned with loading an iEEG dataset.
+    """
+
     @staticmethod
     def extract_channel_names(channel_paths: List[str]) -> List[str]:
         return [
