@@ -29,7 +29,7 @@ class SpikeDetectionPipeline:
     abnormal activity. The pipeline is a multistep process that includes
 
         1.  Reading the data from the provided file (supported file formats are .h5, .edf, .fif) and
-            transforming the data into set of :py:mod:`~spidet.domain.Trace` objects
+            transforming the data into set of :py:mod:`Trace` objects
     """
 
     def __init__(
