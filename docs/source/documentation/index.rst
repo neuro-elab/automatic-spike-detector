@@ -23,7 +23,6 @@ Documentation
    :maxdepth: 2
    :caption: spike_detection
 
-   spike_detection/clustering
    spike_detection/line_length
    spike_detection/nmf
    spike_detection/spike_detection_pipeline
