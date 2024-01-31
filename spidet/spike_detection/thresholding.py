@@ -133,7 +133,7 @@ class ThresholdGenerator:
     def generate_individual_thresholds(self) -> None:
         """
         Computes the threshold for each individual activation function based on
-        :func:`~spike_detection.ThresholdGenerator.generate_threshold`
+        :py:func:`~spike_detection.ThresholdGenerator.generate_threshold`
         """
         for idx, activation_function in enumerate(self.activation_function_matrix):
             threshold = self.generate_threshold(data=activation_function)
@@ -262,7 +262,7 @@ class ThresholdGenerator:
         Computes the events for the activation functions in the activation_function_matrix, which was
         passed to the ThresholdGenerator at initialization. If the threshold argument is None,
         the computation is based on the thresholds generated for each activation function
-        by :func:`~spidet.spike_detection.ThresholdGenerator.generate_individual_thresholds`
+        by :py:func:`~spidet.spike_detection.ThresholdGenerator.generate_individual_thresholds`
 
         Parameters
         ----------
