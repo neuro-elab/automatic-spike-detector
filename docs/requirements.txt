@@ -7,3 +7,6 @@ mne
 numpy
 mne
 nimfa
+loguru
+pandas
+sklearn
