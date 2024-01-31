@@ -54,7 +54,7 @@ class SpikeDetectionPipeline:
         the standard deviation of the line length are saved.
 
     sparseness: float
-        A floating point number :math:`\in [0, 1]`
+        A floating point number :math:`\in [0, 1]`.
         If this parameter is non-zero, NMF is run with sparseness constraints.
 
     bad_times: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
@@ -66,9 +66,9 @@ class SpikeDetectionPipeline:
         results_dir: str = None,
         save_nmf_matrices: bool = False,
         sparseness: float = 0.0,
-        bad_times: np.ndarray = None,
+        bad_times: np.ndarray[Any, np.dtype[np.float64]] = None,
         nmf_runs: int = 100,
-        rank_range: Tuple[int, int] = (2, 10),
+        rank_range: Tuple[int, int] = (2, 5),
         line_length_freq: int = 50,
     ):
         self.sparseness = sparseness
