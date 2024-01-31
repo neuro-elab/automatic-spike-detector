@@ -9,4 +9,4 @@ mne
 nimfa
 loguru
 pandas
-sklearn
+scikit-learn
