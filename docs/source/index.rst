@@ -6,7 +6,7 @@
 Welcome to automatic-spike-detection's documentation!
 =====================================================
 
-.. grid::
+.. grid:: 2
 
     .. grid-item-card::
 
@@ -20,7 +20,6 @@ Welcome to automatic-spike-detection's documentation!
         .. button-ref:: documentation
             :expand:
             :color: secondary
-            :click-parent:
 
             To the documentation
 
