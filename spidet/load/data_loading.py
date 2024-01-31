@@ -347,6 +347,26 @@ class DataLoader:
     def load_detection_functions(
         file_path: str, start_timestamp: float, sfreq: int = 50
     ) -> List[DetectionFunction]:
+        """
+        Loads a precomputed H matrix from a csv file and returns a list of DetectionFunctions.
+
+        Parameters
+        ----------
+        file_path : float
+            The path to the file containing the H matrix.
+
+        start_timestamp : str
+            Start time of the recording in the form of a UNIX timestamp.
+            This is necessary to compute the corresponding timestamp for each individual datapoint.
+
+        sfreq : int
+            this is the sampling frequency of the data contained in the H matrix.
+
+        Returns
+        -------
+        List[DetectionFunction]
+            A list of DetectionFunction objects representing the content of the H matrix.
+        """
         logger.debug(f"Loading detection functions {file_path}")
         # Determine function type
         function_type = FunctionType.from_file_path(file_path)

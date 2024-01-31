@@ -16,12 +16,23 @@ def filter_signal(
     which effectively results in an order of 4 as the data is forward-backward filtered.
     Additionally, the possibility to zero-center the data is provided.
 
-    :param sfreq: sampling frequency of the input signal/-s
-    :param cutoff_freq_low: lower end of the frequency passband
-    :param cutoff_freq_high: upper end of the frequency passband
-    :param data: signal/-s to be filtered
-    :param zero_center: if True, re-centers the signal/-s, defaults to True
-    :return: bandpass filtered zero-centered signal/-s at cut-off frequency 200 Hz
+    Parameters
+    ----------
+    sfreq : float
+        Sampling frequency of the input signal/-s.
+    cutoff_freq_low : float
+        Lower end of the frequency passband.
+    cutoff_freq_high : float
+        Upper end of the frequency passband.
+    data : array-like
+        Signal/-s to be filtered.
+    zero_center : bool, optional
+        If True, re-centers the signal/-s, defaults to True.
+
+    Returns
+    -------
+    array-like
+        Bandpass filtered zero-centered signal/-s at cut-off frequency 200 Hz.
     """
     # TODO: remove nyq
 
@@ -63,16 +74,24 @@ def notch_filter_signal(
     eeg_data: np.array, notch_frequency: int, low_pass_freq: int, sfreq: int
 ):
     """
-    Creates a notch-filter and runs it over the provided data
+    Creates a notch-filter and runs it over the provided data.
 
-    :param eeg_data: data to be filtered
-    :param notch_frequency: frequency (and its harmonics) to filter
-    :param low_pass_freq: frequency above which signal is ignored
-    :param sfreq: baseline frequency of the signal
-    :return: filtered signal
+    Parameters
+    ----------
+    eeg_data : array-like
+        Data to be filtered.
+    notch_frequency : float
+        Frequency (and its harmonics) to filter.
+    low_pass_freq : float
+        Frequency above which the signal is ignored.
+    sfreq : float
+        Baseline frequency of the signal.
+
+    Returns
+    -------
+    array-like
+        Filtered signal.
     """
-    # TODO complete/rework documentation; check for correctness
-
     # get harmonics of the notch frequency within low pass freq, max first 4 harmonics
     harmonics = np.arange(notch_frequency, low_pass_freq, notch_frequency)
     harmonics = harmonics[:4] if harmonics.size > 4 else harmonics
