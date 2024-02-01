@@ -13,31 +13,31 @@ from spidet.domain.Nmfsc import Nmfsc
 
 class Nmf:
     """
-    This class hosts operations concerned with nonegative matrix factorization.
+    This class hosts operations concerned with nonnegative matrix factorization (NMF).
+
+    Parameters
+    ----------
+
+    rank: int
+        The rank used for the nonnegative matrix factorization
+
+    sparseness: float, optional, default = 0.0
+        The sparseness parameter used in case NMF is run with sparseness constraints.
     """
 
     def __init__(self, rank: int, sparseness: float = 0.0):
         self.rank = rank
         self.sparseness = float(sparseness)
 
-    def __calculate_cophenetic_corr(self, A: np.ndarray) -> np.ndarray:
-        """
-        Compute the cophenetic correlation coefficient for matrix A.
-
-        Parameters
-        ----------
-
-        A: numpy.ndarray
-            Input matrix.
-
-        Returns
-        -------
-        float
-            Cophenetic correlation coefficient.
-        """
+    @staticmethod
+    def __calculate_cophenetic_corr(consensus_matrix: np.ndarray) -> np.ndarray:
         # Extract the values from the lower triangle of A
         avec = np.array(
-            [A[i, j] for i in range(A.shape[0] - 1) for j in range(i + 1, A.shape[1])]
+            [
+                consensus_matrix[i, j]
+                for i in range(consensus_matrix.shape[0] - 1)
+                for j in range(i + 1, consensus_matrix.shape[1])
+            ]
         )
 
         # Consensus entries are similarities, conversion to distances
