@@ -20,12 +20,15 @@ class Nmf:
         """
         Compute the cophenetic correlation coefficient for matrix A.
 
-        Parameters:
-        - A : numpy.ndarray
+        Parameters
+        ----------
+
+        A: numpy.ndarray
             Input matrix.
 
-        Returns:
-        - float
+        Returns
+        -------
+        float
             Cophenetic correlation coefficient.
         """
         # Extract the values from the lower triangle of A
