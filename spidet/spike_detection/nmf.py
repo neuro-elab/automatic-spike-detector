@@ -23,7 +23,6 @@ class Nmf:
 
     sparseness: float, optional, default = 0.0
         The sparseness parameter used in case NMF is run with sparseness constraints.
-        If the default value is used, the basic NMF model is used.
     """
 
     def __init__(self, rank: int, sparseness: float = 0.0):
