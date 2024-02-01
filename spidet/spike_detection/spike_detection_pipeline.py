@@ -15,7 +15,6 @@ from spidet.utils import logging_utils
 
 from spidet.domain.BasisFunction import BasisFunction
 from spidet.domain.ActivationFunction import ActivationFunction
-from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.line_length import LineLength
 from spidet.spike_detection.nmf import Nmf
@@ -432,7 +431,7 @@ class SpikeDetectionPipeline:
 
         # Create return objects
         basis_functions: List[BasisFunction] = []
-        coefficient_functions: List[CoefficientsFunction] = []
+        activation_functions: List[ActivationFunction] = []
 
         for idx, (bf, sdf, spikes_idx, threshold_idx, assignments_idx) in enumerate(
             zip(w_opt.T, h_opt, spikes_opt, thresholds_opt, assignments_opt)
@@ -448,20 +447,19 @@ class SpikeDetectionPipeline:
             )
 
             # Create ActivationFunction
-            label_sdf = f"H{idx + 1}"
-            unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
-            coefficient_fct = CoefficientsFunction(
-                label=label_sdf,
-                unique_id=unique_id_sdf,
+            label_af = f"H{idx + 1}"
+            unique_id_af = f"{unique_id_prefix}_{label_af}"
+            activation_fct = ActivationFunction(
+                label=label_af,
+                unique_id=unique_id_af,
                 times=times,
                 data_array=sdf,
                 detected_events_on=spikes_opt.get(spikes_idx)["events_on"],
                 detected_events_off=spikes_opt.get(spikes_idx)["events_off"],
                 event_threshold=thresholds_opt.get(threshold_idx),
-                codes_for_spikes=bool(assignments_opt.get(assignments_idx)),
             )
 
             basis_functions.append(basis_fct)
-            coefficient_functions.append(coefficient_fct)
+            activation_functions.append(activation_fct)
 
-        return basis_functions, coefficient_functions
+        return basis_functions, activation_functions

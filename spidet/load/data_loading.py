@@ -9,7 +9,6 @@ from h5py import Dataset, File
 from loguru import logger
 from mne.io import RawArray
 
-from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.domain.FunctionType import FunctionType
 from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.domain.Trace import Trace
@@ -412,7 +411,7 @@ class DataLoader:
         for idx, df in enumerate(sorted_activation_functions):
             # Create ActivationFunction
             label_df = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
-            unique_id_df = f"{unique_id_prefix}_{label_df}"
+            unique_id_af = f"{unique_id_prefix}_{label_df}"
 
             # Generate threshold and find spikes
             threshold_generator = ThresholdGenerator(
@@ -421,31 +420,15 @@ class DataLoader:
             threshold = threshold_generator.generate_threshold()
             spikes = threshold_generator.find_events(threshold)
 
-            if FunctionType.STD_LINE_LENGTH == function_type:
-                activation_fct = ActivationFunction(
-                    label=label_df,
-                    unique_id=unique_id_df,
-                    times=times,
-                    data_array=df,
-                    detected_events_on=spikes.get(0)["events_on"],
-                    detected_events_off=spikes.get(0)["events_off"],
-                    event_threshold=threshold,
-                )
-            elif FunctionType.H_COEFFICIENTS == function_type:
-                activation_fct = CoefficientsFunction(
-                    label=label_df,
-                    unique_id=unique_id_df,
-                    times=times,
-                    data_array=df,
-                    detected_events_on=spikes.get(0)["events_on"],
-                    detected_events_off=spikes.get(0)["events_off"],
-                    event_threshold=threshold,
-                    codes_for_spikes=bool(cluster_assignments.get(idx)),
-                )
-            else:
-                raise Exception(
-                    f"Function type {function_type} currently not supported by this service"
-                )
+            activation_fct = ActivationFunction(
+                label=label_df,
+                unique_id=unique_id_af,
+                times=times,
+                data_array=df,
+                detected_events_on=spikes.get(0)["events_on"],
+                detected_events_off=spikes.get(0)["events_off"],
+                event_threshold=threshold,
+            )
 
             activation_functions.append(activation_fct)
 
