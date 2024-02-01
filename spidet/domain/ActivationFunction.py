@@ -8,6 +8,10 @@ from spidet.domain.DetectedEvent import DetectedEvent
 
 @dataclass
 class ActivationFunction:
+    """
+    This class represents the activation of an EEG metapattern in the time domain.
+    """
+
     label: str
     unique_id: str
     times: np.ndarray[Any, np.dtype[float]]

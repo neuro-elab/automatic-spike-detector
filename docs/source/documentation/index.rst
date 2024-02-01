@@ -6,6 +6,16 @@ Documentation
 
 .. toctree::
     :maxdepth: 2
+    :caption: most-used domain objects
+
+    domain/ActivationFunction
+    domain/BasisFunction
+    domain/DetectedEvent
+    domain/Trace
+    domain/Nmfsc
+
+.. toctree::
+    :maxdepth: 2
     :caption: load
 
     load/data_loading
