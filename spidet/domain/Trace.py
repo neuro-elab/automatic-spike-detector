@@ -19,7 +19,7 @@ class Trace:
         The sampling frequency of the data.
 
     start_timestamp: float
-        the start timestamp of the recording as a UNIX timestamp.
+        The start timestamp of the recording as a UNIX timestamp.
 
     data: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
         An array containing the EEG data of the given channel.
