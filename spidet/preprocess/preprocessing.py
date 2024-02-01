@@ -19,7 +19,7 @@ def apply_preprocessing_steps(
     """
     Applies the necessary preprocessing steps to the original iEEG data. This involves:
 
-        1.  Bandpass-filtering
+        1.  Bandpass-filtering with a butterworth forward-backward filter of order 2
         2.  Notch-filtering
         3.  Rescaling
         4.  Resampling
@@ -30,7 +30,12 @@ def apply_preprocessing_steps(
         The original iEEG data as a list of Traces objects. Each trace corresponds to the recording of single channel.
 
     notch_freq : int
-        The frequency of the notch filter
+        The frequency of the notch filter; data will be notch-filtered at this frequency
+        and at the corresponding harmonics,
+        e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
+
+    resampling_freq: int
+        The frequency to resample the data after filtering and rescaling
 
     bandpass_cutoff_low : int
         Cut-off frequency at the lower end of the passband of the bandpass filter.

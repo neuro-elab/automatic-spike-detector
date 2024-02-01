@@ -18,12 +18,15 @@ def filter_signal(
 
     Parameters
     ----------
-    sfreq : float
+    sfreq : int
         Sampling frequency of the input signal/-s.
-    cutoff_freq_low : float
+
+    cutoff_freq_low : int
         Lower end of the frequency passband.
-    cutoff_freq_high : float
+
+    cutoff_freq_high : int
         Upper end of the frequency passband.
+
     data : array-like
         Signal/-s to be filtered.
     zero_center : bool, optional
@@ -67,13 +70,15 @@ def notch_filter_signal(
     eeg_data : array-like
         Data to be filtered.
 
-    notch_frequency : float
-        Frequency (and its harmonics) to filter.
+    notch_frequency : int
+        The frequency of the notch filter; data will be notch-filtered at this frequency
+        and at the corresponding harmonics,
+        e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
 
-    low_pass_freq : float
+    low_pass_freq : int
         Frequency above which the signal is ignored.
 
-    sfreq : float
+    sfreq : int
         Baseline frequency of the signal.
 
     Returns

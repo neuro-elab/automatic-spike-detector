@@ -286,7 +286,52 @@ class LineLength:
         n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
-    ) -> Tuple[float, List[str], np.ndarray]:
+    ) -> Tuple[float, List[str], np.ndarray[Any, np.dtype[np.float64]]]:
+        """
+        This function launches the line length pipeline, which first carries out the necessary preprocessing steps
+        and then performs the line-length transformation of the preprocessed EEG data. The individual steps include
+
+            1.  reading the data from the provided file (supported file formats are .h5, .edf, .fif)
+                using the :py:mod:`~spidet.load.data_loading` module, which transforms the data
+                into a list of :py:mod:`~spidet.domain.Trace` objects,
+            2.  performing the necessary preprocessing steps by means of the
+                :py:mod:`~spidet.preprocess.preprocessing` module,
+            3.  and applying the line-length transformation.
+
+        To optimize computation, the channels are split into subsets and processed in parallel.
+
+        Parameters
+        ----------
+        notch_freq: int, optional, default = 50
+            The frequency of the notch filter; data will be notch-filtered at this frequency
+            and at the corresponding harmonics,
+            e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
+
+        resampling_freq: int, optional, default = 500
+            The frequency to resample the data after filtering and rescaling
+
+        bandpass_cutoff_low: int, optional, default = 0.1
+            Cut-off frequency at the lower end of the passband of the bandpass filter.
+
+        bandpass_cutoff_high: int, optional, default = 200
+            Cut-off frequency at the higher end of the passband of the bandpass filter.
+
+        n_processes: int, optional, default = 5
+            Number of parallel processes to use for the line-length pipeline
+
+        line_length_freq: int, optional, default = 50
+            Sampling frequency of the line-length transformed data
+
+        line_length_window: int, optional, default = 40
+            Window length used to for the line-length operation (in milliseconds).
+
+        Returns
+        -------
+        Tuple[float, List[str], numpy.ndarray[Any, numpy.dtype[numpy.float64]]]
+            Tuple containing, the start timestamp of the recording, a list of channel names
+            corresponding to the channels in the line-length transformed data,
+            the line-length transformed data
+        """
         # Set optional line length params
         self.line_length_freq = line_length_freq
         self.line_length_window = line_length_window
@@ -346,6 +391,42 @@ class LineLength:
         line_length_freq: int = 50,
         line_length_window: int = 40,
     ) -> ActivationFunction:
+        """
+        This function computes the standard deviation of the data after performing
+        the line-length transformation using the :py:func:`apply_parallel_line_length_pipeline` method
+        and wraps it into a single :py:class:`~spidet.domain.ActivationFunction` object.
+        The defined parameters will be passed on to the :py:func:`apply_parallel_line_length_pipeline` method.
+
+        Parameters
+        ----------
+        notch_freq: int, optional, default = 50
+            The frequency of the notch filter; data will be notch-filtered at this frequency
+            and at the corresponding harmonics,
+            e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
+
+        resampling_freq: int, optional, default = 500
+            The frequency to resample the data after filtering and rescaling
+
+        bandpass_cutoff_low: int, optional, default = 0.1
+            Cut-off frequency at the lower end of the passband of the bandpass filter.
+
+        bandpass_cutoff_high: int, optional, default = 200
+            Cut-off frequency at the higher end of the passband of the bandpass filter.
+
+        n_processes: int, optional, default = 5
+            Number of parallel processes to use for the line-length pipeline
+
+        line_length_freq: int, optional, default = 50
+            Sampling frequency of the line-length transformed data
+
+        line_length_window: int, optional, default = 40
+            Window length used to for the line-length operation (in milliseconds).
+
+        Returns
+        -------
+        :py:class:`~spidet.domain.ActivationFunction`
+            ActivationFunction containing the standard deviation of the line-length transformed data.
+        """
         # Compute line length for each channel (done in parallel)
         start_timestamp, _, line_length = self.apply_parallel_line_length_pipeline(
             notch_freq=notch_freq,
