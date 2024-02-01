@@ -31,15 +31,15 @@ class LineLength:
         The defined periods will be set to zero with the transitions being smoothed by applying a hanning window
         to prevent spurious patterns.
 
-    dataset_paths: List[str]
+    dataset_paths: List[str], mandatory when the file is in .h5 format
         A list of paths to the traces to be included within an h5 file. This is only necessary in the case
         of h5 files.
 
-    bipolar_reference: bool
+    bipolar_reference: bool, optional, default = False
         If True, the bipolar references of the included channels will be computed. If channels already are
         in bipolar form this needs to be False.
 
-    exclude: List[str]
+    exclude: List[str], optional
         A list of channel names that need to be excluded. This only applies in the case of .edf and .fif files.
 
     leads: List[str]
@@ -87,8 +87,8 @@ class LineLength:
         orig_sfreq : int
             The sampling frequency of the original iEEG data.
 
-        window_length : int
-            The length of the smoothed transition periods in ms
+        window_length : int, optional, default = 100
+            The length of the smoothed transition periods in milliseconds
 
         Returns
         -------
