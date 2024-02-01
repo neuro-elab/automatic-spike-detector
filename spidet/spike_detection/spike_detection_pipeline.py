@@ -96,23 +96,20 @@ class SpikeDetectionPipeline:
         self.line_length_freq = line_length_freq
 
     def __create_results_dir(self, results_dir: str):
-        if results_dir is None:
-            # Create default directory if none is given
-            file_path = self.file_path
-            filename_for_saving = (
-                file_path[file_path.rfind("/") + 1 :]
-                .replace(".", "_")
-                .replace(" ", "_")
-            )
-
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            results_dir = os.path.join(
-                Path.home(), filename_for_saving + "_" + timestamp
-            )
-
-        results_dir = (
-            results_dir + "_nmfsc" if self.sparseness != 0.0 else results_dir + "_nmf"
+        # Create folder to save results
+        file_path = self.file_path
+        filename_for_saving = (
+            file_path[file_path.rfind("/") + 1 :].replace(".", "_").replace(" ", "_")
         )
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        nmf_version = "NMFSC" if self.sparseness != 0.0 else "NMF"
+        folder_name = "_".join([nmf_version, filename_for_saving, timestamp])
+
+        if results_dir is None:
+            results_dir = os.path.join(Path.home(), folder_name)
+        else:
+            results_dir = os.path.join(results_dir, folder_name)
+
         os.makedirs(results_dir, exist_ok=True)
         return results_dir
 
