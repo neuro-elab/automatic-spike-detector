@@ -138,21 +138,21 @@ class LineLength:
             )
         return hann_mask * data
 
-    def compute_line_length(self, eeg_data: np.array, sfreq: int):
+    def compute_line_length(self, eeg_data: np.ndarray, sfreq: int):
         """
-        Computes the line length of the input EEG data.
+        Performs the line-length transformation on the input EEG data..
 
         Parameters
         ----------
         eeg_data : numpy.ndarray
             Input EEG data.
 
-        sfreq : float
-            Frequency of the input EEG data.
+        sfreq : int
+            Sampling frequency of the input EEG data.
 
         Returns
         -------
-        numpy.ndarray
+        numpy.ndarray[Any,
             Line length representation of the input EEG data.
 
         Notes
