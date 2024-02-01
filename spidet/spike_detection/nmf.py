@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Any
 
 import nimfa
 from nimfa.utils.linalg import *
@@ -23,6 +23,7 @@ class Nmf:
 
     sparseness: float, optional, default = 0.0
         The sparseness parameter used in case NMF is run with sparseness constraints.
+        If the default value is used, the basic NMF model is used.
     """
 
     def __init__(self, rank: int, sparseness: float = 0.0):
@@ -53,9 +54,14 @@ class Nmf:
 
     def nmf_run(
         self,
-        preprocessed_data: np.ndarray,
+        preprocessed_data: np.ndarray[Any, np.dtype[np.float64]],
         n_runs: int,
-    ) -> Tuple[Dict, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[
+        Dict,
+        np.ndarray[Any, np.dtype[np.float64]],
+        np.ndarray[Any, np.dtype[np.float64]],
+        np.ndarray[Any, np.dtype[np.float64]],
+    ]:
         data_matrix = preprocessed_data
         consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
         obj = np.zeros(n_runs)
