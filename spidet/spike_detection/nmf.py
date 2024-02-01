@@ -61,6 +61,30 @@ class Nmf:
         np.ndarray[Any, np.dtype[np.float64]],
         np.ndarray[Any, np.dtype[np.float64]],
     ]:
+        """
+        This method performs a number of nonegative matrix factorization runs for the rank
+        defined at initialization of the :py:class:`Nmf` object. At the beginning of each run the :math:`W`
+        and :math:`H` matrices are randomly initialized. The algorithm runs until convergence
+        (i.e., the reconstruction error < 1e-5) or for a maximum of 10 iterations.
+
+        Parameters
+        ----------
+        preprocessed_data: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+            The data used as input for NMF algorithm.
+
+        n_runs: int
+            The number of NMF runs.
+
+        Returns
+        -------
+        Tuple[
+        Dict,
+        np.ndarray[Any, np.dtype[np.float64]],
+        np.ndarray[Any, np.dtype[np.float64]],
+        np.ndarray[Any, np.dtype[np.float64]]]
+            A dictionary containing the rank, the best object, the cophenetic correlation and the instability index,
+            together with the consensus, :math:`W` and :math:`H` matrices
+        """
         data_matrix = preprocessed_data
         consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
         obj = np.zeros(n_runs)
