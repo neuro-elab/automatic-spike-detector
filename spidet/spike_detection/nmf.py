@@ -77,13 +77,12 @@ class Nmf:
 
         Returns
         -------
-        Tuple[
-        Dict,
+        Tuple[Dict,
         np.ndarray[Any, np.dtype[np.float64]],
         np.ndarray[Any, np.dtype[np.float64]],
         np.ndarray[Any, np.dtype[np.float64]]]
-            A dictionary containing the rank, the best object, the cophenetic correlation and the instability index,
-            together with the consensus, :math:`W` and :math:`H` matrices
+            A dictionary containing the rank, the minimum reconstruction error, the cophenetic correlation
+            and the instability index, together with the consensus, :math:`W` and :math:`H` matrices.
         """
         data_matrix = preprocessed_data
         consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
