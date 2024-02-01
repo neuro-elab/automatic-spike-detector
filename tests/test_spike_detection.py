@@ -89,7 +89,7 @@ if __name__ == "__main__":
     ch_prefixes_file: str = parser.parse_args().ch_prefixes
 
     # Configure logger
-    logging_utils.add_logger_with_process_name()
+    # logging_utils.add_logger_with_process_name()
 
     # Channels and leads
     channel_paths = (

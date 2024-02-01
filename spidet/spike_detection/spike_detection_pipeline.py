@@ -11,6 +11,8 @@ from scipy.special import rel_entr
 from sklearn.preprocessing import normalize
 from pathlib import Path
 
+from spidet.utils import logging_utils
+
 from spidet.domain.BasisFunction import BasisFunction
 from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.domain.CoefficentsFunction import CoefficientsFunction
@@ -94,6 +96,9 @@ class SpikeDetectionPipeline:
         self.nmf_runs: int = nmf_runs
         self.rank_range: Tuple[int, int] = rank_range
         self.line_length_freq = line_length_freq
+
+        # Configure logger
+        logging_utils.add_logger_with_process_name(self.results_dir)
 
     def __create_results_dir(self, results_dir: str):
         # Create folder to save results
