@@ -12,7 +12,6 @@ Documentation
     domain/BasisFunction
     domain/DetectedEvent
     domain/Trace
-    domain/Nmfsc
 
 .. toctree::
     :maxdepth: 2

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -27,4 +28,4 @@ class Trace:
     label: str
     sfreq: int
     start_timestamp: float
-    data: np.array
+    data: np.ndarray[Any, np.dtype[np.float64]]
