@@ -12,6 +12,10 @@ from spidet.domain.Nmfsc import Nmfsc
 
 
 class Nmf:
+    """
+    This class hosts operations concerned with nonegative matrix factorization.
+    """
+
     def __init__(self, rank: int, sparseness: float = 0.0):
         self.rank = rank
         self.sparseness = float(sparseness)
