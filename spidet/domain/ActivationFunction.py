@@ -9,7 +9,32 @@ from spidet.domain.DetectedEvent import DetectedEvent
 @dataclass
 class ActivationFunction:
     """
-    This class represents the activation of an EEG metapattern in the time domain.
+    This class represents the activation levels of a given EEG metapattern in the time domain and contains periods
+    of abnormal EEG activity, represented as detected events (see :py:class:`~spidet.domain.DetectedEvent`).
+
+    Attributes
+    ----------
+
+    label: str
+        The label of the ActivationFunction; the label of a given ActivationFunction contains the row index
+        in the :math:`H` matrix prefixed by a capital H.
+
+    unique_id: str
+
+    times: numpy.ndarray[Any, numpy.dtype[float]]
+        An array containing the timestamps of each data point
+
+    data_array: numpy.ndarray[Any, numpy.dtype[float]]
+        An array containing the activation level at each point in time
+
+    detected_events_on: numpy.ndarray[Any, numpy.dtype[int]]
+        An array with the indices in the data array corresponding to the onsets of the detected events.
+
+    detected_events_off: numpy.ndarray[Any, numpy.dtype[int]]
+        An array with the indices in the data array corresponding to the offsets of the detected events.
+
+    event_threshold: float
+        the threshold used for the computation of the detected events.
     """
 
     label: str
@@ -20,7 +45,25 @@ class ActivationFunction:
     detected_events_off: np.ndarray[Any, np.dtype[int]]
     event_threshold: float
 
-    def get_sub_period(self, offset: float, duration: float):
+    def get_sub_period(
+        self, offset: float, duration: float
+    ) -> np.ndarray[Any, np.dtype[float]]:
+        """
+        Computes a sub period of the :py:class:`ActivationFunction`.
+
+        Parameters
+        ----------
+        offset: float
+            Offset from the start of the recording in seconds.
+
+        duration: float
+            Duration of the sub period in seconds.
+
+        Returns
+        -------
+        numpy.ndarray[Any, numpy.dtype[float]]
+            Array containing the data points within the defined sub period.
+        """
         # Find indices corresponding to offset and end of duration
         start_idx = (np.abs(self.times - offset)).argmin()
         end_index = (np.abs(self.times - (offset + duration))).argmin()
@@ -29,6 +72,10 @@ class ActivationFunction:
     def get_detected_events(
         self,
     ) -> List[DetectedEvent]:
+        """
+        Returns a list of :py:class:`~spidet.domain.DetectedEvent` objects representing the
+        computed events detected on the given :py:class:`ActivationFunction`.
+        """
         detected_events = []
 
         for idx, (on, off) in enumerate(
