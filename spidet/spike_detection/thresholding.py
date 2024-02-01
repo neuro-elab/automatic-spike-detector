@@ -11,10 +11,10 @@ class ThresholdGenerator:
 
     Parameters
     ----------
-    activation_function_matrix: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+    activation_function_matrix: numpy.ndarray[numpy.dtype[numpy.float64]]
         A single or set of activation functions for which to compute events
 
-    preprocessed_data: np.ndarray[Any, numpy.dtype[numpy.float64]]
+    preprocessed_data: np.ndarray[numpy.dtype[numpy.float64]]
         The preprocessed iEEG data, produced by applying the preprocessing steps listed in the preprocessing section.
 
     sfreq: int
@@ -27,8 +27,8 @@ class ThresholdGenerator:
 
     def __init__(
         self,
-        activation_function_matrix: np.ndarray[Any, np.dtype[np.float64]],
-        preprocessed_data: np.ndarray[Any, np.dtype[np.float64]] = None,
+        activation_function_matrix: np.ndarray[np.dtype[np.float64]],
+        preprocessed_data: np.ndarray[np.dtype[np.float64]] = None,
         sfreq: int = 50,
         z_threshold: int = 10,
     ):
@@ -139,9 +139,7 @@ class ThresholdGenerator:
             threshold = self.generate_threshold(data=activation_function)
             self.thresholds.update({idx: threshold})
 
-    def generate_threshold(
-        self, data: np.ndarray[Any, np.dtype[float]] = None
-    ) -> float:
+    def generate_threshold(self, data: np.ndarray[np.dtype[float]] = None) -> float:
         """
         Computes the threshold for individual activation functions. The threshold is defined as the
         zero-crossing of the line that is fitted to the right of the histogram of a given
@@ -150,7 +148,7 @@ class ThresholdGenerator:
         Parameters
         ----------
 
-        data: np.ndarray[Any, np.dtype[float]]
+        data: np.ndarray[np.dtype[float]]
             This represents the data for which to compute the threshold. If None, the threshold is computed
             for the activation_function_matrix passed to the ThresholdGenerator at initialization.
 

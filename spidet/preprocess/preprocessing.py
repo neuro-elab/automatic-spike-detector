@@ -15,7 +15,7 @@ def apply_preprocessing_steps(
     resampling_freq: int,
     bandpass_cutoff_low: int,
     bandpass_cutoff_high: int,
-) -> np.ndarray[Any, np.dtype[float]]:
+) -> np.ndarray[np.dtype[float]]:
     """
     Applies the necessary preprocessing steps to the original iEEG data. This involves:
 
@@ -45,7 +45,7 @@ def apply_preprocessing_steps(
 
     Returns
     -------
-    numpy.ndarray[Any, np.dtype[float]]
+    numpy.ndarray[np.dtype[float]]
         2-dimensional numpy array containing the preprocessed data where the rows correspond to the input traces.
     """
 

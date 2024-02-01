@@ -21,16 +21,16 @@ class ActivationFunction:
 
     unique_id: str
 
-    times: numpy.ndarray[Any, numpy.dtype[float]]
+    times: numpy.ndarray[numpy.dtype[float]]
         An array containing the timestamps of each data point
 
-    data_array: numpy.ndarray[Any, numpy.dtype[float]]
+    data_array: numpy.ndarray[numpy.dtype[float]]
         An array containing the activation level at each point in time
 
-    detected_events_on: numpy.ndarray[Any, numpy.dtype[int]]
+    detected_events_on: numpy.ndarray[numpy.dtype[int]]
         An array with the indices in the data array corresponding to the onsets of the detected events.
 
-    detected_events_off: numpy.ndarray[Any, numpy.dtype[int]]
+    detected_events_off: numpy.ndarray[numpy.dtype[int]]
         An array with the indices in the data array corresponding to the offsets of the detected events.
 
     event_threshold: float
@@ -39,15 +39,15 @@ class ActivationFunction:
 
     label: str
     unique_id: str
-    times: np.ndarray[Any, np.dtype[float]]
-    data_array: np.ndarray[Any, np.dtype[float]]
-    detected_events_on: np.ndarray[Any, np.dtype[int]]
-    detected_events_off: np.ndarray[Any, np.dtype[int]]
+    times: np.ndarray[np.dtype[float]]
+    data_array: np.ndarray[np.dtype[float]]
+    detected_events_on: np.ndarray[np.dtype[int]]
+    detected_events_off: np.ndarray[np.dtype[int]]
     event_threshold: float
 
     def get_sub_period(
         self, offset: float, duration: float
-    ) -> np.ndarray[Any, np.dtype[float]]:
+    ) -> np.ndarray[np.dtype[float]]:
         """
         Computes a sub period of the :py:class:`ActivationFunction`.
 
@@ -61,7 +61,7 @@ class ActivationFunction:
 
         Returns
         -------
-        numpy.ndarray[Any, numpy.dtype[float]]
+        numpy.ndarray[numpy.dtype[float]]
             Array containing the data points within the defined sub period.
         """
         # Find indices corresponding to offset and end of duration

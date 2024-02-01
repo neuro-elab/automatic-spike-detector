@@ -58,7 +58,7 @@ class SpikeDetectionPipeline:
         A floating point number :math:`\in [0, 1]`.
         If this parameter is non-zero, nonnegative matrix factorization is run with sparseness constraints.
 
-    bad_times: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+    bad_times: numpy.ndarray[numpy.dtype[numpy.float64]]
         An optional N x 2 numpy array containing periods that must be excluded before applying
         the line-length transformation. Each of th N rows in the array represents a period to be excluded,
         defined by the start and end indices of the period in the original iEEG data.
@@ -82,7 +82,7 @@ class SpikeDetectionPipeline:
         results_dir: str = None,
         save_nmf_matrices: bool = False,
         sparseness: float = 0.0,
-        bad_times: np.ndarray[Any, np.dtype[np.float64]] = None,
+        bad_times: np.ndarray[np.dtype[np.float64]] = None,
         nmf_runs: int = 100,
         rank_range: Tuple[int, int] = (2, 5),
         line_length_freq: int = 50,
@@ -165,10 +165,10 @@ class SpikeDetectionPipeline:
         n_runs: int,
     ) -> Tuple[
         Dict,
-        np.ndarray[Any, np.dtype[float]],
-        np.ndarray[Any, np.dtype[float]],
-        np.ndarray[Any, np.dtype[float]],
-        Dict[int, np.ndarray[Any, np.dtype[int]]],
+        np.ndarray[np.dtype[float]],
+        np.ndarray[np.dtype[float]],
+        np.ndarray[np.dtype[float]],
+        Dict[int, np.ndarray[np.dtype[int]]],
         float,
         Dict[int, int],
     ]:
@@ -220,12 +220,12 @@ class SpikeDetectionPipeline:
 
     def parallel_processing(
         self,
-        preprocessed_data: np.ndarray[Any, np.dtype[float]],
+        preprocessed_data: np.ndarray[np.dtype[float]],
         channel_names: List[str],
     ) -> Tuple[
-        np.ndarray[Any, np.dtype[float]],
-        np.ndarray[Any, np.dtype[float]],
-        Dict[int, np.ndarray[Any, np.dtype[int]]],
+        np.ndarray[np.dtype[float]],
+        np.ndarray[np.dtype[float]],
+        Dict[int, np.ndarray[np.dtype[int]]],
         Dict[int, float],
         Dict[int, int],
     ]:

@@ -53,13 +53,13 @@ class Nmf:
 
     def nmf_run(
         self,
-        preprocessed_data: np.ndarray[Any, np.dtype[np.float64]],
+        preprocessed_data: np.ndarray[np.dtype[np.float64]],
         n_runs: int,
     ) -> Tuple[
         Dict,
-        np.ndarray[Any, np.dtype[np.float64]],
-        np.ndarray[Any, np.dtype[np.float64]],
-        np.ndarray[Any, np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]],
     ]:
         """
         This method performs a number of nonegative matrix factorization runs for the rank
@@ -69,7 +69,7 @@ class Nmf:
 
         Parameters
         ----------
-        preprocessed_data: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+        preprocessed_data: numpy.ndarray[numpy.dtype[numpy.float64]]
             The data used as input for NMF algorithm.
 
         n_runs: int
@@ -78,9 +78,9 @@ class Nmf:
         Returns
         -------
         Tuple[Dict,
-        np.ndarray[Any, np.dtype[np.float64]],
-        np.ndarray[Any, np.dtype[np.float64]],
-        np.ndarray[Any, np.dtype[np.float64]]]
+        np.ndarray[np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]]]
             A dictionary containing the rank, the minimum reconstruction error, the cophenetic correlation
             and the instability index, together with the consensus, :math:`W` and :math:`H` matrices.
         """

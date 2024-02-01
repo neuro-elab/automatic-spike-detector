@@ -35,8 +35,8 @@ class Nmfsc:
         return self.factorize()
 
     def __project(
-        self, s: np.ndarray[Any, np.dtype[float]], k1: float, k2: float
-    ) -> np.ndarray[Any, np.dtype[float]]:
+        self, s: np.ndarray[np.dtype[float]], k1: float, k2: float
+    ) -> np.ndarray[np.dtype[float]]:
         # Save original shape
         shape = s.shape
 
@@ -188,7 +188,7 @@ class Nmfsc:
         return True
 
     def objective(
-        self, W: np.ndarray[Any, np.dtype[float]], H: np.ndarray[Any, np.dtype[float]]
+        self, W: np.ndarray[np.dtype[float]], H: np.ndarray[np.dtype[float]]
     ) -> float:
         """Compute squared Frobenius norm of a target matrix and its NMF estimate."""
         R = self.V - dot(W, H)

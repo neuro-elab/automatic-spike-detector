@@ -24,7 +24,7 @@ class LineLength:
     file_path: str
         Path to the file containing the iEEG data.
 
-    bad_times: numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+    bad_times: numpy.ndarray[numpy.dtype[numpy.float64]]
         An optional N x 2 numpy array containing periods that must be excluded before applying
         the line-length transformation. Each of th N rows in the array represents a period to be excluded,
         defined by the start and end indices of the period in the original iEEG data.
@@ -66,7 +66,7 @@ class LineLength:
 
     def dampen_bad_times(
         self,
-        data: np.ndarray[Any, np.dtype[np.float64]],
+        data: np.ndarray[np.dtype[np.float64]],
         sfreq: int,
         orig_sfreq: int,
         window_length: int = 100,
@@ -78,7 +78,7 @@ class LineLength:
 
         Parameters
         ----------
-        data : numpy.ndarray[Any, np.dtype[np.float64]]
+        data : numpy.ndarray[np.dtype[np.float64]]
             The preprocessed iEEG data.
 
         sfreq : int
@@ -92,7 +92,7 @@ class LineLength:
 
         Returns
         -------
-        smoothed_data : numpy.ndarray[Any, np.dtype[np.float64]]
+        smoothed_data : numpy.ndarray[np.dtype[np.float64]]
             The preprocessed iEEG data wih artifacts being zeroed and having smoothed transition periods.
 
         """
@@ -286,7 +286,7 @@ class LineLength:
         n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
-    ) -> Tuple[float, List[str], np.ndarray[Any, np.dtype[np.float64]]]:
+    ) -> Tuple[float, List[str], np.ndarray[np.dtype[np.float64]]]:
         """
         This function launches the line length pipeline, which first carries out the necessary preprocessing steps
         and then performs the line-length transformation of the preprocessed EEG data. The individual steps include
@@ -327,7 +327,7 @@ class LineLength:
 
         Returns
         -------
-        Tuple[float, List[str], numpy.ndarray[Any, numpy.dtype[numpy.float64]]]
+        Tuple[float, List[str], numpy.ndarray[numpy.dtype[numpy.float64]]]
             Tuple containing, the start timestamp of the recording, a list of channel names
             corresponding to the channels in the line-length transformed data,
             the line-length transformed data

@@ -13,13 +13,13 @@ class DetectedEvent:
     Attributes
     ----------
 
-    times: numpy.ndarray[Any, numpy.dtype[float]]
+    times: numpy.ndarray[numpy.dtype[float]]
         An array of UNIX timestamps representing the points in time for each data point
         within the detected event period.
 
-    values: numpy.ndarray[Any, numpy.dtype[float]]
+    values: numpy.ndarray[numpy.dtype[float]]
         The activation levels at each point in time within the detected event period.
     """
 
-    times: np.ndarray[Any, np.dtype[float]]
-    values: np.ndarray[Any, np.dtype[float]]
+    times: np.ndarray[np.dtype[float]]
+    values: np.ndarray[np.dtype[float]]
