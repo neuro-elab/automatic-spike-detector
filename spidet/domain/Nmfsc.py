@@ -1,5 +1,3 @@
-from typing import Any
-
 from nimfa.utils.linalg import *
 
 
