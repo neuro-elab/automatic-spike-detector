@@ -6,15 +6,6 @@
 Welcome to automatic-spike-detection's documentation!
 =====================================================
 
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :titlesonly:
-
-   Documentation <documentation/index>
-   Install <install/index>
-   API Reference <reference/index>
-
 .. grid:: 3
 
    .. grid-item-card::
@@ -66,7 +57,14 @@ Welcome to automatic-spike-detection's documentation!
 
             To the API Reference
 
+.. toctree::
+   :maxdepth: 3
+   :hidden:
+   :titlesonly:
 
+   Documentation <documentation/index>
+   Install <install/index>
+   API Reference <reference/index>
 
 Indices and tables
 ==================
