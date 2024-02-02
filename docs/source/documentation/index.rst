@@ -22,7 +22,7 @@ mouths, and eyes, corresponding to the different parts making up the whole. By c
 the same data set, PCA yields a set of prototypical eigenfaces that by linear combination approximates the
 original data.
 
-The basic mechanism of NMF, illustrated in |Figure 1|, is that it approximates an original data matrix
+The basic mechanism of NMF, illustrated in :num:`fig_nmf`, is that it approximates an original data matrix
 by the linear combination of two nonnegative lower-rank matrices
 
 .. math::
@@ -33,7 +33,11 @@ Here, :math:`V` is a :math:`M × N` matrix incorporating the original data in te
 variables, expressed by the same features as the observed data. :math:`H` is a :math:`K × N` matrix whose columns are
 the encodings of the samples [64], [15].
 
-.. |Figure 1| image:: ../_images/figure_nmf.pdf
+.. _fig_nmf:
+
+.. figure:: ../_images/figure_nmf.pdf
+
+    Conceptual diagram of Nonnegative Matrix Factorization (NMF)
 
 A further result reported by Lee and Seugn in [64] is that both the basis vectors and the encodings
 contain numerous vanishing coefficients, meaning that both the basis images and encodings are sparse.
