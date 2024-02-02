@@ -42,6 +42,12 @@ class Nmfsc:
 
     sW: float, optional, default = 0.25
         The sparseness imposed on each column of :math:`W`, in case version = 'l'.
+
+    References
+    ----------
+    [1] Patrick Hoyer. Nmfpack. https://github.com/aludnam/MATLAB/tree/master/nmfpack.
+    [2] Patrik O Hoyer. 'Non-negative matrix factorization with sparseness constraints'
+        Journal of Machine Learning Research  5:1457-1469, 2004.
     """
 
     def __init__(
