@@ -17,22 +17,6 @@ Welcome to automatic-spike-detection's documentation!
 
 .. grid:: 3
 
-    .. grid-item-card::
-
-        Install
-        ^^^^^^^
-
-        This section provides information about the installment of the package.
-
-        +++
-
-        .. button-ref:: install
-            :expand:
-            :color: secondary
-            :click-parent:
-
-            How to install automatic-spike-detection
-
    .. grid-item-card::
 
         Documentation
@@ -48,6 +32,23 @@ Welcome to automatic-spike-detection's documentation!
             :click-parent:
 
             To the documentation
+
+   .. grid-item-card::
+
+        Install
+        ^^^^^^^
+
+        This section provides information about the installment of the package.
+
+        +++
+
+        .. button-ref:: install
+            :expand:
+            :color: secondary
+            :click-parent:
+
+            How to install automatic-spike-detection
+
 
    .. grid-item-card::
 
