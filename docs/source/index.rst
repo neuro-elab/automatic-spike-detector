@@ -5,11 +5,6 @@
 
 Welcome to automatic-spike-detection's documentation!
 =====================================================
-.. figure:: /_images/figure_nmf.pdf
-    :align: center
-    :figwidth: 80%
-
-    Conceptual diagram of Nonnegative Matrix Factorization (NMF)
 
 .. grid:: 3
 

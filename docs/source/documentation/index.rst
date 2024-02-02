@@ -39,7 +39,6 @@ the encodings of the samples [2_, 4_].
 .. _fig_nmf:
 
 .. figure:: /_images/figure_nmf-1.png
-    :scale: 90 %
     :align: center
     :figwidth: 80%
 
