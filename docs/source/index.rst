@@ -15,7 +15,7 @@ Welcome to automatic-spike-detection's documentation!
    Documentation <documentation/index>
    API Reference <reference/index>
 
-.. grid:: 2
+.. grid:: 3
 
     .. grid-item-card::
 
