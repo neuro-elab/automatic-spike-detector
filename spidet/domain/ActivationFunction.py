@@ -88,3 +88,14 @@ class ActivationFunction:
             detected_events.append(detected_period)
 
         return detected_events
+
+    def get_event_mask(self):
+        """
+        Returns a binary numpy array indicating the indices of all detected events of the given
+        :py:class:`ActivationFunction`.
+        """
+        event_mask = np.zeros(len(self.data_array))
+        for on, off in zip(self.detected_events_on, self.detected_events_off):
+            event_mask[on : off + 1] = 1
+
+        return event_mask.astype(int)

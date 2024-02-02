@@ -344,7 +344,7 @@ class ThresholdGenerator:
                         {
                             "events_on": events_on,
                             "events_off": events_off,
-                            "event_mask": event_mask,
+                            "event_mask": event_mask.astype(int),
                             "channels_involved": channel_event_assoc,
                         }
                     )

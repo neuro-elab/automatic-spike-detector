@@ -362,6 +362,12 @@ class SpikeDetectionPipeline:
         bipolar_reference: bool = False,
         exclude: List[str] = None,
         leads: List[str] = None,
+        notch_freq: int = 50,
+        resampling_freq: int = 500,
+        bandpass_cutoff_low: int = 0.1,
+        bandpass_cutoff_high: int = 200,
+        line_length_freq: int = 50,
+        line_length_window: int = 40,
     ) -> Tuple[List[BasisFunction], List[ActivationFunction]]:
         """
         This method triggers a complete run of the spike detection pipline with the arguments passed
@@ -382,6 +388,26 @@ class SpikeDetectionPipeline:
 
         leads: List[str]
             A list of the leads included. Only necessary if bipolar_reference is True, otherwise can be None.
+
+        notch_freq: int, optional, default = 50
+            The frequency of the notch filter; data will be notch-filtered at this frequency
+            and at the corresponding harmonics,
+            e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
+
+        resampling_freq: int, optional, default = 500
+            The frequency to resample the data after filtering and rescaling
+
+        bandpass_cutoff_low: int, optional, default = 0.1
+            Cut-off frequency at the lower end of the passband of the bandpass filter.
+
+        bandpass_cutoff_high: int, optional, default = 200
+            Cut-off frequency at the higher end of the passband of the bandpass filter.
+
+        line_length_freq: int, optional, default = 50
+            Sampling frequency of the line-length transformed data
+
+        line_length_window: int, optional, default = 40
+            Window length used to for the line-length operation (in milliseconds).
 
         Returns
         -------
@@ -405,7 +431,14 @@ class SpikeDetectionPipeline:
             start_timestamp,
             channel_names,
             line_length_matrix,
-        ) = line_length.apply_parallel_line_length_pipeline()
+        ) = line_length.apply_parallel_line_length_pipeline(
+            notch_freq=notch_freq,
+            resampling_freq=resampling_freq,
+            bandpass_cutoff_low=bandpass_cutoff_low,
+            bandpass_cutoff_high=bandpass_cutoff_high,
+            line_length_freq=line_length_freq,
+            line_length_window=line_length_window,
+        )
 
         # Run parallelized NMF
         (

@@ -30,6 +30,12 @@ if __name__ == "__main__":
         file_path=file, start_timestamp=start_datetime.timestamp()
     )
 
+    logger.debug(f"Loading finished")
+    for activation_function in activation_functions:
+        logger.debug(
+            f"Event mask of the ActivationFunction {activation_function.label}:\n {activation_function.get_event_mask()}"
+        )
+
     logger.debug(
         f"Loaded the following spike activation functions:\n {activation_functions}"
     )
