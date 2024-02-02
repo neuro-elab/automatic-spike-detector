@@ -55,7 +55,7 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-master_doc = "index"
+# master_doc = "index"
 
 # -- numpydoc configuration --------------------------------------------------
 numpydoc_show_class_members = False
@@ -72,9 +72,7 @@ html_theme = "pydata_sphinx_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
-html_sidebars = {
-    "**": ["search-field.html", "sidebar-nav-bs.html", "sidebar-ethical-ads.html"]
-}
+html_sidebars = {"**": ["search-field.html"]}
 
 # Configuration of sphinx.ext.coverage
 coverage_show_missing_items = True
