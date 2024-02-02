@@ -9,8 +9,9 @@ from spidet.domain.DetectedEvent import DetectedEvent
 @dataclass
 class ActivationFunction:
     """
-    This class represents the activation levels of a given EEG metapattern in the time domain and contains periods
-    of abnormal EEG activity, represented as detected events (see :py:class:`~spidet.domain.DetectedEvent`).
+    This class represents the activation levels of a given EEG metapattern (:py:class:`~spidet.domain.BasisFunction`)
+    in the time domain and contains periods of abnormal EEG activity, represented as detected events
+    (see :py:class:`~spidet.domain.DetectedEvent`).
 
     Attributes
     ----------
