@@ -7,7 +7,7 @@ Welcome to automatic-spike-detection's documentation!
 =====================================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
    :titlesonly:
 
