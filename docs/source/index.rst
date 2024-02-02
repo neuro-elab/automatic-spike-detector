@@ -11,16 +11,34 @@ Welcome to automatic-spike-detection's documentation!
    :hidden:
    :titlesonly:
 
+   Install <install/index>
    Documentation <documentation/index>
+   API Reference <reference/index>
 
 .. grid:: 2
 
     .. grid-item-card::
 
+        Install
+        ^^^^^^^^^^^^^
+
+        This section provides information about the installment of the package.
+
+        +++
+
+        .. button-ref:: install
+            :expand:
+            :color: secondary
+            :click-parent:
+
+            How to install automatic-spike-detection
+
+   .. grid-item-card::
+
         Documentation
         ^^^^^^^^^^^^^
 
-        The documentation provides in-depth information on the functionalities of the API.
+        The documentation provides information about the underlying concepts of the employed detection algorithm.
 
         +++
 
@@ -30,6 +48,22 @@ Welcome to automatic-spike-detection's documentation!
             :click-parent:
 
             To the documentation
+
+   .. grid-item-card::
+
+        API Reference
+        ^^^^^^^^^^^^^
+
+        The API Reference provides in-depth information on the functionalities of the API.
+
+        +++
+
+        .. button-ref:: reference
+            :expand:
+            :color: secondary
+            :click-parent:
+
+            To the API Reference
 
 
 

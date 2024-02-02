@@ -1,7 +1,7 @@
 .. module:: spidet
 
 =============
-Documentation
+API Reference
 =============
 
 .. toctree::
