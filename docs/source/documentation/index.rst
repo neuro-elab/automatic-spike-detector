@@ -38,12 +38,13 @@ the encodings of the samples [2_, 4_].
 
 .. _fig_nmf:
 
-.. figure:: figure_nmf.pdf
-    :scale: 50%
-    :align: center
-    :figwidth: 75%
+.. image:: figure_nmf.pdf
+    :scale: 50 %
+    :loading: embed
+    :align: right
 
     Conceptual diagram of Nonnegative Matrix Factorization (NMF)
+
 
 A further result reported by Lee and Seugn is that both the basis vectors and the encodings
 contain numerous vanishing coefficients, meaning that both the basis images and encodings are sparse [2_].
