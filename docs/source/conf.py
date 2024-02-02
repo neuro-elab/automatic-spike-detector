@@ -43,8 +43,7 @@ extensions = [
     "sphinx_design",
     "sphinx.ext.doctest",
     "sphinx.ext.autosummary",
-    # "sphinx.ext.coverage",
-    # "sphinx.ext.viewcode",
+    "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
 ]
 
