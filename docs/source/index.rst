@@ -20,7 +20,7 @@ Welcome to automatic-spike-detection's documentation!
     .. grid-item-card::
 
         Install
-        ^^^^^^^^^^^^^
+        ^^^^^^^
 
         This section provides information about the installment of the package.
 
