@@ -22,7 +22,7 @@ mouths, and eyes, corresponding to the different parts making up the whole. By c
 the same data set, PCA yields a set of prototypical eigenfaces that by linear combination approximates the
 original data.
 
-The basic mechanism of NMF, illustrated in :num:`fig_nmf`, is that it approximates an original data matrix
+The basic mechanism of NMF, illustrated in :numref:`fig_nmf`, is that it approximates an original data matrix
 by the linear combination of two nonnegative lower-rank matrices
 
 .. math::
