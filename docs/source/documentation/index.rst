@@ -40,7 +40,7 @@ the encodings of the samples [2_, 4_].
 
 .. figure:: figure_nmf.pdf
     :scale: 50 %
-    :alt: map to buried treasure
+
 
 
     Conceptual diagram of Nonnegative Matrix Factorization (NMF)
