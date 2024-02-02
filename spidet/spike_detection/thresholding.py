@@ -276,7 +276,8 @@ class ThresholdGenerator:
             in the dictionary can be accessed by its respective index in the :py:attr:`activation_function_matrix`.
             The events for a given activation function are represented by a dictionary containing two index arrays
             corresponding to the onset, accessible by the "events_on"-key, and offset,
-            accessible by the "events_off"-key, indices of the events.
+            accessible by the "events_off"-key, indices of the events, and one binary masking array
+            indicating the indices of all detected events, accessible via the "event_mask"-key.
         """
         # Process rows sequentially
         events = dict()
