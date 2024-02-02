@@ -2,15 +2,57 @@ from nimfa.utils.linalg import *
 
 
 class Nmfsc:
+    """
+    This class provides nonegative matrix factorization with sparseness constraints. The implementation is based on
+    the matlab library [1]_ developed by Hoyer, which defined sparseness in terms of a relation between the
+    :math:`L_1` norm and the :math:`L_2` norm [2]_.
+
+    Parameters
+    ----------
+
+    V: numpy.ndarray[numpy.dtype[float]]
+        A matrix representing the input data.
+
+    W: numpy.ndarray[numpy.dtype[float]], optional
+        If given, these values will be used to initialize the :math:`W` matrix.
+
+    H: numpy.ndarray[numpy.dtype[float]], optional
+        If given, these values will be used to initialize the :math:`H` matrix.
+
+    rank: int, optional, default = 5
+        The rank of the decomposition.
+
+    max_iter: int, optional, default = 10
+        The number of maximally performed matrix factorization iterations if convergence is not achieved in one
+        of the preceding iterations.
+
+    min_residuals: float, optional default = 1e-4
+        The maximum reconstruction error to reach convergence.
+
+    n_runs: int, optional, default = 1
+        The number of complete nmf runs performed, each run includes a new initialization of the :math:`W`
+        and :math:`H` matrices.
+
+    version: str, optional, default = 'l'
+        If version = 'l', sparseness will be imposed on the columns of :math:`W`, if version = 'r',
+        sparseness will be imposed on the rows of :math:`H`.
+
+    sH: float, optional, default = 0.25
+        The sparseness imposed on each row of :math:`H`, in case version = 'r'.
+
+    sW: float, optional, default = 0.25
+        The sparseness imposed on each column of :math:`W`, in case version = 'l'.
+    """
+
     def __init__(
         self,
         V,
         W=None,
         H=None,
-        rank=30,
-        max_iter=30,
+        rank=5,
+        max_iter=10,
         min_residuals=1e-4,
-        n_run=1,
+        n_runs=1,
         version="l",
         sH=0.25,
         sW=0.25,
@@ -20,7 +62,7 @@ class Nmfsc:
         self.H = H
         self.rank = rank
         self.max_iter = max_iter
-        self.n_run = n_run
+        self.n_runs = n_runs
         self.version = version
         self.sH = sH
         self.sW = sW
@@ -88,7 +130,7 @@ class Nmfsc:
 
         Return fitted factorization model.
         """
-        for run in range(self.n_run):
+        for run in range(self.n_runs):
             # Create initial matrices
             prng = np.random.RandomState()
             self.W = np.mat(np.zeros((self.V.shape[0], self.rank)))
@@ -170,12 +212,21 @@ class Nmfsc:
 
         Return logical value denoting factorization continuation.
 
-        :param p_obj: Objective function value from previous iteration.
-        :type p_obj: `float`
-        :param c_obj: Current objective function value.
-        :type c_obj: `float`
-        :param iter: Current iteration number.
-        :type iter: `int`
+        Parameters
+        ----------
+        p_obj: float
+            Objective function value from previous iteration.
+
+        c_obj: float
+            Current objective function value.
+
+        iter: int
+            Current iteration number.
+
+        Returns
+        -------
+        bool
+            Boolean indication whether stopping criteria is met.
         """
         if self.max_iter and self.max_iter <= iter:
             return False
@@ -193,6 +244,9 @@ class Nmfsc:
         return 0.5 * multiply(R, R).sum()
 
     def update(self):
+        """
+        Performs the update steps on :math:`W` and :math:`H`.
+        """
         # Update H
         if self.version == "r":
             # Gradient for H
