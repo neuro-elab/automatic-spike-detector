@@ -7,7 +7,8 @@ import numpy as np
 @dataclass
 class BasisFunction:
     """
-    This class represents the expression levels of the channels in the given BasisFunction.
+    This class represents a single EEG metapattern extracted from the preprocessed EEG data and contains
+    the expression levels of each channel in the given BasisFunction.
 
     Attributes
     ----------
