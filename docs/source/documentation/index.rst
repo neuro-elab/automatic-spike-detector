@@ -6,6 +6,9 @@
 Documentation
 =============
 
+Nonnegative Matrix Factorization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Nonnegative Matrix Factorization (NMF) is a machine-learning algorithm used to decompose an original
 data matrix into two lower-rank matrices. As such it resembles other matrix decomposition algorithms,
 such as Principal Component Analysis (PCA), Linear Discriminant Analysis (LDA), and Independent
