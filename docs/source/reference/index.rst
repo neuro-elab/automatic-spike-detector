@@ -1,5 +1,7 @@
 .. module:: spidet
 
+.. _reference:
+
 =============
 API Reference
 =============
