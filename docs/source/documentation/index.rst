@@ -6,6 +6,20 @@
 Documentation
 =============
 
+Interictal epileptiform discharges (IEDs), also referred to as ”spikes”, are a characteristic of
+the epileptic brain that are recognizable as large transient events in the electroencephalogram
+of patients living with epilepsy.
+
+Whereas, for clinicians, IEDs can provide valuable information about the epileptogenic
+zone, for researchers, they can also be a source of noise, depending on the phenomenon
+under investigation. Regardless of the context, the localization of IEDs in intracranial EEG recordings
+is a very time-consuming task.
+
+This package aims to contribute to this issue by employing nonnegative matrix factorization (NMF)
+to automatically detect IEDs, an unsupervised machine-learning algorithm that produces a
+lower-dimensional approximation of the input, and uses consensus clustering to automatically
+determine the most discriminating EEG patterns.
+
 Nonnegative Matrix Factorization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
