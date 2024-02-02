@@ -16,7 +16,7 @@
 import os
 import sys
 
-# sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("../../"))
 
 
@@ -77,3 +77,5 @@ html_static_path = ["_static"]
 
 # Configuration of sphinx.ext.coverage
 coverage_show_missing_items = True
+
+numfig = True
