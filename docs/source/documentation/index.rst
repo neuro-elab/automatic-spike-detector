@@ -46,7 +46,7 @@ different forms, accounting for their sparsity. The sparsity in the image encodi
 that all parts are used by at least one image, but no image uses all parts.
 In [4_], Brunet et al. introduced NMF as a means of reducing the dimension of expression data from
 thousands of genes to a small number of metagenes. By combining NMF with consensus clustering, a
-model-selection algorithm developed in [76] and adding a quantitative evaluation to assess the robustness
+model-selection algorithm developed in [5_] and adding a quantitative evaluation to assess the robustness
 of a given decomposition, they were able to identify distinct molecular patterns and cluster samples into
 the different metagenes. In their model, the data matrix consists of the gene expression levels of–expressed
 in terms of the variables introduced above–:math:`M` genes in :math:`N` samples. The decomposition results in a matrix
@@ -75,3 +75,7 @@ References
 .. [4] Jean-Philippe Brunet, Pablo Tamayo, Todd R. Golub, and Jill P. Mesirov. Metagenes and molecular
         pattern discovery using matrix factorization. Proceedings of the National Academy of Sciences,
         101(12):4164–4169, 2004.
+
+.. [5] Stefano Monti, Pablo Tamayo, Jill Mesirov, and Todd Golub. Consensus clustering: A resampling-
+        based method for class discovery and visualization of gene expression microarray data. Machine
+        Learning, 52(1):91–118, Jul 2003.
