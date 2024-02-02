@@ -35,7 +35,7 @@ the encodings of the samples [2]_, [4]_.
 
 .. _fig_nmf:
 
-.. figure:: ./figure_nmf.pdf
+.. figure:: ./figure_nmf.*
 
     Conceptual diagram of Nonnegative Matrix Factorization (NMF)
 
