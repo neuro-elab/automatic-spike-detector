@@ -11,8 +11,8 @@ Welcome to automatic-spike-detection's documentation!
    :hidden:
    :titlesonly:
 
-   Install <install/index>
    Documentation <documentation/index>
+   Install <install/index>
    API Reference <reference/index>
 
 .. grid:: 3
@@ -22,7 +22,7 @@ Welcome to automatic-spike-detection's documentation!
         Documentation
         ^^^^^^^^^^^^^
 
-        The documentation provides information about the underlying concepts of the employed detection algorithm.
+        The documentation provides crucial information about the underlying concepts of the employed detection algorithm.
 
         +++
 
