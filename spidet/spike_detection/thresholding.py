@@ -333,12 +333,18 @@ class ThresholdGenerator:
                     events_off,
                 ) = self.__determine_involved_channels(events_on, events_off)
 
+            # Create event mask
+            event_mask = np.zeros(len(activation_function))
+            for on, off in zip(events_on, events_off):
+                event_mask[on : off + 1] = 1
+
             events.update(
                 {
                     idx: dict(
                         {
                             "events_on": events_on,
                             "events_off": events_off,
+                            "event_mask": event_mask,
                             "channels_involved": channel_event_assoc,
                         }
                     )
