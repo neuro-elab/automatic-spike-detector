@@ -8,9 +8,7 @@ Documentation
 
 Interictal epileptiform discharges (IEDs), also referred to as ”spikes”, are a characteristic of
 the epileptic brain that are recognizable as large transient events in the electroencephalogram
-of patients living with epilepsy.
-
-Whereas, for clinicians, IEDs can provide valuable information about the epileptogenic
+of patients living with epilepsy. Whereas, for clinicians, IEDs can provide valuable information about the epileptogenic
 zone, for researchers, they can also be a source of noise, depending on the phenomenon
 under investigation. Regardless of the context, the localization of IEDs in intracranial EEG recordings
 is a very time-consuming task.
