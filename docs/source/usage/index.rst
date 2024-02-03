@@ -83,3 +83,5 @@ An application example could look like
         spike_detection_pipeline.run(
             channel_paths=channel_paths,
         )
+
+Pleas check out the :ref:`API Reference <reference>` for further details on how to use the :class:`~spidet.spike_detection.spike_detection_pipeline.SpikeDetectionPipeline`.
