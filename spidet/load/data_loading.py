@@ -9,9 +9,8 @@ from h5py import Dataset, File
 from loguru import logger
 from mne.io import RawArray
 
-from spidet.domain.CoefficentsFunction import CoefficientsFunction
 from spidet.domain.FunctionType import FunctionType
-from spidet.domain.DetectionFunction import DetectionFunction
+from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.domain.Trace import Trace
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.thresholding import ThresholdGenerator
@@ -28,6 +27,10 @@ H_KEYWORD = "H_best"
 
 
 class DataLoader:
+    """
+    This class provides the utilities concerned with loading an iEEG dataset.
+    """
+
     @staticmethod
     def extract_channel_names(channel_paths: List[str]) -> List[str]:
         return [
@@ -304,7 +307,11 @@ class DataLoader:
 
         channel_paths : List[str]
             Paths to the channels to include within the file
-            (defaults to all if non are present)
+            (defaults to all if none are given)
+
+        exclude: List[str]
+            A list of names of the channels to exclude.
+            Instead of defining which channels to include, this option allows to exclude certain channels.
 
         bipolar_reference: bool (default False)
             A boolean indicating whether bipolar references between respective channels
@@ -344,10 +351,30 @@ class DataLoader:
         ]
 
     @staticmethod
-    def load_detection_functions(
+    def load_activation_functions(
         file_path: str, start_timestamp: float, sfreq: int = 50
-    ) -> List[DetectionFunction]:
-        logger.debug(f"Loading detection functions {file_path}")
+    ) -> List[ActivationFunction]:
+        """
+        Loads a precomputed H matrix from a csv file and returns a list of ActivationFunctions.
+
+        Parameters
+        ----------
+        file_path : float
+            The path to the file containing the H matrix.
+
+        start_timestamp : str
+            Start time of the recording in the form of a UNIX timestamp.
+            This is necessary to compute the corresponding timestamp for each individual datapoint.
+
+        sfreq : int
+            this is the sampling frequency of the data contained in the H matrix.
+
+        Returns
+        -------
+        List[ActivationFunction]
+            A list of ActivationFunction objects representing the content of the H matrix.
+        """
+        logger.debug(f"Loading activation functions {file_path}")
         # Determine function type
         function_type = FunctionType.from_file_path(file_path)
 
@@ -355,7 +382,7 @@ class DataLoader:
         data_matrix = np.genfromtxt(file_path, delimiter=",")
 
         if FunctionType.STD_LINE_LENGTH == function_type:
-            sorted_detection_functions = data_matrix[np.newaxis, :]
+            sorted_activation_functions = data_matrix[np.newaxis, :]
 
             # Create unique id prefix
             path, file = os.path.split(file_path)
@@ -366,7 +393,7 @@ class DataLoader:
             kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
             (
                 _,
-                sorted_detection_functions,
+                sorted_activation_functions,
                 cluster_assignments,
             ) = kmeans.cluster_and_sort(h_matrix=data_matrix)
 
@@ -378,51 +405,35 @@ class DataLoader:
         # Compute times for x-axis
         times = compute_rescaled_timeline(
             start_timestamp=start_timestamp,
-            length=sorted_detection_functions.shape[1],
+            length=sorted_activation_functions.shape[1],
             sfreq=sfreq,
         )
 
         # Create return objects
-        detection_functions: List[DetectionFunction] = []
+        activation_functions: List[ActivationFunction] = []
 
-        for idx, df in enumerate(sorted_detection_functions):
-            # Create DetectionFunction
+        for idx, df in enumerate(sorted_activation_functions):
+            # Create ActivationFunction
             label_df = f"H{idx}" if H_KEYWORD in file_path else LABEL_STD_LL
-            unique_id_df = f"{unique_id_prefix}_{label_df}"
+            unique_id_af = f"{unique_id_prefix}_{label_df}"
 
             # Generate threshold and find spikes
             threshold_generator = ThresholdGenerator(
-                detection_function_matrix=df, sfreq=sfreq
+                activation_function_matrix=df, sfreq=sfreq
             )
             threshold = threshold_generator.generate_threshold()
             spikes = threshold_generator.find_events(threshold)
 
-            if FunctionType.STD_LINE_LENGTH == function_type:
-                detection_fct = DetectionFunction(
-                    label=label_df,
-                    unique_id=unique_id_df,
-                    times=times,
-                    data_array=df,
-                    detected_events_on=spikes.get(0)["events_on"],
-                    detected_events_off=spikes.get(0)["events_off"],
-                    event_threshold=threshold,
-                )
-            elif FunctionType.H_COEFFICIENTS == function_type:
-                detection_fct = CoefficientsFunction(
-                    label=label_df,
-                    unique_id=unique_id_df,
-                    times=times,
-                    data_array=df,
-                    detected_events_on=spikes.get(0)["events_on"],
-                    detected_events_off=spikes.get(0)["events_off"],
-                    event_threshold=threshold,
-                    codes_for_spikes=bool(cluster_assignments.get(idx)),
-                )
-            else:
-                raise Exception(
-                    f"Function type {function_type} currently not supported by this service"
-                )
+            activation_fct = ActivationFunction(
+                label=label_df,
+                unique_id=unique_id_af,
+                times=times,
+                data_array=df,
+                detected_events_on=spikes.get(0)["events_on"],
+                detected_events_off=spikes.get(0)["events_off"],
+                event_threshold=threshold,
+            )
 
-            detection_functions.append(detection_fct)
+            activation_functions.append(activation_fct)
 
-        return detection_functions
+        return activation_functions

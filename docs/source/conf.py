@@ -1,14 +1,14 @@
-# Configuration file for the Sphinx documentation builder.
+# Configuration file for the Sphinx reference builder.
 #
 # This file only contains a selection of the most common options. For a full
-# list see the documentation:
+# list see the reference:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
+# reference root, use os.path.abspath to make it absolute, like shown here.
 #
 # import os
 # import sys
@@ -36,6 +36,7 @@ release = "1.2.4b0"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinx.ext.duration",
     "sphinx.ext.autodoc",
     "numpydoc",
     "sphinx_copybutton",
@@ -43,6 +44,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -51,14 +53,16 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+# exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# master_doc = "index"
 
 # -- numpydoc configuration --------------------------------------------------
 numpydoc_show_class_members = False
 
 # -- Options for HTML output -------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
+# The theme to use for HTML and HTML Help pages.  See the reference for
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
@@ -68,5 +72,11 @@ html_theme = "pydata_sphinx_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+html_title = f"automatic-spike-detection {release}"
+
+# html_sidebars = {"**": ["search-field.html"]}
+
 # Configuration of sphinx.ext.coverage
 coverage_show_missing_items = True
+
+numfig = True

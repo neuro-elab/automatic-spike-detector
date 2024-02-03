@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 
-from spidet.domain.DetectionFunction import DetectionFunction
+from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.spike_detection.line_length import LineLength
 from spidet.utils import logging_utils
 from spidet.utils.variables import (
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     )
 
     # Perform line length steps to compute unique line length
-    detection_function: DetectionFunction = line_length.compute_unique_line_length()
+    activation_function: ActivationFunction = line_length.compute_unique_line_length()
 
     # Perform line length steps to compute line length
     (
@@ -72,6 +72,6 @@ if __name__ == "__main__":
     np.savetxt(data_path, line_length_matrix, delimiter=",")
 
     data_path = os.path.join(filename_for_saving, "std_line_length.csv")
-    np.savetxt(data_path, detection_function.data_array, delimiter=",")
+    np.savetxt(data_path, activation_function.data_array, delimiter=",")
 
     print("DONE preprocess")

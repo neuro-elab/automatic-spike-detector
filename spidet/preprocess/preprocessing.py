@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 
 import numpy as np
 from loguru import logger
@@ -15,8 +15,39 @@ def apply_preprocessing_steps(
     resampling_freq: int,
     bandpass_cutoff_low: int,
     bandpass_cutoff_high: int,
-) -> np.ndarray:
-    # TODO add documentation, clean up
+) -> np.ndarray[np.dtype[float]]:
+    """
+    Applies the necessary preprocessing steps to the original iEEG data. This involves:
+
+        1.  Bandpass-filtering with a butterworth forward-backward filter of order 2
+        2.  Notch-filtering
+        3.  Rescaling
+        4.  Resampling
+
+    Parameters
+    ----------
+    traces : List[Trace]
+        The original iEEG data as a list of Traces objects. Each trace corresponds to the recording of single channel.
+
+    notch_freq : int
+        The frequency of the notch filter; data will be notch-filtered at this frequency
+        and at the corresponding harmonics,
+        e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
+
+    resampling_freq: int
+        The frequency to resample the data after filtering and rescaling
+
+    bandpass_cutoff_low : int
+        Cut-off frequency at the lower end of the passband of the bandpass filter.
+
+    bandpass_cutoff_high : int
+        Cut-off frequency at the higher end of the passband of the bandpass filter.
+
+    Returns
+    -------
+    numpy.ndarray[np.dtype[float]]
+        2-dimensional numpy array containing the preprocessed data where the rows correspond to the input traces.
+    """
 
     # Extract channel names
     channel_names = [trace.label for trace in traces]

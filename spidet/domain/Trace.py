@@ -5,13 +5,26 @@ import numpy as np
 
 @dataclass
 class Trace:
+    """
+    This class represents the recording from a given channel.
+
+    Attributes
+    ----------
+
     label: str
-    # duration: float
-    # n_samples: int
-    # processing: str
+        The name of the channel.
+
     sfreq: int
-    # unit: str
-    # start_date: date
-    # start_time: time
+        The sampling frequency of the data.
+
     start_timestamp: float
-    data: np.array
+        The start timestamp of the recording as a UNIX timestamp.
+
+    data: numpy.ndarray[numpy.dtype[numpy.float64]]
+        An array containing the EEG data of the given channel.
+    """
+
+    label: str
+    sfreq: int
+    start_timestamp: float
+    data: np.ndarray[np.dtype[np.float64]]

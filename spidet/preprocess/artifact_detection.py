@@ -48,16 +48,16 @@ class ArtifactDetector:
 
     @staticmethod
     def __detect_bad_times(
-        data: np.ndarray[Any, np.dtype[np.float64]],
+        data: np.ndarray[np.dtype[np.float64]],
         sfreq: int,
-    ) -> np.ndarray[Any, np.dtype[np.int64]]:
+    ) -> np.ndarray[np.dtype[np.int64]]:
         """
         Detects periods within the underlying EEG data that are considered bad, meaning that they represent
         some kind of artifact.
 
         Parameters
         ----------
-        data : numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+        data : numpy.ndarray[numpy.dtype[numpy.float64]]
             The underlying data containing the bad times (artifacts) periods.
 
         sfreq : int
@@ -65,7 +65,7 @@ class ArtifactDetector:
 
         Returns
         -------
-        bad_times : numpy.ndarray[Any, numpy.dtype[numpy.int64]]
+        bad_times : numpy.ndarray[numpy.dtype[numpy.int64]]
             An array containing the periods detected as bad.
         """
         logger.debug("Computing bad times")
@@ -157,7 +157,7 @@ class ArtifactDetector:
     @staticmethod
     def __detect_stimulation_artifacts(
         data: np.ndarray, bad_times: np.ndarray
-    ) -> np.ndarray[Any, np.dtype[np.int64]]:
+    ) -> np.ndarray[np.dtype[np.int64]]:
         logger.debug("Detecting stimulation artifacts")
 
         # A stimulation has the same value along a channel and across channels
@@ -217,10 +217,10 @@ class ArtifactDetector:
     @staticmethod
     def __add_stimulation_trigger_times(
         trigger_times: List[str],
-        bad_times: np.ndarray[Any, np.dtype[np.int64]],
-        times: np.ndarray[Any, np.dtype[np.float64]],
+        bad_times: np.ndarray[np.dtype[np.int64]],
+        times: np.ndarray[np.dtype[np.float64]],
         sfreq: int,
-    ) -> np.ndarray[Any, np.dtype[int]]:
+    ) -> np.ndarray[np.dtype[int]]:
         """
         Creates an artifact window around each stimulation trigger by adding a 100ms window before
         and a 1sec window after the trigger time, and adds them to the existing artifact periods.
@@ -236,11 +236,11 @@ class ArtifactDetector:
         trigger_times : List[str]
             A list of datetime strings corresponding to the time points of trigger events.
 
-        bad_times : numpy.ndarray[Any, numpy.dtype[numpy.int64]]
+        bad_times : numpy.ndarray[numpy.dtype[numpy.int64]]
             An array containing indices representing the start and end points of intervals
             associated with artifacts.
 
-        times : numpy.ndarray[Any, numpy.dtype[numpy.float64]]
+        times : numpy.ndarray[numpy.dtype[numpy.float64]]
             Timestamps corresponding to the respective values along the x-axis of the underlying data.
 
         sfreq : int
@@ -248,7 +248,7 @@ class ArtifactDetector:
 
         Returns
         -------
-        bad_times : numpy.ndarray[Any, numpy.dtype[numpy.int64]]
+        bad_times : numpy.ndarray[numpy.dtype[numpy.int64]]
             An array of artifact intervals, complemented by intervals encompassing respective
             stimulation events.
 

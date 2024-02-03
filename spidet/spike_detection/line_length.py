@@ -5,7 +5,7 @@ import numpy as np
 from loguru import logger
 from scipy.signal.windows import hann
 
-from spidet.domain.DetectionFunction import DetectionFunction
+from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.domain.Trace import Trace
 from spidet.load.data_loading import DataLoader
 from spidet.preprocess.preprocessing import apply_preprocessing_steps
@@ -15,6 +15,37 @@ from spidet.utils.times_utils import compute_rescaled_timeline
 
 
 class LineLength:
+    """
+    This class provides all operations regarding the line-length transformation.
+
+    Parameters
+    ----------
+
+    file_path: str
+        Path to the file containing the iEEG data.
+
+    bad_times: numpy.ndarray[numpy.dtype[numpy.float64]]
+        An optional N x 2 numpy array containing periods that must be excluded before applying
+        the line-length transformation. Each of th N rows in the array represents a period to be excluded,
+        defined by the start and end indices of the period in the original iEEG data.
+        The defined periods will be set to zero with the transitions being smoothed by applying a hanning window
+        to prevent spurious patterns.
+
+    dataset_paths: List[str], mandatory when the file is in .h5 format
+        A list of paths to the traces to be included within an h5 file. This is only necessary in the case
+        of h5 files.
+
+    bipolar_reference: bool, optional, default = False
+        If True, the bipolar references of the included channels will be computed. If channels already are
+        in bipolar form this needs to be False.
+
+    exclude: List[str], optional
+        A list of channel names that need to be excluded. This only applies in the case of .edf and .fif files.
+
+    leads: List[str]
+        A list of the leads included. Only necessary if bipolar_reference is True, otherwise can be None.
+    """
+
     def __init__(
         self,
         file_path: str,
@@ -35,34 +66,34 @@ class LineLength:
 
     def dampen_bad_times(
         self,
-        data: np.ndarray[Any, np.dtype[np.float64]],
+        data: np.ndarray[np.dtype[np.float64]],
         sfreq: int,
         orig_sfreq: int,
         window_length: int = 100,
     ) -> np.ndarray:
         """
-        Dampens bad times within preprocessed EEG data by setting values of bad times intervals to zero
+        Dampens bad times within preprocessed iEEG data by setting values of bad times intervals to zero
         and applying hann windows (https://en.wikipedia.org/wiki/Hann_function) around starting and ending
         points in order to get smoothed transitions
 
         Parameters
         ----------
-        data : numpy.ndarray[Any, np.dtype[np.float64]]
-            The preprocessed EEG data.
+        data : numpy.ndarray[np.dtype[np.float64]]
+            The preprocessed iEEG data.
 
         sfreq : int
-            The sampling frequency of the preprocessed EEG data.
+            The sampling frequency of the preprocessed iEEG data.
 
         orig_sfreq : int
-            The sampling frequency of the original EEG data.
+            The sampling frequency of the original iEEG data.
 
-        window_length : int
-            The length of the smoothed transition periods in ms
+        window_length : int, optional, default = 100
+            The length of the smoothed transition periods in milliseconds
 
         Returns
         -------
-        smoothed_data : numpy.ndarray[Any, np.dtype[np.float64]]
-            The preprocessed EEG data wih artifacts being zeroed and having smoothed transition periods.
+        smoothed_data : numpy.ndarray[np.dtype[np.float64]]
+            The preprocessed iEEG data wih artifacts being zeroed and having smoothed transition periods.
 
         """
         if len(self.bad_times.shape) == 1:
@@ -107,36 +138,36 @@ class LineLength:
             )
         return hann_mask * data
 
-    def compute_line_length(self, eeg_data: np.array, sfreq: int):
+    def compute_line_length(self, eeg_data: np.ndarray, sfreq: int):
         """
-        Computes the line length of the input EEG data.
+        Performs the line-length transformation on the input EEG data..
 
         Parameters
         ----------
         eeg_data : numpy.ndarray
             Input EEG data.
 
-        sfreq : float
-            Frequency of the input EEG data.
+        sfreq : int
+            Sampling frequency of the input EEG data.
 
         Returns
         -------
-        numpy.ndarray
+        numpy.ndarray[Any,
             Line length representation of the input EEG data.
 
         Notes
         -----
         The line length operation involves slicing the input data into evenly spaced intervals
         along the time axis and processing each block separately. It computes the summed absolute
-        difference of the data along consecutive time points over a predefined segment.
+        difference of the data along consecutive time points over a predefined segment. [1]_
 
         References
         ----------
-        See also
-        --------
-        :see: Line length as a robust method to detect high-activity events:
-              Automated burst detection in premature EEG recordings
-        (https://www.sciencedirect.com/science/article/pii/S1388245714001114?via%3Dihub).
+        .. [1]
+        Koolen, N., Jansen, K., Vervisch, J., Matic, V., De Vos, M., Naulaers, G., & Van Huffel, S. (2014).
+        Line length as a robust method to detect high-activity events:
+        Automated burst detection in premature EEG recordings.
+        Clinical Neurophysiology, 125(10), 1985–1994. https://doi.org/https://doi.org/10.1016/j.clinph.2014.02.015
         """
         # shape of the data: number of channels x duration
         nr_channels, duration = np.shape(eeg_data)
@@ -252,10 +283,51 @@ class LineLength:
         resampling_freq: int = 500,
         bandpass_cutoff_low: int = 0.1,
         bandpass_cutoff_high: int = 200,
-        n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
-    ) -> Tuple[float, List[str], np.ndarray]:
+    ) -> Tuple[float, List[str], np.ndarray[np.dtype[np.float64]]]:
+        """
+        This function launches the line length pipeline, which first carries out the necessary preprocessing steps
+        and then performs the line-length transformation of the preprocessed EEG data. The individual steps include
+
+            1.  reading the data from the provided file (supported file formats are .h5, .edf, .fif)
+                using the :py:mod:`~spidet.load.data_loading` module, which transforms the data
+                into a list of :py:mod:`~spidet.domain.Trace` objects,
+            2.  performing the necessary preprocessing steps by means of the
+                :py:mod:`~spidet.preprocess.preprocessing` module,
+            3.  and applying the line-length transformation.
+
+        To optimize computation, the channels are split into subsets and processed in parallel.
+
+        Parameters
+        ----------
+        notch_freq: int, optional, default = 50
+            The frequency of the notch filter; data will be notch-filtered at this frequency
+            and at the corresponding harmonics,
+            e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
+
+        resampling_freq: int, optional, default = 500
+            The frequency to resample the data after filtering and rescaling
+
+        bandpass_cutoff_low: int, optional, default = 0.1
+            Cut-off frequency at the lower end of the passband of the bandpass filter.
+
+        bandpass_cutoff_high: int, optional, default = 200
+            Cut-off frequency at the higher end of the passband of the bandpass filter.
+
+        line_length_freq: int, optional, default = 50
+            Sampling frequency of the line-length transformed data
+
+        line_length_window: int, optional, default = 40
+            Window length used to for the line-length operation (in milliseconds).
+
+        Returns
+        -------
+        Tuple[float, List[str], numpy.ndarray[numpy.dtype[numpy.float64]]]
+            Tuple containing, the start timestamp of the recording, a list of channel names
+            corresponding to the channels in the line-length transformed data,
+            the line-length transformed data
+        """
         # Set optional line length params
         self.line_length_freq = line_length_freq
         self.line_length_window = line_length_window
@@ -266,8 +338,11 @@ class LineLength:
         labels = []
         line_length_list = []
 
-        # Sequential data loading due to memory limitations
-        for channel_set in np.array_split(self.dataset_paths, n_processes):
+        # Sequentially load, preprocess and line-length transform subsets of channels due to memory limitations
+        nr_channel_subsets = (
+            1 if len(self.dataset_paths) // 10 == 0 else len(self.dataset_paths) // 10
+        )
+        for channel_set in np.array_split(self.dataset_paths, nr_channel_subsets):
             traces: List[Trace] = data_loader.read_file(
                 self.file_path,
                 list(channel_set),
@@ -283,6 +358,9 @@ class LineLength:
 
             # Using all available cores for process pool
             n_cores = multiprocessing.cpu_count()
+
+            # Define the number of parallel process used for preprocessing and line-length transformation
+            n_processes = min(5, len(channel_set))
 
             with multiprocessing.Pool(processes=n_cores) as pool:
                 line_length = pool.starmap(
@@ -314,7 +392,43 @@ class LineLength:
         n_processes: int = 5,
         line_length_freq: int = 50,
         line_length_window: int = 40,
-    ) -> DetectionFunction:
+    ) -> ActivationFunction:
+        """
+        This function computes the standard deviation of the data after performing
+        the line-length transformation using the :py:func:`apply_parallel_line_length_pipeline` method
+        and wraps it into a single :py:class:`~spidet.domain.ActivationFunction` object.
+        The defined parameters will be passed on to the :py:func:`apply_parallel_line_length_pipeline` method.
+
+        Parameters
+        ----------
+        notch_freq: int, optional, default = 50
+            The frequency of the notch filter; data will be notch-filtered at this frequency
+            and at the corresponding harmonics,
+            e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
+
+        resampling_freq: int, optional, default = 500
+            The frequency to resample the data after filtering and rescaling
+
+        bandpass_cutoff_low: int, optional, default = 0.1
+            Cut-off frequency at the lower end of the passband of the bandpass filter.
+
+        bandpass_cutoff_high: int, optional, default = 200
+            Cut-off frequency at the higher end of the passband of the bandpass filter.
+
+        n_processes: int, optional, default = 5
+            Number of parallel processes to use for the line-length pipeline
+
+        line_length_freq: int, optional, default = 50
+            Sampling frequency of the line-length transformed data
+
+        line_length_window: int, optional, default = 40
+            Window length used to for the line-length operation (in milliseconds).
+
+        Returns
+        -------
+        :py:class:`~spidet.domain.ActivationFunction`
+            ActivationFunction containing the standard deviation of the line-length transformed data.
+        """
         # Compute line length for each channel (done in parallel)
         start_timestamp, _, line_length = self.apply_parallel_line_length_pipeline(
             notch_freq=notch_freq,
@@ -338,7 +452,7 @@ class LineLength:
 
         # Generate threshold and detect periods
         threshold_generator = ThresholdGenerator(
-            detection_function_matrix=std_line_length, sfreq=line_length_freq
+            activation_function_matrix=std_line_length, sfreq=line_length_freq
         )
         threshold = threshold_generator.generate_threshold()
         detected_periods = threshold_generator.find_events(threshold)
@@ -347,7 +461,7 @@ class LineLength:
         filename = self.file_path[self.file_path.rfind("/") + 1 :]
         unique_id = f"{filename[:filename.rfind('.')]}_std_line_length"
 
-        return DetectionFunction(
+        return ActivationFunction(
             label="Std Line Length",
             unique_id=unique_id,
             times=times,
