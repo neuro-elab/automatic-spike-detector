@@ -63,7 +63,7 @@ Welcome to automatic-spike-detection's documentation!
    :titlesonly:
 
    Documentation <documentation/index>
-   Install <install/index>
+   Usage <usage/index>
    API Reference <reference/index>
 
 Indices and tables
