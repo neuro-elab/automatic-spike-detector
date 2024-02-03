@@ -116,7 +116,7 @@ Here, we quickly present the most important terminologies used in the library.
 
 Limitations
 ^^^^^^^^^^^
-The default algorithm ran by means of the :class:`~spidet.spike_detection.SpikeDetectionPipeline`
+The default algorithm ran by means of the :class:`~spidet.spike_detection.spike_detection_pipeline.SpikeDetectionPipeline`
 employs a simple K-Means clustering to split the returned activation functions into those coding
 for a certain EEG pattern and those coding for noise and sorts them starting with the noisy functions. However,
 there is no functionality that is guaranteed to find which of the activation functions exactly codes for
