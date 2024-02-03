@@ -26,19 +26,19 @@ Welcome to automatic-spike-detection's documentation!
 
    .. grid-item-card::
 
-        Install
+        Usage
         ^^^^^^^
 
-        This section provides information about the installment of the package.
+        This section gives some instructions on the usage of the package.
 
         +++
 
-        .. button-ref:: install
+        .. button-ref:: usage
             :expand:
             :color: secondary
             :click-parent:
 
-            How to install automatic-spike-detection
+            How to use the automatic-spike-detection package
 
 
    .. grid-item-card::
