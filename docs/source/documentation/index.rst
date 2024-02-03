@@ -118,7 +118,7 @@ Limitations
 ^^^^^^^^^^^
 While the default algorithm ran by means of the :class:`~spidet.spike_detection.SpikeDetectionPipeline`
 employs a simple K-Means clustering to split the returned activation functions into those that code
-for spikes and those that code for noise, there is no functionality that is guaranteed to find which of
+for a certain EEG pattern and those that code for noise, there is no functionality that is guaranteed to find which of
 the activation functions exactly codes for spikes. Therefore, it is recommended to use additional tools that
 allow the visualization of the activation functions and their respective event periods.
 
