@@ -28,6 +28,9 @@ and updated via
 Code Examples
 ^^^^^^^^^^^^^
 
+SpikeDetectionPipeline
+""""""""""""""""""""""
+
 The :class:`~spidet.spike_detection.spike_detection_pipeline.SpikeDetectionPipeline` class builds the core entity
 of the automatic-spike-detection package and provides a complete pipeline for spike detection that includes
 
@@ -85,3 +88,25 @@ An application example could look like
         )
 
 Pleas check out the :ref:`API Reference <reference>` for further details on how to use the :class:`~spidet.spike_detection.spike_detection_pipeline.SpikeDetectionPipeline`.
+Furthermore, all the different components of the pipeline can be used individually and are also explained in the
+:ref:`API Reference <reference>`.
+
+
+ThresholdGenerator
+""""""""""""""""""
+
+Another entity worth providing an example for is the :class:`~spidet.spike_detection.thresholding.ThresholdGenerator`
+While the detection pipeline computes a threshold based on the histograms of the individual
+:class:`~spidet.domain.ActivationFunction`s, it can be useful to recompute events for a given
+:class:`~spidet.domain.ActivationFunction` based on a custom threshold provided to the
+:class:`~spidet.spike_detection.thresholding.ThresholdGenerator`. This can be done as follows
+
+.. code-block:: Python
+
+    # Initialize the ThresholdGenerator and pass a preloaded activation function
+    threshold_generator = ThresholdGenerator(activation_function_matrix=activation_function)
+
+    # Compute the events for the given activation function for the custom defined threshold
+    spike_annotations = threshold_generator.find_events(threshold)
+
+For further details the reader is referred to the :ref:`API Reference <reference>`.
