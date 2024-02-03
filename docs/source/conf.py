@@ -72,6 +72,8 @@ html_theme = "pydata_sphinx_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+html_title = f"automatic-spike-detection {release}"
+
 # html_sidebars = {"**": ["search-field.html"]}
 
 # Configuration of sphinx.ext.coverage
