@@ -17,6 +17,12 @@ This package aims to contribute to this issue by building on an algorithm previo
 that employs nonnegative matrix factorization (NMF) to automatically detect IEDs, an unsupervised machine-learning
 algorithm that produces a lower-dimensional approximation of the input.
 
+It is important to note, that the algorithm used by this package is optimized for and was solely tested on
+intracranial EEG (iEEG) recordings. Intracranial EEG is an invasive technique with implanted electrodes that is used for
+clinical monitoring, e.g. to identify the epileptogenic zone and prepare for epilepsy surgery. The primary
+characteristic of iEEG is that it provides high spatial and temporal resolution of the electrical activity
+in the brain, which makes it a valuable resource for neuroscientific research as well [9_].
+
 Nonnegative Matrix Factorization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -91,6 +97,10 @@ References
 .. [8] Maxime O. Baud, Jonathan K. Kleen, Gopala K. Anumanchipalli, Liberty S. Hamilton, Yee-Leng
         Tan, Robert Knowlton, and Edward F. Chang. Unsupervised learning of spatiotemporal interictal
         discharges in focal epilepsy. Neurosurgery, 83(4), 2018.
+
+.. [9] Elizabeth L Johnson, Julia W Y Kam, Athina Tzovara, and Robert T Knight. Insights into human
+        cognition from intracranial eeg: A review of audition, memory, internal cognition, and causality.
+        Journal of Neural Engineering, 17(5):051001, oct 2020.
 
 .. [1] Yu-Xiong Wang and Yu-Jin Zhang. Nonnegative matrix factorization: A comprehensive review.
         IEEE Transactions on Knowledge and Data Engineering, 25(6):1336–1353, 2013.
