@@ -78,7 +78,7 @@ whose :math:`N` columns represent the metagene expression pattern of each indivi
 context of EEG data while using the analogous terminology, NMF decomposes a set of EEG signals into a
 small number of EEG metapatterns that make up these signals. The original data matrix :math:`V` contains the
 measurements of the electrical activity in the brain from :math:`M` different electrodes along :math:`N` different time
-points. The :math:`K` columns of W then represent the EEG patterns contained in the original signals, expressed
+points. The :math:`K` columns of W then represent the EEG metapatterns contained in the original signals, expressed
 in terms of the different brain activity patterns captured by the :math:`M` electrodes, while the :math:`N`
 columns of :math:`H` represent the activation level of each metapattern at each point in time.
 
@@ -102,8 +102,13 @@ Glossary
 ^^^^^^^^
 Here, we quickly present the most important terminologies used in the library.
 
-Activation Function
-"""""""""""""""""""
+.. glossary::
+    Basis Function
+
+    Activation Function
+        An activation function refers to a single row of the :math:`H` matrix and contains the activation
+        levels of a given metapattern at each point in time. They are represented by the
+        :class:`~spidet.domain.ActivationFunction` object.
 
 References
 ^^^^^^^^^^
