@@ -97,7 +97,7 @@ ThresholdGenerator
 
 Another entity worth providing an example for is the :class:`~spidet.spike_detection.thresholding.ThresholdGenerator`
 While the detection pipeline computes a threshold based on the histograms of the individual
-:class:`~spidet.domain.ActivationFunction`s, it can be useful to recompute events for a given
+:class:`~spidet.domain.ActivationFunction` s, it can be useful to recompute events for a given
 :class:`~spidet.domain.ActivationFunction` based on a custom threshold provided to the
 :class:`~spidet.spike_detection.thresholding.ThresholdGenerator`. This can be done as follows
 
