@@ -8,15 +8,14 @@ Documentation
 
 Interictal epileptiform discharges (IEDs), also referred to as ”spikes”, are a characteristic of
 the epileptic brain that are recognizable as large transient events in the electroencephalogram
-of patients living with epilepsy. Whereas, for clinicians, IEDs can provide valuable information about the epileptogenic
-zone, for researchers, they can also be a source of noise, depending on the phenomenon
-under investigation. Regardless of the context, the localization of IEDs in intracranial EEG recordings
-is a very time-consuming task.
+of patients living with epilepsy [6_]. Whereas, for clinicians, IEDs can provide valuable information about the epileptogenic
+zone, for researchers, they can also be a source of noise and need to be excluded, such as in [7_] where
+Cusinato and Alnes et al. studied how the human brain processes sounds. Regardless of the context,
+the localization of IEDs in EEG recordings is a very time-consuming task.
 
-This package aims to contribute to this issue by employing nonnegative matrix factorization (NMF)
-to automatically detect IEDs, an unsupervised machine-learning algorithm that produces a
-lower-dimensional approximation of the input, and uses consensus clustering to automatically
-determine the most discriminating EEG patterns.
+This package aims to contribute to this issue by building on an algorithm previously developed by Baud et al. [8_]
+that employs nonnegative matrix factorization (NMF) to automatically detect IEDs, an unsupervised machine-learning
+algorithm that produces a lower-dimensional approximation of the input.
 
 Nonnegative Matrix Factorization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -80,6 +79,18 @@ columns of :math:`H` represent the activation level of each metapattern at each 
 
 References
 ^^^^^^^^^^
+
+.. [6] Marco de Curtis, , and Giuliano Avanzini. "Interictal spikes in focal epileptogenesis".
+        Progress in Neurobiology 63, no.5 (2001): 541-567.
+
+.. [7] Riccardo Cusinato, Sigurd L. Alnes, Ellen van Maren, Ida Boccalaro, Debora Ledergerber, Antoine
+        Adamantidis, Lukas L. Imbach, Kaspar Schindler, Maxime O. Baud, and Athina Tzovara. Intrinsic
+        neural timescales in the temporal lobe support an auditory processing hierarchy. Journal of
+        Neuroscience, 43(20):3696–3707, 2023.
+
+.. [8] Maxime O. Baud, Jonathan K. Kleen, Gopala K. Anumanchipalli, Liberty S. Hamilton, Yee-Leng
+        Tan, Robert Knowlton, and Edward F. Chang. Unsupervised learning of spatiotemporal interictal
+        discharges in focal epilepsy. Neurosurgery, 83(4), 2018.
 
 .. [1] Yu-Xiong Wang and Yu-Jin Zhang. Nonnegative matrix factorization: A comprehensive review.
         IEEE Transactions on Knowledge and Data Engineering, 25(6):1336–1353, 2013.
