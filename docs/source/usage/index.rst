@@ -12,13 +12,13 @@ examples of how to use it.
 Installation
 ^^^^^^^^^^^^
 The automatic-spike-detection package is hosted on `Python Package Index (PyPi) <https://pypi.org/>`_ repository and can be installed
-via the `package installer for Python <https://pip.pypa.io/en/stable/>`_ ``pip`` with
+with the `package installer for Python <https://pip.pypa.io/en/stable/>`_ ``pip`` via
 
 .. code-block:: bash
 
     pip install automatic-spike-detection
 
-and updated with
+and updated via
 
 .. code-block:: bash
 
