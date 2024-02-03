@@ -11,4 +11,7 @@ examples of how to use it.
 Installation
 ^^^^^^^^^^^^
 The automatic-spike-detection package is hosted on Python Package Index (PyPi) repository and can be installed
-via the package installer for Python :mdoule:`pip <https://pip.pypa.io/en/stable/>`_
+via the package installer for Python :mdoule:`pip <https://pip.pypa.io/en/stable/>`_:
+
+.. code-block:: bash
+    pip install automatic-spike-detection
