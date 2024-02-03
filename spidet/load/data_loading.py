@@ -307,7 +307,11 @@ class DataLoader:
 
         channel_paths : List[str]
             Paths to the channels to include within the file
-            (defaults to all if non are present)
+            (defaults to all if none are given)
+
+        exclude: List[str]
+            A list of names of the channels to exclude.
+            Instead of defining which channels to include, this option allows to exclude certain channels.
 
         bipolar_reference: bool (default False)
             A boolean indicating whether bipolar references between respective channels
