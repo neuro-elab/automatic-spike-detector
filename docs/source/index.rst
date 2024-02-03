@@ -29,7 +29,7 @@ Welcome to automatic-spike-detection's documentation!
         Usage
         ^^^^^^^
 
-        This section gives some instructions on the usage of the package.
+        This section gives instructions on the installation and usage of the package.
 
         +++
 
@@ -38,7 +38,7 @@ Welcome to automatic-spike-detection's documentation!
             :color: secondary
             :click-parent:
 
-            How to use the automatic-spike-detection package
+            Installation and usage
 
 
    .. grid-item-card::
