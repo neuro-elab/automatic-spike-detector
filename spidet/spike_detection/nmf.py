@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Any
 
 import nimfa
 from nimfa.utils.linalg import *
@@ -12,25 +12,32 @@ from spidet.domain.Nmfsc import Nmfsc
 
 
 class Nmf:
+    """
+    This class hosts operations concerned with nonnegative matrix factorization (NMF).
+
+    Parameters
+    ----------
+
+    rank: int
+        The rank used for the nonnegative matrix factorization
+
+    sparseness: float, optional, default = 0.0
+        The sparseness parameter used in case NMF is run with sparseness constraints.
+    """
+
     def __init__(self, rank: int, sparseness: float = 0.0):
         self.rank = rank
         self.sparseness = float(sparseness)
 
-    def __calculate_cophenetic_corr(self, A: np.ndarray) -> np.ndarray:
-        """
-        Compute the cophenetic correlation coefficient for matrix A.
-
-        Parameters:
-        - A : numpy.ndarray
-            Input matrix.
-
-        Returns:
-        - float
-            Cophenetic correlation coefficient.
-        """
+    @staticmethod
+    def __calculate_cophenetic_corr(consensus_matrix: np.ndarray) -> np.ndarray:
         # Extract the values from the lower triangle of A
         avec = np.array(
-            [A[i, j] for i in range(A.shape[0] - 1) for j in range(i + 1, A.shape[1])]
+            [
+                consensus_matrix[i, j]
+                for i in range(consensus_matrix.shape[0] - 1)
+                for j in range(i + 1, consensus_matrix.shape[1])
+            ]
         )
 
         # Consensus entries are similarities, conversion to distances
@@ -46,9 +53,37 @@ class Nmf:
 
     def nmf_run(
         self,
-        preprocessed_data: np.ndarray,
+        preprocessed_data: np.ndarray[np.dtype[np.float64]],
         n_runs: int,
-    ) -> Tuple[Dict, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[
+        Dict,
+        np.ndarray[np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]],
+    ]:
+        """
+        This method performs a number of nonegative matrix factorization runs for the rank
+        defined at initialization of the :py:class:`Nmf` object. At the beginning of each run the :math:`W`
+        and :math:`H` matrices are randomly initialized. The algorithm runs until convergence
+        (i.e., the reconstruction error < 1e-5) or for a maximum of 10 iterations.
+
+        Parameters
+        ----------
+        preprocessed_data: numpy.ndarray[numpy.dtype[numpy.float64]]
+            The data used as input for NMF algorithm.
+
+        n_runs: int
+            The number of NMF runs.
+
+        Returns
+        -------
+        Tuple[Dict,
+        np.ndarray[np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]],
+        np.ndarray[np.dtype[np.float64]]]
+            A dictionary containing the rank, the minimum reconstruction error, the cophenetic correlation
+            and the instability index, together with the consensus, :math:`W` and :math:`H` matrices.
+        """
         data_matrix = preprocessed_data
         consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
         obj = np.zeros(n_runs)

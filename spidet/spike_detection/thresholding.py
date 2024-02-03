@@ -5,17 +5,37 @@ from loguru import logger
 
 
 class ThresholdGenerator:
+    """
+    This class is the primary entity for computing detected events on a given single activation function or
+    set of activation functions.
+
+    Parameters
+    ----------
+    activation_function_matrix: numpy.ndarray[numpy.dtype[numpy.float64]]
+        A single or set of activation functions for which to compute events
+
+    preprocessed_data: np.ndarray[numpy.dtype[numpy.float64]]
+        The preprocessed iEEG data, produced by applying the preprocessing steps listed in the preprocessing section.
+
+    sfreq: int
+        The sampling frequency of the data contained in the activation functions, defaults to 50 Hz.
+
+    z_threshold: int
+        The z-threshold used for computing the channels involved in a particular event.
+
+    """
+
     def __init__(
         self,
-        detection_function_matrix: np.ndarray,
-        preprocessed_data: np.ndarray = None,
+        activation_function_matrix: np.ndarray[np.dtype[np.float64]],
+        preprocessed_data: np.ndarray[np.dtype[np.float64]] = None,
         sfreq: int = 50,
         z_threshold: int = 10,
     ):
-        self.detection_function_matrix = (
-            detection_function_matrix
-            if len(detection_function_matrix.shape) > 1
-            else detection_function_matrix[np.newaxis, :]
+        self.activation_function_matrix = (
+            activation_function_matrix
+            if len(activation_function_matrix.shape) > 1
+            else activation_function_matrix[np.newaxis, :]
         )
         self.preprocessed_data = preprocessed_data
         self.sfreq = sfreq
@@ -111,16 +131,37 @@ class ThresholdGenerator:
         )
 
     def generate_individual_thresholds(self) -> None:
-        for idx, detection_function in enumerate(self.detection_function_matrix):
-            threshold = self.generate_threshold(data=detection_function)
+        """
+        Computes the threshold for each individual activation function based on
+        :py:func:`~generate_threshold`
+        """
+        for idx, activation_function in enumerate(self.activation_function_matrix):
+            threshold = self.generate_threshold(data=activation_function)
             self.thresholds.update({idx: threshold})
 
-    def generate_threshold(
-        self, data: np.ndarray[Any, np.dtype[float]] = None
-    ) -> float:
+    def generate_threshold(self, data: np.ndarray[np.dtype[float]] = None) -> float:
+        """
+        Computes the threshold for individual activation functions. The threshold is defined as the
+        zero-crossing of the line that is fitted to the right of the histogram of a given
+        activation function.
+
+        Parameters
+        ----------
+
+        data: np.ndarray[np.dtype[float]]
+            This represents the data for which to compute the threshold. If None, the threshold is computed
+            for the activation_function_matrix passed to the ThresholdGenerator at initialization.
+
+        Returns
+        -------
+        float
+            The threshold computed for either the data passed as a function argument or the activation function
+            passed to the ThresholdGenerator at initialization.
+
+        """
         # TODO: add doc
         # Determine data to compute threshold for
-        data = data if data is not None else self.detection_function_matrix
+        data = data if data is not None else self.activation_function_matrix
 
         # Calculate number of bins
         nr_bins = min(round(0.1 * data.shape[-1]), 1000)
@@ -215,15 +256,37 @@ class ThresholdGenerator:
         return threshold
 
     def find_events(self, threshold: float = None) -> Dict[(int, Dict)]:
-        # TODO: add doc
+        """
+        Computes the events for the activation functions in the activation_function_matrix, which was
+        passed to the ThresholdGenerator at initialization. If the threshold argument is None,
+        the computation is based on the thresholds generated for each activation function
+        by :py:func:`~generate_individual_thresholds`
+
+        Parameters
+        ----------
+        threshold: float
+            The threshold used to compute events for the activation_function_matrix. This can be useful e.g.
+            if the activation_function_matrix contains a single activation function and events need to be
+            computed based on a custom threshold.
+
+        Returns
+        -------
+        Dict[(int, Dict)]
+            A nested dictionary containing the events for each activation function. A given activation function
+            in the dictionary can be accessed by its respective index in the :py:attr:`activation_function_matrix`.
+            The events for a given activation function are represented by a dictionary containing two index arrays
+            corresponding to the onset, accessible by the "events_on"-key, and offset,
+            accessible by the "events_off"-key, indices of the events, and one binary masking array
+            indicating the indices of all detected events, accessible via the "event_mask"-key.
+        """
         # Process rows sequentially
         events = dict()
-        for idx, detection_function in enumerate(self.detection_function_matrix):
+        for idx, activation_function in enumerate(self.activation_function_matrix):
             # Determine threshold
             threshold = threshold if threshold is not None else self.thresholds.get(idx)
 
             # Create event mask indicating whether specific time point belongs to event
-            event_mask = detection_function > threshold
+            event_mask = activation_function > threshold
 
             # Find starting time points of events
             events_on = np.array(np.diff(np.append(0, event_mask), 1) == 1).nonzero()[0]
@@ -255,8 +318,14 @@ class ThresholdGenerator:
                 # and upper bounding values by maximum time point
                 events_on = np.maximum(0, events_on - 0.04 * self.sfreq).astype(int)
                 events_off = np.minimum(
-                    len(event_mask), events_off + 0.04 * self.sfreq
+                    len(event_mask) - 1, events_off + 0.04 * self.sfreq
                 ).astype(int)
+
+                # Merge overlapping events
+                gaps = events_on[1:] - events_off[:-1]
+                gaps_mask = gaps > 0
+                events_on = events_on[np.append(1, gaps_mask).nonzero()[0]]
+                events_off = events_off[np.append(gaps_mask, 1).nonzero()[0]]
 
                 # Determine which channels were involved in measuring which events
                 (
@@ -265,12 +334,18 @@ class ThresholdGenerator:
                     events_off,
                 ) = self.__determine_involved_channels(events_on, events_off)
 
+            # Create event mask
+            event_mask = np.zeros(len(activation_function))
+            for on, off in zip(events_on, events_off):
+                event_mask[on : off + 1] = 1
+
             events.update(
                 {
                     idx: dict(
                         {
                             "events_on": events_on,
                             "events_off": events_off,
+                            "event_mask": event_mask.astype(int),
                             "channels_involved": channel_event_assoc,
                         }
                     )

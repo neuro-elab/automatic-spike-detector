@@ -11,28 +11,80 @@ from scipy.special import rel_entr
 from sklearn.preprocessing import normalize
 from pathlib import Path
 
+from spidet.utils import logging_utils
+
 from spidet.domain.BasisFunction import BasisFunction
-from spidet.domain.DetectionFunction import DetectionFunction
-from spidet.domain.CoefficentsFunction import CoefficientsFunction
+from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.line_length import LineLength
 from spidet.spike_detection.nmf import Nmf
-from spidet.spike_detection.projecting import Projector
 from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 from spidet.utils.plotting_utils import plot_w_and_consensus_matrix
 
 
 class SpikeDetectionPipeline:
+    """
+    This class builds the heart of the automatic-spike-detection library. It provides an end-to-end
+    pipeline that takes in a path to a file containing an iEEG recording and returns periods of
+    abnormal activity. The pipeline is a multistep process that includes
+
+        1.  reading the data from the provided file (supported file formats are .h5, .edf, .fif) and
+            transforming the data into a list of :py:mod:`~spidet.domain.Trace` objects,
+        2.  performing the necessary preprocessing steps by means of the :py:mod:`~spidet.preprocess.preprocessing` module,
+        3.  applying the line-length transformation using the :py:mod:`~spidet.spike_detection.line_length` module,
+        4.  performing Nonnegative Matrix Factorization to extract the most discriminating metappatterns,
+            done by the :py:mod:`~spidet.spike_detection.nmf` module and
+        5.  computing periods of abnormal activity by means of the :py:mod:`~spidet.spike_detection.thresholding` module.
+
+    Parameters
+    ----------
+
+    file_path: str
+        Path to the file containing the iEEG data.
+
+    results_dir: str
+        Path to the directory where the folder containing the results of the spike detection run should be saved.
+        If None, the results folder will be saved in the user's home directory. By default, the results contain
+        the metrics representing the computation of the optimal rank and two plots for both the basis functions
+        and the consensus matrices of the different ranks.
+
+    save_nmf_matrices: bool
+        If True, in addition to the results saved by default, the W matrix containing the basis functions and
+        the H matrix containing the activation functions for each rank, the line-length transformed data and
+        the standard deviation of the line length are saved.
+
+    sparseness: float
+        A floating point number :math:`\in [0, 1]`.
+        If this parameter is non-zero, nonnegative matrix factorization is run with sparseness constraints.
+
+    bad_times: numpy.ndarray[numpy.dtype[numpy.float64]]
+        An optional N x 2 numpy array containing periods that must be excluded before applying
+        the line-length transformation. Each of th N rows in the array represents a period to be excluded,
+        defined by the start and end indices of the period in the original iEEG data.
+        The defined periods will be set to zero with the transitions being smoothed by applying a hanning window
+        to prevent spurious patterns.
+
+    nmf_runs: int
+        The number of nonnegative matrix factorization runs performed for each rank, default is 100.
+
+    rank_range: Tuple[int, int]
+        A tuple defining the range of ranks for which to perform the nonnegative matrix factorization,
+        default is (2, 5).
+
+    line_length_freq: int
+        The sampling frequency of the line-length transformed data, default is 50 hz.
+    """
+
     def __init__(
         self,
         file_path: str,
         results_dir: str = None,
         save_nmf_matrices: bool = False,
         sparseness: float = 0.0,
-        bad_times: np.ndarray = None,
+        bad_times: np.ndarray[np.dtype[np.float64]] = None,
         nmf_runs: int = 100,
-        rank_range: Tuple[int, int] = (2, 10),
+        rank_range: Tuple[int, int] = (2, 5),
         line_length_freq: int = 50,
     ):
         self.sparseness = sparseness
@@ -44,24 +96,24 @@ class SpikeDetectionPipeline:
         self.rank_range: Tuple[int, int] = rank_range
         self.line_length_freq = line_length_freq
 
+        # Configure logger
+        logging_utils.add_logger_with_process_name(self.results_dir)
+
     def __create_results_dir(self, results_dir: str):
-        if results_dir is None:
-            # Create default directory if none is given
-            file_path = self.file_path
-            filename_for_saving = (
-                file_path[file_path.rfind("/") + 1 :]
-                .replace(".", "_")
-                .replace(" ", "_")
-            )
-
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            results_dir = os.path.join(
-                Path.home(), filename_for_saving + "_" + timestamp
-            )
-
-        results_dir = (
-            results_dir + "_nmfsc" if self.sparseness != 0.0 else results_dir + "_nmf"
+        # Create folder to save results
+        file_path = self.file_path
+        filename_for_saving = (
+            file_path[file_path.rfind("/") + 1 :].replace(".", "_").replace(" ", "_")
         )
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        nmf_version = "NMFSC" if self.sparseness != 0.0 else "NMF"
+        folder_name = "_".join([nmf_version, filename_for_saving, timestamp])
+
+        if results_dir is None:
+            results_dir = os.path.join(Path.home(), folder_name)
+        else:
+            results_dir = os.path.join(results_dir, folder_name)
+
         os.makedirs(results_dir, exist_ok=True)
         return results_dir
 
@@ -111,13 +163,12 @@ class SpikeDetectionPipeline:
         preprocessed_data: np.ndarray,
         rank: int,
         n_runs: int,
-        execute: bool = False,
     ) -> Tuple[
         Dict,
-        np.ndarray[Any, np.dtype[float]],
-        np.ndarray[Any, np.dtype[float]],
-        np.ndarray[Any, np.dtype[float]],
-        Dict[int, np.ndarray[Any, np.dtype[int]]],
+        np.ndarray[np.dtype[float]],
+        np.ndarray[np.dtype[float]],
+        np.ndarray[np.dtype[float]],
+        Dict[int, np.ndarray[np.dtype[int]]],
         float,
         Dict[int, int],
     ]:
@@ -157,16 +208,6 @@ class SpikeDetectionPipeline:
         threshold_generator.generate_individual_thresholds()
         spike_annotations = threshold_generator.find_events()
 
-        if execute:
-            #####################
-            #   PROJECTING      #
-            #####################
-
-            projector = Projector(h_matrix=sorted_h, w_matrix=sorted_w)
-            w_projection, data_projections = projector.find_and_project_peaks(
-                preprocessed_data
-            )
-
         return (
             metrics,
             consensus,
@@ -179,12 +220,12 @@ class SpikeDetectionPipeline:
 
     def parallel_processing(
         self,
-        preprocessed_data: np.ndarray[Any, np.dtype[float]],
+        preprocessed_data: np.ndarray[np.dtype[float]],
         channel_names: List[str],
     ) -> Tuple[
-        np.ndarray[Any, np.dtype[float]],
-        np.ndarray[Any, np.dtype[float]],
-        Dict[int, np.ndarray[Any, np.dtype[int]]],
+        np.ndarray[np.dtype[float]],
+        np.ndarray[np.dtype[float]],
+        Dict[int, np.ndarray[np.dtype[int]]],
         Dict[int, float],
         Dict[int, int],
     ]:
@@ -317,11 +358,64 @@ class SpikeDetectionPipeline:
 
     def run(
         self,
-        channel_paths: List[str],
+        channel_paths: List[str] = None,
         bipolar_reference: bool = False,
         exclude: List[str] = None,
         leads: List[str] = None,
-    ) -> Tuple[List[BasisFunction], List[DetectionFunction]]:
+        notch_freq: int = 50,
+        resampling_freq: int = 500,
+        bandpass_cutoff_low: int = 0.1,
+        bandpass_cutoff_high: int = 200,
+        line_length_freq: int = 50,
+        line_length_window: int = 40,
+    ) -> Tuple[List[BasisFunction], List[ActivationFunction]]:
+        """
+        This method triggers a complete run of the spike detection pipline with the arguments passed
+        to the :py:class:`SpikeDetectionPipeline` at initialization.
+
+        Parameters
+        ----------
+        channel_paths: List[str]
+            A list of paths to the traces to be included within an h5 file. This is only necessary in the case
+            of h5 files.
+
+        bipolar_reference: bool
+            If True, the bipolar references of the included channels will be computed. If channels already are
+            in bipolar form this needs to be False.
+
+        exclude: List[str]
+            A list of channel names that need to be excluded. This only applies in the case of .edf and .fif files.
+
+        leads: List[str]
+            A list of the leads included. Only necessary if bipolar_reference is True, otherwise can be None.
+
+        notch_freq: int, optional, default = 50
+            The frequency of the notch filter; data will be notch-filtered at this frequency
+            and at the corresponding harmonics,
+            e.g. notch_freq = 50 Hz -> harmonics = [50, 100, 150, etc.]
+
+        resampling_freq: int, optional, default = 500
+            The frequency to resample the data after filtering and rescaling
+
+        bandpass_cutoff_low: int, optional, default = 0.1
+            Cut-off frequency at the lower end of the passband of the bandpass filter.
+
+        bandpass_cutoff_high: int, optional, default = 200
+            Cut-off frequency at the higher end of the passband of the bandpass filter.
+
+        line_length_freq: int, optional, default = 50
+            Sampling frequency of the line-length transformed data
+
+        line_length_window: int, optional, default = 40
+            Window length used to for the line-length operation (in milliseconds).
+
+        Returns
+        -------
+        Tuple[List[BasisFunction], List[ActivationFunction]]
+            Two lists containing the :py:mod:`~spidet.domain.BasisFunction`
+            and :py:mod:`~spidet.domain.ActivationFunction`, where each activation function contains
+            the corresponding detected events.
+        """
         # Instantiate a LineLength instance
         line_length = LineLength(
             file_path=self.file_path,
@@ -337,7 +431,14 @@ class SpikeDetectionPipeline:
             start_timestamp,
             channel_names,
             line_length_matrix,
-        ) = line_length.apply_parallel_line_length_pipeline()
+        ) = line_length.apply_parallel_line_length_pipeline(
+            notch_freq=notch_freq,
+            resampling_freq=resampling_freq,
+            bandpass_cutoff_low=bandpass_cutoff_low,
+            bandpass_cutoff_high=bandpass_cutoff_high,
+            line_length_freq=line_length_freq,
+            line_length_window=line_length_window,
+        )
 
         # Run parallelized NMF
         (
@@ -363,7 +464,7 @@ class SpikeDetectionPipeline:
 
         # Create return objects
         basis_functions: List[BasisFunction] = []
-        coefficient_functions: List[CoefficientsFunction] = []
+        activation_functions: List[ActivationFunction] = []
 
         for idx, (bf, sdf, spikes_idx, threshold_idx, assignments_idx) in enumerate(
             zip(w_opt.T, h_opt, spikes_opt, thresholds_opt, assignments_opt)
@@ -378,21 +479,20 @@ class SpikeDetectionPipeline:
                 data_array=bf,
             )
 
-            # Create SpikeDetectionFunction
-            label_sdf = f"H{idx + 1}"
-            unique_id_sdf = f"{unique_id_prefix}_{label_sdf}"
-            coefficient_fct = CoefficientsFunction(
-                label=label_sdf,
-                unique_id=unique_id_sdf,
+            # Create ActivationFunction
+            label_af = f"H{idx + 1}"
+            unique_id_af = f"{unique_id_prefix}_{label_af}"
+            activation_fct = ActivationFunction(
+                label=label_af,
+                unique_id=unique_id_af,
                 times=times,
                 data_array=sdf,
                 detected_events_on=spikes_opt.get(spikes_idx)["events_on"],
                 detected_events_off=spikes_opt.get(spikes_idx)["events_off"],
                 event_threshold=thresholds_opt.get(threshold_idx),
-                codes_for_spikes=bool(assignments_opt.get(assignments_idx)),
             )
 
             basis_functions.append(basis_fct)
-            coefficient_functions.append(coefficient_fct)
+            activation_functions.append(activation_fct)
 
-        return basis_functions, coefficient_functions
+        return basis_functions, activation_functions

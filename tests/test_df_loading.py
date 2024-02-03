@@ -4,7 +4,7 @@ from datetime import datetime
 
 from loguru import logger
 
-from spidet.domain.DetectionFunction import DetectionFunction
+from spidet.domain.ActivationFunction import ActivationFunction
 from spidet.load.data_loading import DataLoader
 from spidet.utils import logging_utils
 
@@ -23,11 +23,19 @@ if __name__ == "__main__":
     # Initialize data loader
     data_loader = DataLoader()
 
-    # Load spike detection functions
-    detection_functions: List[DetectionFunction] = data_loader.load_detection_functions(
+    # Load spike activation functions
+    activation_functions: List[
+        ActivationFunction
+    ] = data_loader.load_activation_functions(
         file_path=file, start_timestamp=start_datetime.timestamp()
     )
 
+    logger.debug(f"Loading finished")
+    for activation_function in activation_functions:
+        logger.debug(
+            f"Event mask of the ActivationFunction {activation_function.label}:\n {activation_function.get_event_mask()}"
+        )
+
     logger.debug(
-        f"Loaded the following spike detection functions:\n {detection_functions}"
+        f"Loaded the following spike activation functions:\n {activation_functions}"
     )

@@ -89,7 +89,7 @@ if __name__ == "__main__":
     ch_prefixes_file: str = parser.parse_args().ch_prefixes
 
     # Configure logger
-    logging_utils.add_logger_with_process_name()
+    # logging_utils.add_logger_with_process_name()
 
     # Channels and leads
     channel_paths = (
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         logger.debug(
             f"File: {file}; Start nmf for sparseness {sparseness}; Start time is {start}"
         )
-        basis_functions, spike_detection_functions = spike_detection_pipeline.run(
+        basis_functions, spike_activation_functions = spike_detection_pipeline.run(
             channel_paths=channels_included,
             exclude=exclude,
             bipolar_reference=bipolar_reference,
@@ -207,5 +207,5 @@ if __name__ == "__main__":
         logger.debug(f"Finished nmf in {end - start} seconds")
 
         logger.debug(
-            f"Results:\n Basis Functions: {basis_functions}\n Spike Detection Functions: {spike_detection_functions}"
+            f"Results:\n Basis Functions: {basis_functions}\n Spike Activation Functions: {spike_activation_functions}"
         )

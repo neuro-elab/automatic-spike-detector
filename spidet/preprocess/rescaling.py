@@ -7,12 +7,23 @@ def rescale_data(
     data_to_be_scaled: np.array, original_data: np.array, sfreq: int
 ) -> np.array:
     """
-    Rescales the bandpass filtered data with respect to the original data matrix
+    Rescales the bandpass filtered data with respect to the original data matrix.
 
-    :param data_to_be_scaled:
-    :param original_data:
-    :param sfreq: sampling frequency of the channels in the original data
-    :return: scaled version of the filtered data
+    Parameters
+    ----------
+    data_to_be_scaled : numpy.array
+        Data to be scaled.
+
+    original_data : numpy.array
+        Original data.
+
+    sfreq : float
+        Sampling frequency of the channels in the original data.
+
+    Returns
+    -------
+    array-like
+        Scaled version of the filtered data.
     """
     # PROCESS ORIGINAL DATA
     # bandpass filter
