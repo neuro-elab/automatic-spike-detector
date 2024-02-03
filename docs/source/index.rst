@@ -6,6 +6,10 @@
 Welcome to automatic-spike-detection's documentation!
 =====================================================
 
+The automatic-spike-detection package is a Python library for automatically detection interictal epileptiform discharges (IEDs)
+in intracranial EEG recordings. We highly recommend to first read the :ref:`Documentation <documentation>` to get
+an understanding of the concept of the underlying algorithm and the terminologies used in package.
+
 .. grid:: 3
 
    .. grid-item-card::
