@@ -48,7 +48,7 @@ An application example could look like
     # Define the file path
     file: str  = "/home/User/intracranial_EEG_recording.h5"
 
-    # Define the sparseness parameter if NMF should run with sparseness constraints, a value in the range [0, 1]
+    # Define the sparseness parameter in [0, 1] if NMF should run with sparseness constraints
     # Note that running NMF with sparseness constraints typically increases running time
     sparseness: float = 0.25
 
@@ -78,6 +78,7 @@ An application example could look like
         "/traces/raw_bipolar/lead/Amy/Amy04-Amy05",
         ...]
 
+    # Run the detection pipeline
     basis_functions: List[BasisFunction], activation_functions: List[ActivationFunction] =
         spike_detection_pipeline.run(
             channel_paths=channel_paths,
