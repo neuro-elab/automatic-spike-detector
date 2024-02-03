@@ -98,7 +98,12 @@ norm and the :math:`L_2` norm:
     sparseness(x) = \frac{\sqrt{n} - (\sum | x_i |) / \sqrt{\sum x_{i}^2}}{\sqrt{n} - 1}
 
 
+Glossary
+^^^^^^^^
+Here, we quickly present the most important terminologies used in the library.
 
+Activation Function
+"""""""""""""""""""
 
 References
 ^^^^^^^^^^
