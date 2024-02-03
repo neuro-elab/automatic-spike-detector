@@ -104,8 +104,9 @@ Here, we quickly present the most important terminologies used in the library.
 
 .. glossary::
     Basis Function
-        A basis function refers to a column of the :math:`W` matrix and represents an EEG metapattern
+        A basis function refers to a column of the :math:`W` matrix and represents an EEG metapattern,
         expressed in terms of the different brain activity patterns captured by the employed electrodes.
+        They are represented in the library by the :class:`~spidet.domain.BasisFunction` object.
 
     Activation Function
         An activation function refers to a single row of the :math:`H` matrix and contains the activation
