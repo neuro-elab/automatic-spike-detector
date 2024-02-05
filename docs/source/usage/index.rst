@@ -96,17 +96,34 @@ ThresholdGenerator
 """"""""""""""""""
 
 Another entity worth providing an example for is the :class:`~spidet.spike_detection.thresholding.ThresholdGenerator`
-While the detection pipeline computes a threshold based on the histograms of the individual
-:class:`~spidet.domain.ActivationFunction` s, it can be useful to recompute events for a given
-:class:`~spidet.domain.ActivationFunction` based on a custom threshold provided to the
-:class:`~spidet.spike_detection.thresholding.ThresholdGenerator`. This can be done as follows
+The detection pipeline is a complete end-to-end module. However, it might be necessary to recompute events for a
+precomputed :class:`~spidet.domain.ActivationFunction` based on a custom defined threshold.
+A precomputed :math:`H` matrix can be loaded via the :class:`~spidet.load.data_loading.DataLoader` and passed row-wise
+or as a complete matrix to the :class:`~spidet.spike_detection.thresholding.ThresholdGenerator`.
+The events can then be computed for a predefined threshold.
 
 .. code-block:: Python
 
+    # Define start datetime of the recording
+    start_datetime = datetime(2021, 11, 11, 16, 1, 20)
+
+    # Set path to file containing the H matrix
+    file: str = "PATH/TO/H_MATRIX.csv"
+
+    # Initialize data loader
+    data_loader = DataLoader()
+
+    # Load spike activation functions
+    activation_functions: List[
+        ActivationFunction
+    ] = data_loader.load_activation_functions(
+        file_path=file, start_timestamp=start_datetime.timestamp()
+    )
+
     # Initialize the ThresholdGenerator and pass a preloaded activation function
-    threshold_generator = ThresholdGenerator(activation_function_matrix=activation_function)
+    threshold_generator = ThresholdGenerator(activation_function_matrix=activation_functions[0])
 
     # Compute the events for the given activation function for the custom defined threshold
     spike_annotations = threshold_generator.find_events(threshold)
 
-For further details the reader is referred to the :ref:`API Reference <reference>`.
+For further details, please consult the :ref:`API Reference <reference>`.
