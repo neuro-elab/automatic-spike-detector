@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Any, List
+from typing import Dict, Tuple
 
 import numpy as np
 from loguru import logger
@@ -11,10 +11,10 @@ class ThresholdGenerator:
 
     Parameters
     ----------
-    activation_function_matrix: numpy.ndarray[numpy.dtype[numpy.float64]]
+    activation_function_matrix: numpy.ndarray[numpy.dtype[float]]
         A single or set of activation functions for which to compute events
 
-    preprocessed_data: np.ndarray[numpy.dtype[numpy.float64]]
+    preprocessed_data: np.ndarray[numpy.dtype[float]]
         The preprocessed iEEG data, produced by applying the preprocessing steps listed in the preprocessing section.
 
     sfreq: int
@@ -27,8 +27,8 @@ class ThresholdGenerator:
 
     def __init__(
         self,
-        activation_function_matrix: np.ndarray[np.dtype[np.float64]],
-        preprocessed_data: np.ndarray[np.dtype[np.float64]] = None,
+        activation_function_matrix: np.ndarray[np.dtype[float]],
+        preprocessed_data: np.ndarray[np.dtype[float]] = None,
         sfreq: int = 50,
         z_threshold: int = 10,
     ):

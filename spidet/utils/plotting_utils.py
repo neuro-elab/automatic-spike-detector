@@ -5,11 +5,14 @@ from typing import List, Sequence, Dict
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
 from loguru import logger
 
 from spidet.utils.variables import LEAD_PREFIXES_EL010
+
+mpl.use("agg")
 
 
 def plot_std_line_length(

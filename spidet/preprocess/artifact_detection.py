@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Any
+from typing import List
 
 import numpy as np
 from loguru import logger
@@ -48,7 +48,7 @@ class ArtifactDetector:
 
     @staticmethod
     def __detect_bad_times(
-        data: np.ndarray[np.dtype[np.float64]],
+        data: np.ndarray[np.dtype[float]],
         sfreq: int,
     ) -> np.ndarray[np.dtype[np.int64]]:
         """
@@ -57,7 +57,7 @@ class ArtifactDetector:
 
         Parameters
         ----------
-        data : numpy.ndarray[numpy.dtype[numpy.float64]]
+        data : numpy.ndarray[numpy.dtype[float]]
             The underlying data containing the bad times (artifacts) periods.
 
         sfreq : int
@@ -218,7 +218,7 @@ class ArtifactDetector:
     def __add_stimulation_trigger_times(
         trigger_times: List[str],
         bad_times: np.ndarray[np.dtype[np.int64]],
-        times: np.ndarray[np.dtype[np.float64]],
+        times: np.ndarray[np.dtype[float]],
         sfreq: int,
     ) -> np.ndarray[np.dtype[int]]:
         """
@@ -240,7 +240,7 @@ class ArtifactDetector:
             An array containing indices representing the start and end points of intervals
             associated with artifacts.
 
-        times : numpy.ndarray[numpy.dtype[numpy.float64]]
+        times : numpy.ndarray[numpy.dtype[float]]
             Timestamps corresponding to the respective values along the x-axis of the underlying data.
 
         sfreq : int

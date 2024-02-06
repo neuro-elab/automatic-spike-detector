@@ -26,6 +26,15 @@ for details on the [underlying concepts](https://automatic-spike-detection.readt
 of the algorithm, the [Installation and Usage](https://automatic-spike-detection.readthedocs.io/en/latest/usage/index.html#usage)
 , and the application programming interface [(API)](https://automatic-spike-detection.readthedocs.io/en/latest/reference/index.html)
 
+## Contributions
+In addition to the dependencies in the `requirements.txt` file, you need to install the dependencies listed in the
+`dev-requirements.txt` file, which provides some formatting tools:
+
+````
+pip install requirements.txt
+pip install dev-requirements.txt
+````
+
 ## References
 <a id="1">[1]</a>
 Marco de Curtis and Giuliano Avanzini. "Interictal spikes in focal epileptogenesis".

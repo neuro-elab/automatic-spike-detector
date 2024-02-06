@@ -125,7 +125,7 @@ class DataLoader:
             label,
             sfreq,
             start_timestamp,
-            dataset[:].astype(np.float64),
+            dataset[:].astype(float),
         )
 
     def read_file(

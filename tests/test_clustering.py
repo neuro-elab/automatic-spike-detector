@@ -1,7 +1,6 @@
 import argparse
 import os
 
-import numpy as np
 from loguru import logger
 from numpy import genfromtxt
 
