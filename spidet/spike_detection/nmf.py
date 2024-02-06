@@ -1,12 +1,9 @@
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict
 
 import nimfa
-from nimfa.utils.linalg import *
 import numpy as np
 from loguru import logger
 from scipy.cluster.hierarchy import linkage, cophenet
-from sklearn.decomposition import NMF
-from sklearn.preprocessing import normalize
 
 from spidet.domain.Nmfsc import Nmfsc
 

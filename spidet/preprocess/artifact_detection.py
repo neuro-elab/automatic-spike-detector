@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Any
+from typing import List
 
 import numpy as np
 from loguru import logger

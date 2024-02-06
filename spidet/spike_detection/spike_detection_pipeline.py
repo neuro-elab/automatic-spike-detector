@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 import os
 from datetime import datetime
-from typing import Tuple, List, Dict, Any
+from typing import Tuple, List, Dict
 
 import numpy as np
 import pandas as pd

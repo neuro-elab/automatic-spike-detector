@@ -1,5 +1,5 @@
 import multiprocessing
-from typing import List, Tuple, Any
+from typing import List, Tuple
 
 import numpy as np
 from loguru import logger
