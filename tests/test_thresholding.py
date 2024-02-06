@@ -37,8 +37,8 @@ if __name__ == "__main__":
     ]
 
     for rank_dir in rank_dirs:
-        h_sorted = genfromtxt(rank_dir + "/H_best_sorted.csv", delimiter=",")
-        w_sorted = genfromtxt(rank_dir + "/W_best_sorted.csv", delimiter=",")
+        h_sorted = genfromtxt(rank_dir + "/H_best.csv", delimiter=",")
+        w_sorted = genfromtxt(rank_dir + "/W_best.csv", delimiter=",")
 
         threshold_generator = ThresholdGenerator(h_sorted, line_length_data, sfreq=50)
         threshold = threshold_generator.generate_threshold()
