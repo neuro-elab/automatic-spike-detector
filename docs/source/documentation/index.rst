@@ -91,12 +91,15 @@ of the decomposition, following the example of Brunet et al. [8_] described in t
 Additionally, the package offers a modified version of the NMF algorithm, which attempts to further exploit the
 spatiotemporal features of the EEG signals by integrating sparseness constraints. The method uses a
 model of sparseness introduced by Hoyer [10_] who defined sparseness based on a relation between the :math:`L_1`
-norm and the :math:`L_2` norm:
+norm and the :math:`L_2` norm
 
 .. math::
 
-    sparseness(x) = \frac{\sqrt{n} - (\sum | x_i |) / \sqrt{\sum x_{i}^2}}{\sqrt{n} - 1}
+    sparseness(x) = \frac{\sqrt{n} - (\sum | x_i |) / \sqrt{\sum x_{i}^2}}{\sqrt{n} - 1},
 
+where :math:`x` is a vector and :math:`n` is the dimensionality of :math:`x`. This function has the advantage of interpolating
+smoothly in the interval [0, 1] and evaluating to 0 if and only if all elements of :math:`x` are equal and to 1 if and
+only if :math:`x` contains a single non-zero element.
 
 Glossary
 ^^^^^^^^
