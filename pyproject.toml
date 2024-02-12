@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "automatic-spike-detection"
-version = "1.2.5"
-requires-python = "== 3.10"
-description = "Python library for automatically detectiong interictal epileptiform discharges (IEDs) by means of nonnegative matrix factorization (NMF)"
+version = "1.2.6"
+requires-python = ">= 3.9"
+description = "Python library for automatically detecting interictal epileptiform discharges (IEDs) by means of nonnegative matrix factorization (NMF)"
 readme = "README.md"
 dynamic = ["dependencies"]
 

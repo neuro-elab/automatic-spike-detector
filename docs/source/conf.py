@@ -27,7 +27,7 @@ copyright = "2024, Dominik Frey"
 author = "Dominik Frey"
 
 # The full version, including alpha/beta/rc tags
-release = "1.2.5"
+release = "1.2.6"
 
 
 # -- General configuration ---------------------------------------------------
