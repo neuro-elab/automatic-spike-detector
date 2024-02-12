@@ -100,7 +100,7 @@ norm and the :math:`L_2` norm
 where :math:`x` is a vector and :math:`n` is the dimensionality of :math:`x`. This function has the advantage of interpolating
 smoothly in the interval [0, 1] and evaluating to 0 if and only if all elements of :math:`x` are equal and to 1 if and
 only if :math:`x` contains a single non-zero element. In our model, we impose sparseness constraints on individual
-basis vectors, i.e. the columns of :math:`W` . We can then define the sparseness of a single basis vector :math:`w_i` as
+basis vectors, i.e. the columns of :math:`W`. We can then define the sparseness of a single basis vector :math:`w_i` as
 
 .. math::
 
