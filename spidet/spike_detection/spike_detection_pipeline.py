@@ -24,7 +24,7 @@ from spidet.utils.plotting_utils import plot_w_and_consensus_matrix
 
 
 class SpikeDetectionPipeline:
-    """
+    r"""
     This class builds the heart of the automatic-spike-detection library. It provides an end-to-end
     pipeline that takes in a path to a file containing an iEEG recording and returns periods of
     abnormal activity. The pipeline is a multistep process that includes
@@ -237,7 +237,7 @@ class SpikeDetectionPipeline:
         data_matrix = normalize(preprocessed_data)
 
         # Using all cores except 2 if necessary
-        n_cores = multiprocessing.cpu_count() - 2
+        n_cores = min(multiprocessing.cpu_count() - 2, nr_ranks)
 
         logger.debug(
             f"Running NMF on {n_cores if nr_ranks > n_cores else nr_ranks} cores "

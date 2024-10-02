@@ -360,9 +360,9 @@ class LineLength:
             n_cores = multiprocessing.cpu_count()
 
             # Define the number of parallel process used for preprocessing and line-length transformation
-            n_processes = min(5, len(channel_set))
+            n_processes = min(n_cores, len(traces))
 
-            with multiprocessing.Pool(processes=n_cores) as pool:
+            with multiprocessing.Pool(processes=n_processes) as pool:
                 line_length = pool.starmap(
                     self.line_length_pipeline,
                     [
