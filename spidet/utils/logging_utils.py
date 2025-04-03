@@ -5,7 +5,7 @@ from loguru import logger
 
 
 def add_logger_with_process_name(directory: str = None):
-    logger.remove(0)
+    logger.remove()
     if directory is not None:
         logger.add(
             os.path.join(directory, "file_{time}.log"),
