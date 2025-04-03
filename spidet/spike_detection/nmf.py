@@ -22,9 +22,14 @@ class Nmf:
         The sparseness parameter used in case NMF is run with sparseness constraints.
     """
 
-    def __init__(self, rank: int, sparseness: float = 0.0):
+    def __init__(self, rank: int, sparseness: float = 0.0, version: str = None):
+        assert sparseness >= 0.0
+        assert rank > 0
+        assert version == None or version == "l" or version == "r"
+
         self.rank = rank
         self.sparseness = float(sparseness)
+        self.version = version
 
     @staticmethod
     def __calculate_cophenetic_corr(consensus_matrix: np.ndarray) -> np.ndarray:
@@ -52,8 +57,11 @@ class Nmf:
         self,
         preprocessed_data: np.ndarray[np.dtype[float]],
         n_runs: int,
+        H: np.ndarray[np.dtype[float]] | None = None,
+        W: np.ndarray[np.dtype[float]] | None = None,
     ) -> Tuple[
         Dict,
+        int,
         np.ndarray[np.dtype[float]],
         np.ndarray[np.dtype[float]],
         np.ndarray[np.dtype[float]],
@@ -89,38 +97,39 @@ class Nmf:
         w_best = None
 
         if self.sparseness == 0.0:
+            seed = "random_vcol" if H == None and W == None else None
             nmf = nimfa.Nmf(
-                data_matrix.T, rank=self.rank, seed="random_vcol", max_iter=10
+                data_matrix.T, seed=seed, rank=self.rank, W=W, H=H, max_iter=10
             )
         else:
-            nmf = Nmfsc(data_matrix, rank=self.rank, max_iter=10, sW=self.sparseness)
+            nmf = Nmfsc(
+                data_matrix,
+                W=W,
+                H=H,
+                rank=self.rank,
+                max_iter=10,
+                version=self.version,
+                sparseness=self.sparseness,
+            )
 
-        for n in range(n_runs):
+        for i in range(n_runs):
             logger.debug(
-                f"Rank {self.rank}, Run {n + 1}/{n_runs}: Perform matrix factorization"
+                f"Rank {self.rank}, Run {i + 1}/{n_runs}: Perform matrix factorization"
             )
             if self.sparseness != 0.0:
                 fit = nmf()
-                consensus += fit.connectivity()
-                obj[n] = fit.final_obj
-                if obj[n] < lowest_obj:
-                    logger.debug(
-                        f"Rank {self.rank}, Run {n + 1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
-                    )
-                    lowest_obj = obj[n]
-                    w_best = np.array(fit.basis())
-                    h_best = np.array(fit.coef())
             else:
-                fit = nmf()
-                consensus += fit.fit.connectivity()
-                obj[n] = fit.fit.final_obj
-                if obj[n] < lowest_obj:
-                    logger.debug(
-                        f"Rank {self.rank}, Run {n + 1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
-                    )
-                    lowest_obj = obj[n]
-                    w_best = np.array(fit.fit.coef().T)
-                    h_best = np.array(fit.fit.basis().T)
+                fit = nmf().fit
+
+            consensus += fit.connectivity()
+            obj[i] = fit.final_obj
+            if obj[i] < lowest_obj:
+                logger.debug(
+                    f"Rank {self.rank}, Run {i + 1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
+                )
+                lowest_obj = obj[i]
+                w_best = np.array(fit.basis())
+                h_best = np.array(fit.coef())
 
         consensus /= n_runs
         coph = self.__calculate_cophenetic_corr(consensus)
