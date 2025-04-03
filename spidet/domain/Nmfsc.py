@@ -37,11 +37,8 @@ class Nmfsc:
         If version = 'l', sparseness will be imposed on the columns of :math:`W`, if version = 'r',
         sparseness will be imposed on the rows of :math:`H`.
 
-    sH: float, optional, default = 0.25
-        The sparseness imposed on each row of :math:`H`, in case version = 'r'.
-
-    sW: float, optional, default = 0.25
-        The sparseness imposed on each column of :math:`W`, in case version = 'l'.
+    sparseness: float, optional, default = 0.25
+        The sparseness imposed on each column of :math:`W`, in case of version = 'l', or each row of :math:`H`, in case of version = 'r'.
 
     References
     ----------
@@ -60,21 +57,25 @@ class Nmfsc:
         min_residuals=1e-4,
         n_runs=1,
         version="l",
-        sH=0.25,
-        sW=0.25,
+        sparseness=0.25,
     ):
         self.V = np.asmatrix(V)
-        self.W = W
-        self.H = H
+        self.initial_W = W
+        self.initial_H = H
         self.rank = rank
         self.max_iter = max_iter
         self.n_runs = n_runs
         self.version = version
-        self.sH = sH
-        self.sW = sW
+        self.sparseness = sparseness
         self.min_residuals = 1e-4 if not min_residuals else min_residuals
         self.p_c = int(ceil(1.0 / 5 * self.V.shape[1]))
         self.p_r = int(ceil(1.0 / 5 * self.V.shape[0]))
+        self.prng = np.random.RandomState()
+
+        if self.initial_W != None:
+            assert self.initial_W.shape == (self.V.shape[0], self.rank)
+        if self.initial_H != None:
+            assert self.initial.shape == (self.rank, self.V.shape[1])
 
     def __call__(self):
         """Run the specified MF algorithm."""
@@ -130,6 +131,43 @@ class Nmfsc:
 
         return np.reshape(v, shape)
 
+    def __initialize_matrices(self):
+        self.__initialize_H()
+        self.__initialize_W()
+
+    def __initialize_H(self):
+        if self.initial_H != None:
+            self.H = self.initial_H
+            return
+
+        # if no H was given, do random vcol initialization
+        self.H = np.mat(np.zeros((self.rank, self.V.shape[1])))
+        for i in range(self.rank):
+            self.H[i, :] = self.V[
+                self.prng.randint(low=0, high=self.V.shape[0], size=self.p_r), :
+            ].mean(axis=0)
+        self.H = elop(
+            self.H,
+            repmat(
+                np.sqrt(np.sum(multiply(self.H, self.H), axis=1)).T,
+                self.V.shape[1],
+                1,
+            ).T,
+            div,
+        )
+
+    def __initialize_W(self):
+        if self.initial_W != None:
+            self.W = self.initial_W
+            return
+
+        # if no W was given, do random vcol initialization
+        self.W = np.mat(np.zeros((self.V.shape[0], self.rank)))
+        for i in range(self.rank):
+            self.W[:, i] = self.V[
+                :, self.prng.randint(low=0, high=self.V.shape[1], size=self.p_c)
+            ].mean(axis=1)
+
     def factorize(self):
         """
         Compute matrix factorization.
@@ -138,30 +176,13 @@ class Nmfsc:
         """
         for run in range(self.n_runs):
             # Create initial matrices
-            prng = np.random.RandomState()
-            self.W = np.mat(np.zeros((self.V.shape[0], self.rank)))
-            self.H = np.mat(np.zeros((self.rank, self.V.shape[1])))
-            for i in range(self.rank):
-                self.W[:, i] = self.V[
-                    :, prng.randint(low=0, high=self.V.shape[1], size=self.p_c)
-                ].mean(axis=1)
-                self.H[i, :] = self.V[
-                    prng.randint(low=0, high=self.V.shape[0], size=self.p_r), :
-                ].mean(axis=0)
-            self.H = elop(
-                self.H,
-                repmat(
-                    np.sqrt(np.sum(multiply(self.H, self.H), axis=1)).T,
-                    self.V.shape[1],
-                    1,
-                ).T,
-                div,
-            )
+            self.__initialize_matrices()
 
             # Make initial matrices have correct sparseness
             if self.version == "l":
                 self.L1a = (
-                    np.sqrt(self.V.shape[0]) - (np.sqrt(self.V.shape[0]) - 1) * self.sW
+                    np.sqrt(self.V.shape[0])
+                    - (np.sqrt(self.V.shape[0]) - 1) * self.sparseness
                 )
                 for idx in range(self.rank):
                     self.W[:, idx] = self.__project(
@@ -174,7 +195,8 @@ class Nmfsc:
                     )
             if self.version == "r":
                 self.L1s = (
-                    np.sqrt(self.V.shape[1]) - (np.sqrt(self.V.shape[1]) - 1) * self.sH
+                    np.sqrt(self.V.shape[1])
+                    - (np.sqrt(self.V.shape[1]) - 1) * self.sparseness
                 )
                 for idx in range(self.rank):
                     self.H[idx, :] = self.__project(
