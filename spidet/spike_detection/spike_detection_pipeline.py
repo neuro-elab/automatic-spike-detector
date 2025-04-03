@@ -407,7 +407,7 @@ class SpikeDetectionPipeline:
             Sampling frequency of the line-length transformed data
 
         line_length_window: int, optional, default = 40
-            Window length used to for the line-length operation (in milliseconds).
+            Window length used for the line-length operation (in milliseconds).
 
         Returns
         -------
