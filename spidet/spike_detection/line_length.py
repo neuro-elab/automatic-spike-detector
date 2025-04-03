@@ -339,9 +339,8 @@ class LineLength:
         line_length_list = []
 
         # Sequentially load, preprocess and line-length transform subsets of channels due to memory limitations
-        nr_channel_subsets = (
-            1 if len(self.dataset_paths) // 10 == 0 else len(self.dataset_paths) // 10
-        )
+        nr_channel_subsets = max(1, len(self.dataset_paths) // 10)
+
         for channel_set in np.array_split(self.dataset_paths, nr_channel_subsets):
             traces: List[Trace] = data_loader.read_file(
                 self.file_path,
