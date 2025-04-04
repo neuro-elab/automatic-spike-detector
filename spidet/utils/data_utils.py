@@ -3,10 +3,16 @@
 This module contains functions used to prepare data describing periods of time to numpy arrays, usable for fast computations.
 """
 
-from .utils import change_interval
-
 import pandas
 import numpy as np
+
+
+def change_interval(t, a: float, b: float, A: float = 0, B: float = 1):
+    """
+    Map t from interval [A, B] to interval [a, b]
+    """
+    t = (t - A) / (B - A)  # Normalize t to [0, 1]
+    return b * t + a * (1 - t)
 
 
 def transform_time_grades(
