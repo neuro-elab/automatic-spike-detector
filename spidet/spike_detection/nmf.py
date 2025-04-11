@@ -55,7 +55,7 @@ class Nmf:
 
     def nmf_run(
         self,
-        preprocessed_data: np.ndarray[np.dtype[float]],
+        V: np.ndarray[np.dtype[float]],
         n_runs: int,
         H: np.ndarray[np.dtype[float]] | None = None,
         W: np.ndarray[np.dtype[float]] | None = None,
@@ -74,7 +74,7 @@ class Nmf:
 
         Parameters
         ----------
-        preprocessed_data: numpy.ndarray[numpy.dtype[float]]
+        V: numpy.ndarray[numpy.dtype[float]]
             The data used as input for NMF algorithm.
 
         n_runs: int
@@ -89,7 +89,7 @@ class Nmf:
             A dictionary containing the rank, the minimum reconstruction error, the cophenetic correlation
             and the instability index, together with the consensus, :math:`W` and :math:`H` matrices.
         """
-        data_matrix = preprocessed_data
+        data_matrix = V
         consensus = np.zeros((data_matrix.shape[0], data_matrix.shape[0]))
         obj = np.zeros(n_runs)
         lowest_obj = float("inf")

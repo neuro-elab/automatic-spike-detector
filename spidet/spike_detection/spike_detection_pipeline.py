@@ -11,6 +11,7 @@ from scipy.special import rel_entr
 from sklearn.preprocessing import normalize
 from pathlib import Path
 
+from spidet.save.nmf_data import NMFData
 from spidet.utils import logging_utils
 
 from spidet.domain.BasisFunction import BasisFunction
@@ -43,61 +44,75 @@ class SpikeDetectionPipeline:
     file_path: str
         Path to the file containing the iEEG data.
 
-    results_dir: str
-        Path to the directory where the folder containing the results of the spike detection run should be saved.
-        If None, the results folder will be saved in the user's home directory. By default, the results contain
-        the metrics representing the computation of the optimal rank and two plots for both the basis functions
-        and the consensus matrices of the different ranks.
+    result_path: str, default: "."
+        The results will be stored in .h5 format at the specified path. It should be ensured that the path is
+        writable. If None, the current directory will be used.
 
-    save_nmf_matrices: bool
-        If True, in addition to the results saved by default, the W matrix containing the basis functions and
-        the H matrix containing the activation functions for each rank, the line-length transformed data and
-        the standard deviation of the line length are saved.
-
-    sparseness: float
+    sparseness: float, default: 0.0
         A floating point number :math:`\in [0, 1]`.
         If this parameter is non-zero, nonnegative matrix factorization is run with sparseness constraints.
 
-    bad_times: numpy.ndarray[numpy.dtype[float]]
-        An optional N x 2 numpy array containing periods that must be excluded before applying
-        the line-length transformation. Each of th N rows in the array represents a period to be excluded,
-        defined by the start and end indices of the period in the original iEEG data.
-        The defined periods will be set to zero with the transitions being smoothed by applying a hanning window
-        to prevent spurious patterns.
+    bad_times: numpy.ndarray[numpy.dtype[float]], optional
+        N x 2 numpy array, designating periods to be zeroed before applying the line-length transformation.
+        Each row represents a time period with [start, end]. Values for start and end correspond to the time in seconds
+        since the start of the recording. A hanning window is applied to smooth transitions around the periods.
 
-    nmf_runs: int
-        The number of nonnegative matrix factorization runs performed for each rank, default is 100.
+    nmf_runs: int, default: 100
+        The number of nonnegative matrix factorization runs performed for each rank.
 
-    rank_range: Tuple[int, int]
-        A tuple defining the range of ranks for which to perform the nonnegative matrix factorization,
-        default is (2, 5).
+    ranks: List[int, int], default: [2, 3, 4, 5]
+        A tuple defining the range of ranks for which to perform the nonnegative matrix factorization.
 
-    line_length_freq: int
-        The sampling frequency of the line-length transformed data, default is 50 hz.
+    line_length_freq: int, default: 50
+        The sampling frequency of the line-length transformed data in hz.
     """
 
     def __init__(
         self,
         file_path: str,
-        results_dir: str = None,
+        result_path: str = "nmf.h5",
         save_nmf_matrices: bool = False,
         sparseness: float = 0.0,
         bad_times: np.ndarray[np.dtype[float]] = None,
         nmf_runs: int = 100,
-        rank_range: Tuple[int, int] = (2, 5),
+        ranks: List[int, int] = [2, 3, 4, 5],
         line_length_freq: int = 50,
+        H: np.ndarray | None = None,
+        W: np.ndarray | None = None,
     ):
         self.sparseness = sparseness
         self.file_path = file_path
-        self.results_dir: str = self.__create_results_dir(results_dir)
+        self.results_path: str = result_path
         self.save_nmf_matrices: bool = save_nmf_matrices
         self.bad_times = bad_times
         self.nmf_runs: int = nmf_runs
-        self.rank_range: Tuple[int, int] = rank_range
+        self.ranks: Tuple[int, int] = ranks
         self.line_length_freq = line_length_freq
+        # Set results data
+        self.nmf_data: NMFData = NMFData.from_recording(
+            self.file_path, self.results_path
+        )
+        self.H = H
+        self.W = W
 
         # Configure logger
-        logging_utils.add_logger_with_process_name(self.results_dir)
+        logging_utils.add_logger_with_process_name(self.results_path)
+
+    def feature_matrix_name(self, line_length_window):
+        if line_length_window > 100:
+            return f"V_LL_{line_length_window/100:1.1f}"
+        return f"V_LL_{line_length_window}ms"
+
+    def model_name(self, h_init: bool, w_init: bool):
+        name = "model_"
+        if self.sparseness > 0:
+            name += f"sparsity{self.sparseness:1.2f}_"
+        if h_init:
+            name += "initH_"
+        if w_init:
+            name += "initW_"
+
+        return name[:-1]
 
     def __create_results_dir(self, results_dir: str):
         # Create folder to save results
@@ -140,13 +155,12 @@ class SpikeDetectionPipeline:
         return delta_k, delta_y
 
     def __calculate_statistics(self, consensus_matrices: List[np.ndarray]):
-        k_min, k_max = self.rank_range
-        bins = np.linspace(0, 1, 101)
+        num_bins = 100
+        bins = np.linspace(0, 1, num_bins + 1)
         bin_width = bins[1] - bins[0]
 
-        num_bins = len(bins) - 1
-        cdfs = np.zeros((num_bins, k_max - k_min + 1))
-        areas = np.zeros(k_max - k_min + 1)
+        cdfs = np.zeros((num_bins, len(self.ranks)))
+        areas = np.zeros(len(self.ranks))
 
         for idx, consensus in enumerate(consensus_matrices):
             cdf_vals = self.__compute_cdf(consensus, bins)
@@ -154,7 +168,7 @@ class SpikeDetectionPipeline:
             cdfs[:, idx] = cdf_vals
 
         delta_k, delta_y = self.__compute_delta_k(areas, cdfs)
-        k_opt = np.argmax(delta_k) + k_min if delta_k.size > 0 else k_min
+        k_opt = self.ranks[np.argmax(delta_k)]
 
         return areas, delta_k, delta_y, k_opt
 
@@ -183,7 +197,10 @@ class SpikeDetectionPipeline:
 
         # Run NMF consensus clustering for specified rank and number of runs (default = 100)
         metrics, consensus, h_best, w_best = nmf_classifier.nmf_run(
-            preprocessed_data, n_runs
+            V=preprocessed_data,
+            n_runs=n_runs,
+            H=self.H,
+            W=self.W,
         )
 
         #####################
@@ -222,6 +239,7 @@ class SpikeDetectionPipeline:
         self,
         preprocessed_data: np.ndarray[np.dtype[float]],
         channel_names: List[str],
+        n_cores: int = 1,
     ) -> Tuple[
         np.ndarray[np.dtype[float]],
         np.ndarray[np.dtype[float]],
@@ -230,14 +248,13 @@ class SpikeDetectionPipeline:
         Dict[int, int],
     ]:
         # List of ranks to run NMF for
-        rank_list = list(range(self.rank_range[0], self.rank_range[1] + 1))
-        nr_ranks = len(rank_list)
+        nr_ranks = len(self.ranks)
 
         # Normalize for NMF (preprocessed data needs to be non-negative)
         data_matrix = normalize(preprocessed_data)
 
         # Using all cores except 2 if necessary
-        n_cores = min(multiprocessing.cpu_count() - 2, nr_ranks)
+        n_cores = min(n_cores, nr_ranks)
 
         logger.debug(
             f"Running NMF on {n_cores if nr_ranks > n_cores else nr_ranks} cores "
@@ -247,10 +264,7 @@ class SpikeDetectionPipeline:
         with multiprocessing.Pool(processes=n_cores) as pool:
             results = pool.starmap(
                 self.perform_nmf_steps_for_rank,
-                [
-                    (data_matrix, rank, self.nmf_runs)
-                    for rank in range(self.rank_range[0], self.rank_range[1] + 1)
-                ],
+                [(data_matrix, rank, self.nmf_runs) for rank in self.ranks],
             )
 
         # Extract return objects from results
@@ -265,15 +279,15 @@ class SpikeDetectionPipeline:
         cluster_assignments = [assignments for _, _, _, _, _, _, assignments in results]
 
         # Calculate final statistics
-        C, delta_k, delta_y, k_opt = self.__calculate_statistics(consensus_matrices)
+        C, delta_k, delta_y, idx_opt = self.__calculate_statistics(consensus_matrices)
 
         # Get objects for the optimal rank
-        idx_opt = k_opt - self.rank_range[0]
-        h_opt = h_matrices[idx_opt]
-        w_opt = w_matrices[idx_opt]
-        events_opt = event_annotations[idx_opt]
-        thresholds_opt = thresholds[idx_opt]
-        assignments_opt = cluster_assignments[idx_opt]
+        # k_opt = self.ranks[idx_opt]
+        # h_opt = h_matrices[idx_opt]
+        # w_opt = w_matrices[idx_opt]
+        # events_opt = event_annotations[idx_opt]
+        # thresholds_opt = thresholds[idx_opt]
+        # assignments_opt = cluster_assignments[idx_opt]
 
         # Generate metrics data frame
         metrics_df = pd.DataFrame(metrics)
@@ -281,80 +295,42 @@ class SpikeDetectionPipeline:
         metrics_df["delta_k (CDF)"] = delta_k
         metrics_df["delta_y (KL-div)"] = delta_y
 
-        logger.debug(f"Optimal rank: k = {k_opt}")
-
         # Plot and save W and consensus matrices
-        plot_w_and_consensus_matrix(
-            w_matrices=w_matrices,
-            consensus_matrices=consensus_matrices,
-            experiment_dir=self.results_dir,
-            channel_names=channel_names,
-        )
+        # plot_w_and_consensus_matrix(
+        #    w_matrices=w_matrices,
+        #    consensus_matrices=consensus_matrices,
+        #    experiment_dir=self.results_path,
+        #    channel_names=channel_names,
+        # )
 
         # Saving metrics as CSV
-        logger.debug("Saving metrics")
-        metrics_path = os.path.join(self.results_dir, "metrics.csv")
-        metrics_df.to_csv(metrics_path, index=False)
+        # logger.debug("Saving metrics")
+        # metrics_path = os.path.join(self.results_path, "metrics.csv")
+        # metrics_df.to_csv(metrics_path, index=False)
 
-        # Saving H and W matrices, event annotations and line length matrix
-        if self.save_nmf_matrices:
-            logger.debug(
-                f"Saving LineLength and Consensus, W, H matrices and corresponding event annotations for ranks {rank_list}"
-            )
+        # Saving H and W matrices
+        # logger.debug(
+        #    f"Saving LineLength and Consensus, W, H matrices and corresponding event annotations for ranks {rank_list}"
+        # )
 
-            # Saving line length and std line length
-            np.savetxt(
-                f"{self.results_dir}/line_length.csv", data_matrix, delimiter=","
-            )
+        # for idx in range(nr_ranks):
+        #    # Saving Consensus, W and H matrices
+        #    h_matrix = h_matrices[idx]
+        #    w_matrix = w_matrices[idx]
+        #    consensus_matrix = consensus_matrices[idx]
 
-            np.savetxt(
-                f"{self.results_dir}/std_line_length.csv",
-                np.std(data_matrix, axis=0),
-                delimiter=",",
-            )
+        #    saving_path = os.path.join(self.results_path, f"k={rank_list[idx]}")
+        #    os.makedirs(saving_path, exist_ok=True)
 
-            for idx in range(nr_ranks):
-                # Saving Consensus, W and H matrices
-                h_matrix = h_matrices[idx]
-                w_matrix = w_matrices[idx]
-                consensus_matrix = consensus_matrices[idx]
+        #    np.savetxt(f"{saving_path}/H_best.csv", h_matrix, delimiter=",")
+        #    np.savetxt(f"{saving_path}/W_best.csv", w_matrix, delimiter=",")
+        #    np.savetxt(
+        #        f"{saving_path}/consensus_matrix.csv",
+        #        consensus_matrix,
+        #        delimiter=",",
+        #    )
 
-                saving_path = os.path.join(self.results_dir, f"k={rank_list[idx]}")
-                os.makedirs(saving_path, exist_ok=True)
-
-                np.savetxt(f"{saving_path}/H_best.csv", h_matrix, delimiter=",")
-                np.savetxt(f"{saving_path}/W_best.csv", w_matrix, delimiter=",")
-                np.savetxt(
-                    f"{saving_path}/consensus_matrix.csv",
-                    consensus_matrix,
-                    delimiter=",",
-                )
-
-                # Saving event annotations
-                spikes = event_annotations[idx]
-                headers = []
-                event_times = []
-                max_length = 0
-                for h_idx in spikes.keys():
-                    event_times_on = spikes.get(h_idx).get("events_on")
-                    event_times_off = spikes.get(h_idx).get("events_off")
-
-                    if len(event_times_on) > max_length:
-                        max_length = len(event_times_on)
-
-                    event_times.append(event_times_on)
-                    event_times.append(event_times_off)
-                    headers.extend(
-                        [f"h{h_idx + 1}_events_on", f"h{h_idx + 1}_events_off"]
-                    )
-
-                df_spike_times = pd.DataFrame(event_times)
-                df_spike_times = df_spike_times.transpose()
-                df_spike_times.columns = headers
-
-                df_spike_times.to_csv(f"{saving_path}/event_annotations.csv")
-
-        return h_opt, w_opt, events_opt, thresholds_opt, assignments_opt
+        return w_matrices, h_matrices, consensus_matrices
 
     def run(
         self,
@@ -368,6 +344,7 @@ class SpikeDetectionPipeline:
         bandpass_cutoff_high: int = 200,
         line_length_freq: int = 50,
         line_length_window: int = 40,
+        n_cores: int = 1,
     ) -> Tuple[List[BasisFunction], List[ActivationFunction]]:
         """
         This method triggers a complete run of the spike detection pipline with the arguments passed
@@ -409,6 +386,9 @@ class SpikeDetectionPipeline:
         line_length_window: int, optional, default = 40
             Window length used for the line-length operation (in milliseconds).
 
+        n_cores, default = 1
+            Number of cores to use for computation.
+
         Returns
         -------
         Tuple[List[BasisFunction], List[ActivationFunction]]
@@ -416,6 +396,9 @@ class SpikeDetectionPipeline:
             and :py:mod:`~spidet.domain.ActivationFunction`, where each activation function contains
             the corresponding detected events.
         """
+
+        # TODO: Enable Artifact detection
+
         # Instantiate a LineLength instance
         line_length = LineLength(
             file_path=self.file_path,
@@ -440,20 +423,48 @@ class SpikeDetectionPipeline:
             line_length_window=line_length_window,
         )
 
-        # Run parallelized NMF
-        (
-            h_opt,
-            w_opt,
-            spikes_opt,
-            thresholds_opt,
-            assignments_opt,
-        ) = self.parallel_processing(
-            preprocessed_data=line_length_matrix, channel_names=channel_names
+        # Save feature matrix (line length)
+        feature_matrix_name = self.feature_matrix_name(line_length_window)
+        self.nmf_data.set_feature_matrix(
+            feature_matrix_name=feature_matrix_name,
+            feature_matrix=line_length_matrix,
+            feature_names=channel_names,
+            feature_units=["uV" for _ in channel_names],
+            sfreq=self.line_length_freq,
+            processing="Butterworth [forward, backward, 0.1 - 200Hz], Notch [line noise and harmonics], rescaled median [20 uV], resampled [500 Hz]",
         )
 
-        # Create unique id prefix
-        filename = self.file_path[self.file_path.rfind("/") + 1 :]
-        unique_id_prefix = filename[: filename.rfind(".")]
+        # Run parallelized NMF
+        (
+            h_matrices,
+            w_matrices,
+            _consensus_matrices,
+        ) = self.parallel_processing(
+            preprocessed_data=line_length_matrix,
+            channel_names=channel_names,
+            n_cores=n_cores,
+        )
+
+        # free some memory
+        del line_length_matrix
+
+        # Save NMFs
+        h_init = self.H != None
+        w_init = self.W != None
+
+        for rank, w, h in zip(self.ranks, w_matrices, h_matrices):
+            model = self.model_name(h_init, w_init)
+            self.nmf_data.set_nmf(
+                w=w,
+                h=h,
+                feature_matrix_name=feature_matrix_name,
+                model=model,
+                rank=rank,
+            )
+
+        ## Create unique id prefix
+        # filename = self.file_path[self.file_path.rfind("/") + 1 :]
+        # unique_id_prefix = filename[: filename.rfind(".")]
 
         # Compute times for H x-axis
         times = compute_rescaled_timeline(
