@@ -256,7 +256,7 @@ class SpikeDetectionPipeline:
 
         logger.debug(
             f"Running NMF on {n_cores if nr_ranks > n_cores else nr_ranks} cores "
-            f"for ranks {rank_list} and {self.nmf_runs} runs each"
+            f"for ranks {self.ranks} and {self.nmf_runs} runs each"
         )
 
         with multiprocessing.Pool(processes=n_cores) as pool:
