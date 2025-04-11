@@ -3,6 +3,7 @@ from __future__ import annotations
 import h5py as h5
 import numpy as np
 import os
+import re
 
 from spidet.utils.h5_utils import (
     read_recording_duration,
