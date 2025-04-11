@@ -58,7 +58,7 @@ class NMFData:
         with h5.File(recording_path) as file:
             return NMFData(
                 filepath=filepath,
-                subject_id=subject_id_from_filepath(recording_path),
+                subject_id=NMFData.subject_id_from_filepath(recording_path),
                 species=species,
                 start_timestamp=read_start_timestamp(file),
                 duration=read_recording_duration(file),
