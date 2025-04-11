@@ -4,6 +4,7 @@ import h5py as h5
 import numpy as np
 import os
 import re
+import datetime
 
 from spidet.utils.h5_utils import (
     read_recording_duration,
