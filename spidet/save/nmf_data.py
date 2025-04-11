@@ -47,7 +47,7 @@ class NMFData:
         self._file_path = filepath
 
         if not os.path.exists(filepath):
-            self._create_file(filepath)
+            self._create_file()
             self.subject_id = subject_id
             self.species = species
             self.start_timestamp = start_timestamp
@@ -122,7 +122,7 @@ class NMFData:
             file[META_GROUP].attrs[UTILITY_FREQ_LABEL] = value
 
     def _create_file(self):
-        with h5.File(self.path, "x") as file:
+        with h5.File(self._file_path, "x") as file:
             meta = file.create_group(META_GROUP)
             meta.attrs[CREATION_DATE_LABEL] = datetime.now().strftime("%Y-%m-%d")
             meta.attrs[SUBJECT_ID_LABEL] = self.subject_id
