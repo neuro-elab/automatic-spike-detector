@@ -148,7 +148,7 @@ class NMFData:
         processing: str = "",
     ):
         with h5.File(self._file_path, "r+") as file:
-            grp = file[os.path.join(NMF_GROUP, feature_matrix_name)]
+            grp = file.require_group(os.path.join(NMF_GROUP, feature_matrix_name))
             grp[FEATURE_MATRIX_LABEL] = feature_matrix
             grp[FEATURE_NAMES_LABEL] = feature_names
             grp[FEATURE_UNITS_LABEL] = feature_units
@@ -169,7 +169,7 @@ class NMFData:
             path = os.path.join(
                 NMF_GROUP, feature_matrix_name, self.rank_str(rank), model
             )
-            grp = file[path]
+            grp = file.require_group(path)
             grp[W_LABEL] = w
             grp[H_LABEL] = h
             if parameters:
