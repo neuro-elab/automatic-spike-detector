@@ -61,10 +61,6 @@ def apply_preprocessing_steps(
     traces = np.array([trace.data for trace in traces])
 
     # 1. Bandpass filter
-    logger.debug(
-        f"Bandpass filter data between {bandpass_cutoff_low} and {bandpass_cutoff_high} Hz"
-    )
-
     bandpass_filtered = filter_signal(
         sfreq=sfreq,
         cutoff_freq_low=bandpass_cutoff_low,
@@ -73,7 +69,6 @@ def apply_preprocessing_steps(
     )
 
     # 2. Notch filter
-    logger.debug(f"Apply notch filter at {notch_freq} Hz")
     notch_filtered = notch_filter_signal(
         eeg_data=bandpass_filtered,
         notch_frequency=notch_freq,
@@ -82,13 +77,11 @@ def apply_preprocessing_steps(
     )
 
     # 3. Scaling channels
-    logger.debug("Rescale filtered data")
     scaled_data = rescale_data(
         data_to_be_scaled=notch_filtered, original_data=traces, sfreq=sfreq
     )
 
     # 4. Resampling data
-    logger.debug(f"Resample data at sampling frequency {resampling_freq} Hz")
     resampled_data = resample_data(
         data=scaled_data,
         channel_names=channel_names,
