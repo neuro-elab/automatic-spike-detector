@@ -134,6 +134,11 @@ class NMFData:
 
             file.create_group(NMF_GROUP)
 
+    def _update_dset(self, path: str, data: np.ndarray):
+        with h5.File(self._file_path, "r+") as file:
+            dset = file.require_dataset(name=path, shape=data.shape, exact=True)
+            dset[()] = data[()]
+
     def list_feature_matrices(self):
         with h5.File(self.path, "r") as file:
             return file[NMF_GROUP].keys()
@@ -148,10 +153,16 @@ class NMFData:
         processing: str = "",
     ):
         with h5.File(self._file_path, "r+") as file:
-            grp = file.require_group(os.path.join(NMF_GROUP, feature_matrix_name))
-            grp[FEATURE_MATRIX_LABEL] = feature_matrix
-            grp[FEATURE_NAMES_LABEL] = feature_names
-            grp[FEATURE_UNITS_LABEL] = feature_units
+            grp_path = os.path.join(NMF_GROUP, feature_matrix_name)
+            self._update_dset(
+                os.path.join(grp_path, FEATURE_MATRIX_LABEL), feature_matrix
+            )
+            self._update_dset(
+                os.path.join(grp_path, FEATURE_NAMES_LABEL), np.ndarray(feature_names)
+            )
+            self._update_dset(
+                os.path.join(grp_path, FEATURE_UNITS_LABEL), np.ndarray(feature_units)
+            )
 
             grp.attrs[SFREQ_LABEL] = sfreq
             grp.attrs[PROCESSING_LABEL] = processing
@@ -169,11 +180,10 @@ class NMFData:
             path = os.path.join(
                 NMF_GROUP, feature_matrix_name, self.rank_str(rank), model
             )
-            grp = file.require_group(path)
-            grp[W_LABEL] = w
-            grp[H_LABEL] = h
+            self._update_dset(os.path.join(path, W_LABEL), w)
+            self._update_dset(os.path.join(path, H_LABEL), h)
             if parameters:
-                grp[PARAMETERS_LABEL] = parameters
+                file[path].attrs[PARAMETERS_LABEL] = parameters
 
     def list_ranks(self, feature_matrix_name: str) -> list:
         with h5.File(self._file_path, "r") as file:
