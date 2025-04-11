@@ -103,8 +103,7 @@ class SpikeDetectionPipeline:
 
     def model_name(self, h_init: bool, w_init: bool):
         name = "model_"
-        if self.sparseness > 0:
-            name += f"sparsity{self.sparseness:1.2f}_"
+        name += f"sparsity{self.sparseness:1.2f}_"
         if h_init:
             name += "initH_"
         if w_init:
