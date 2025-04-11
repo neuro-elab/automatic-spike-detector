@@ -4,7 +4,7 @@ import h5py as h5
 import numpy as np
 import os
 import re
-import datetime
+from datetime import datetime
 
 from spidet.utils.h5_utils import (
     read_recording_duration,
@@ -79,7 +79,7 @@ class NMFData:
 
     @subject_id.setter
     def subject_id(self, value):
-        with h5.File(self.path, "r+") as file:
+        with h5.File(self._file_path, "r+") as file:
             file[META_GROUP].attrs[SUBJECT_ID_LABEL] = value
 
     @property
@@ -89,7 +89,7 @@ class NMFData:
 
     @species.setter
     def species(self, value):
-        with h5.File(self.path, "r+") as file:
+        with h5.File(self._file_path, "r+") as file:
             file[META_GROUP].attrs[SPECIES_LABEL] = value
 
     @property
@@ -99,7 +99,7 @@ class NMFData:
 
     @start_timestamp.setter
     def start_timestamp(self, value):
-        with h5.File(self.path, "r+") as file:
+        with h5.File(self._file_path, "r+") as file:
             file[META_GROUP].attrs[START_TIMESTAMP_LABEL] = value
 
     @property
@@ -109,7 +109,7 @@ class NMFData:
 
     @duration.setter
     def duration(self, value):
-        with h5.File(self.path, "r+") as file:
+        with h5.File(self._file_path, "r+") as file:
             file[META_GROUP].attrs[DURATION_LABEL] = value
 
     @property
@@ -119,28 +119,26 @@ class NMFData:
 
     @utility_freq.setter
     def utility_freq(self, value):
-        with h5.File(self.path, "r+") as file:
+        with h5.File(self._file_path, "r+") as file:
             file[META_GROUP].attrs[UTILITY_FREQ_LABEL] = value
 
     def _create_file(self):
         with h5.File(self._file_path, "x") as file:
+            file.create_group(NMF_GROUP)
             meta = file.create_group(META_GROUP)
             meta.attrs[CREATION_DATE_LABEL] = datetime.now().strftime("%Y-%m-%d")
-            meta.attrs[SUBJECT_ID_LABEL] = self.subject_id
-            meta.attrs[SPECIES_LABEL] = self.species
-            meta.attrs[START_TIMESTAMP_LABEL] = self.start_timestamp
-            meta.attrs[DURATION_LABEL] = self.duration
-            meta.attrs[UTILITY_FREQ_LABEL] = self.utility_freq
-
-            file.create_group(NMF_GROUP)
 
     def _update_dset(self, path: str, data: np.ndarray):
+        dtype = data.dtype
+        # check if dtype is unicode; if so, use dtype object to conform to h5py
+        if "U" in str(dtype):
+            dtype = h5.string_dtype()
         with h5.File(self._file_path, "r+") as file:
-            dset = file.require_dataset(name=path, shape=data.shape, exact=True)
+            dset = file.require_dataset(name=path, shape=data.shape, dtype=dtype, exact=True)
             dset[()] = data[()]
 
     def list_feature_matrices(self):
-        with h5.File(self.path, "r") as file:
+        with h5.File(self._file_path, "r") as file:
             return file[NMF_GROUP].keys()
 
     def set_feature_matrix(
@@ -158,12 +156,12 @@ class NMFData:
                 os.path.join(grp_path, FEATURE_MATRIX_LABEL), feature_matrix
             )
             self._update_dset(
-                os.path.join(grp_path, FEATURE_NAMES_LABEL), np.ndarray(feature_names)
+                os.path.join(grp_path, FEATURE_NAMES_LABEL), np.array(feature_names)
             )
             self._update_dset(
-                os.path.join(grp_path, FEATURE_UNITS_LABEL), np.ndarray(feature_units)
+                os.path.join(grp_path, FEATURE_UNITS_LABEL), np.array(feature_units)
             )
-
+            grp = file[grp_path]
             grp.attrs[SFREQ_LABEL] = sfreq
             grp.attrs[PROCESSING_LABEL] = processing
 
