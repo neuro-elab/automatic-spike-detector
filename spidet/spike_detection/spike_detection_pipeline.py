@@ -94,7 +94,7 @@ class SpikeDetectionPipeline:
         self.W = W
 
         # Configure logger
-        logging_utils.add_logger_with_process_name(self.results_path)
+        logging_utils.add_logger_with_process_name(os.path.dirname(self.results_path))
 
     def feature_matrix_name(self, line_length_window):
         if line_length_window > 100:
