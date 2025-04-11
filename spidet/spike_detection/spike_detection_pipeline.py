@@ -467,43 +467,43 @@ class SpikeDetectionPipeline:
         # unique_id_prefix = filename[: filename.rfind(".")]
 
         # Compute times for H x-axis
-        times = compute_rescaled_timeline(
-            start_timestamp=start_timestamp,
-            length=h_opt.shape[1],
-            sfreq=self.line_length_freq,
-        )
+        # times = compute_rescaled_timeline(
+        #    start_timestamp=start_timestamp,
+        #    length=h_opt.shape[1],
+        #    sfreq=self.line_length_freq,
+        # )
 
         # Create return objects
-        basis_functions: List[BasisFunction] = []
-        activation_functions: List[ActivationFunction] = []
+        # basis_functions: List[BasisFunction] = []
+        # activation_functions: List[ActivationFunction] = []
 
-        for idx, (bf, sdf, spikes_idx, threshold_idx, assignments_idx) in enumerate(
-            zip(w_opt.T, h_opt, spikes_opt, thresholds_opt, assignments_opt)
-        ):
-            # Create BasisFunction
-            label_bf = f"W{idx + 1}"
-            unique_id_bf = f"{unique_id_prefix}_{label_bf}"
-            basis_fct = BasisFunction(
-                label=label_bf,
-                unique_id=unique_id_bf,
-                channel_names=channel_names,
-                data_array=bf,
-            )
+        # for idx, (bf, sdf, spikes_idx, threshold_idx, assignments_idx) in enumerate(
+        #    zip(w_opt.T, h_opt, spikes_opt, thresholds_opt, assignments_opt)
+        # ):
+        #    # Create BasisFunction
+        #    label_bf = f"W{idx + 1}"
+        #    unique_id_bf = f"{unique_id_prefix}_{label_bf}"
+        #    basis_fct = BasisFunction(
+        #        label=label_bf,
+        #        unique_id=unique_id_bf,
+        #        channel_names=channel_names,
+        #        data_array=bf,
+        #    )
 
-            # Create ActivationFunction
-            label_af = f"H{idx + 1}"
-            unique_id_af = f"{unique_id_prefix}_{label_af}"
-            activation_fct = ActivationFunction(
-                label=label_af,
-                unique_id=unique_id_af,
-                times=times,
-                data_array=sdf,
-                detected_events_on=spikes_opt.get(spikes_idx)["events_on"],
-                detected_events_off=spikes_opt.get(spikes_idx)["events_off"],
-                event_threshold=thresholds_opt.get(threshold_idx),
-            )
+        #    # Create ActivationFunction
+        #    label_af = f"H{idx + 1}"
+        #    unique_id_af = f"{unique_id_prefix}_{label_af}"
+        #    activation_fct = ActivationFunction(
+        #        label=label_af,
+        #        unique_id=unique_id_af,
+        #        times=times,
+        #        data_array=sdf,
+        #        detected_events_on=spikes_opt.get(spikes_idx)["events_on"],
+        #        detected_events_off=spikes_opt.get(spikes_idx)["events_off"],
+        #        event_threshold=thresholds_opt.get(threshold_idx),
+        #    )
 
-            basis_functions.append(basis_fct)
-            activation_functions.append(activation_fct)
+        #    basis_functions.append(basis_fct)
+        #    activation_functions.append(activation_fct)
 
-        return basis_functions, activation_functions
+        # return basis_functions, activation_functions
