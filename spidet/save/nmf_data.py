@@ -198,5 +198,5 @@ class NMFData:
         with h5.File(self._file_path, "r") as file:
             return file[path].keys()
 
-    def rank_str(rank: int) -> str:
+    def rank_str(self, rank: int) -> str:
         return f"rank_{rank:02}"
