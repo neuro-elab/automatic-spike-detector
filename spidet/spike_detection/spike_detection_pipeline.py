@@ -60,7 +60,7 @@ class SpikeDetectionPipeline:
     nmf_runs: int, default: 100
         The number of nonnegative matrix factorization runs performed for each rank.
 
-    ranks: List[int, int], default: [2, 3, 4, 5]
+    ranks: List[int], default: [2, 3, 4, 5]
         A tuple defining the range of ranks for which to perform the nonnegative matrix factorization.
 
     line_length_freq: int, default: 50
@@ -75,7 +75,7 @@ class SpikeDetectionPipeline:
         sparseness: float = 0.0,
         bad_times: np.ndarray[np.dtype[float]] = None,
         nmf_runs: int = 100,
-        ranks: List[int, int] = [2, 3, 4, 5],
+        ranks: List[int] = [2, 3, 4, 5],
         line_length_freq: int = 50,
         H: np.ndarray | None = None,
         W: np.ndarray | None = None,
