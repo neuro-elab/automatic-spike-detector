@@ -71,7 +71,6 @@ class SpikeDetectionPipeline:
         self,
         file_path: str,
         result_path: str = "nmf.h5",
-        save_nmf_matrices: bool = False,
         sparseness: float = 0.0,
         bad_times: np.ndarray[np.dtype[float]] = None,
         nmf_runs: int = 100,
@@ -83,14 +82,13 @@ class SpikeDetectionPipeline:
         self.sparseness = sparseness
         self.file_path = file_path
         self.results_path: str = result_path
-        self.save_nmf_matrices: bool = save_nmf_matrices
         self.bad_times = bad_times
         self.nmf_runs: int = nmf_runs
         self.ranks: Tuple[int, int] = ranks
         self.line_length_freq = line_length_freq
         # Set results data
         self.nmf_data: NMFData = NMFData.from_recording(
-            self.file_path, self.results_path
+            recording_path=self.file_path, filepath=self.results_path
         )
         self.H = H
         self.W = W
