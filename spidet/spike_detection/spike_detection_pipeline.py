@@ -241,10 +241,10 @@ class SpikeDetectionPipeline:
             )
 
         # Extract return objects from results
-        consensus_matrices = [consensus for _, consensus, _, _, _, _, _ in results]
-        h_matrices = [h_best for _, _, h_best, _, _, _, _ in results]
-        w_matrices = [w_best for _, _, _, w_best, _, _, _ in results]
-        metrics = [metrics for metrics, _, _, _, _, _, _ in results]
+        metrics = [metrics for metrics, _, _, _ in results]
+        consensus_matrices = [consensus for _, consensus, _, _ in results]
+        h_matrices = [h_best for _, _, h_best, _ in results]
+        w_matrices = [w_best for _, _, _, w_best in results]
 
         # Calculate final statistics
         C, delta_k, delta_y, idx_opt = self.__calculate_statistics(consensus_matrices)
