@@ -281,6 +281,7 @@ class LineLength:
         bandpass_cutoff_high: int = 200,
         line_length_freq: int = 50,
         line_length_window: int = 40,
+        n_cores: int = 4,
     ) -> Tuple[float, List[str], np.ndarray[np.dtype[float]]]:
         """
         This function launches the line length pipeline, which first carries out the necessary preprocessing steps
@@ -317,6 +318,9 @@ class LineLength:
         line_length_window: int, optional, default = 40
             Window length used to for the line-length operation (in milliseconds).
 
+        n_cores: int, optional, default = 4
+            Maximum amount of cores used for computation.
+
         Returns
         -------
         Tuple[float, List[str], numpy.ndarray[numpy.dtype[float]]]
@@ -350,9 +354,6 @@ class LineLength:
 
             # Start time of the recording
             start_timestamp = traces[0].start_timestamp
-
-            # Using all available cores for process pool
-            n_cores = multiprocessing.cpu_count()
 
             # Define the number of parallel process used for preprocessing and line-length transformation
             n_processes = min(n_cores, len(traces))

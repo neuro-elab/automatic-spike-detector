@@ -194,43 +194,18 @@ class SpikeDetectionPipeline:
         nmf_classifier = Nmf(rank=rank, sparseness=self.sparseness)
 
         # Run NMF consensus clustering for specified rank and number of runs (default = 100)
-        metrics, consensus, h_best, w_best = nmf_classifier.nmf_run(
+        metrics, consensus, h, w = nmf_classifier.nmf_run(
             V=preprocessed_data,
             n_runs=n_runs,
             H=self.H,
             W=self.W,
         )
 
-        #####################
-        # CLUSTERING BS FCT #
-        #####################
-
-        # Initialize kmeans classifier
-        kmeans = BasisFunctionClusterer(n_clusters=2, use_cosine_dist=True)
-
-        # Cluster into noise / basis function and sort according to cluster assignment
-        sorted_w, sorted_h, cluster_assignments = kmeans.cluster_and_sort(
-            h_matrix=h_best, w_matrix=w_best
-        )
-        # TODO check if necessary: cluster_assignments = np.where(cluster_assignments == 1, "BF", "noise")
-
-        #####################
-        #   THRESHOLDING    #
-        #####################
-
-        threshold_generator = ThresholdGenerator(sorted_h, preprocessed_data, sfreq=50)
-
-        threshold_generator.generate_individual_thresholds()
-        spike_annotations = threshold_generator.find_events()
-
         return (
             metrics,
             consensus,
-            sorted_h,
-            sorted_w,
-            spike_annotations,
-            threshold_generator.thresholds,
-            cluster_assignments,
+            h,
+            w,
         )
 
     def parallel_processing(
@@ -270,22 +245,9 @@ class SpikeDetectionPipeline:
         h_matrices = [h_best for _, _, h_best, _, _, _, _ in results]
         w_matrices = [w_best for _, _, _, w_best, _, _, _ in results]
         metrics = [metrics for metrics, _, _, _, _, _, _ in results]
-        event_annotations = [
-            spike_annotations for _, _, _, _, spike_annotations, _, _ in results
-        ]
-        thresholds = [threshold for _, _, _, _, _, threshold, _ in results]
-        cluster_assignments = [assignments for _, _, _, _, _, _, assignments in results]
 
         # Calculate final statistics
         C, delta_k, delta_y, idx_opt = self.__calculate_statistics(consensus_matrices)
-
-        # Get objects for the optimal rank
-        # k_opt = self.ranks[idx_opt]
-        # h_opt = h_matrices[idx_opt]
-        # w_opt = w_matrices[idx_opt]
-        # events_opt = event_annotations[idx_opt]
-        # thresholds_opt = thresholds[idx_opt]
-        # assignments_opt = cluster_assignments[idx_opt]
 
         # Generate metrics data frame
         metrics_df = pd.DataFrame(metrics)
@@ -420,6 +382,7 @@ class SpikeDetectionPipeline:
             bandpass_cutoff_high=bandpass_cutoff_high,
             line_length_freq=line_length_freq,
             line_length_window=line_length_window,
+            n_cores=n_cores,
         )
 
         # Save feature matrix (line length)
