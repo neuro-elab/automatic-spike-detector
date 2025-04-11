@@ -83,8 +83,8 @@ class SpikeDetectionPipeline:
         self.file_path = file_path
         self.results_path: str = result_path
         self.bad_times = bad_times
-        self.nmf_runs: int = nmf_runs
-        self.ranks: Tuple[int, int] = ranks
+        self.nmf_runs = nmf_runs
+        self.ranks = ranks
         self.line_length_freq = line_length_freq
         # Set results data
         self.nmf_data: NMFData = NMFData.from_recording(
@@ -254,7 +254,7 @@ class SpikeDetectionPipeline:
         # Using all cores except 2 if necessary
         n_cores = min(n_cores, nr_ranks)
 
-        logger.debug(
+        logger.info(
             f"Running NMF on {n_cores if nr_ranks > n_cores else nr_ranks} cores "
             f"for ranks {self.ranks} and {self.nmf_runs} runs each"
         )
@@ -397,6 +397,7 @@ class SpikeDetectionPipeline:
 
         # TODO: Enable Artifact detection
 
+        logger.info("Computing line length")
         # Instantiate a LineLength instance
         line_length = LineLength(
             file_path=self.file_path,

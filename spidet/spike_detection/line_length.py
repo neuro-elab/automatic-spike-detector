@@ -2,7 +2,6 @@ import multiprocessing
 from typing import List, Tuple
 
 import numpy as np
-from loguru import logger
 from scipy.signal.windows import hann
 
 from spidet.domain.ActivationFunction import ActivationFunction
@@ -252,19 +251,16 @@ class LineLength:
 
         # Zero out bad times if any
         if self.bad_times is not None:
-            logger.debug("Dampening bad times on preprocessed EEG with hann windows")
             preprocessed = self.dampen_bad_times(
                 data=preprocessed, sfreq=resampling_freq, orig_sfreq=traces[0].sfreq
             )
 
         # Compute line length
-        logger.debug("Apply line length computations")
         line_length = self.compute_line_length(
             eeg_data=preprocessed, sfreq=resampling_freq
         )
 
         # Downsample to line_length_freq (default 50 Hz)
-        logger.debug(f"Resample line length at {self.line_length_freq} Hz")
         line_length_resampled_data = resample_data(
             data=line_length,
             channel_names=channel_names,
