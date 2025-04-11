@@ -134,7 +134,9 @@ class NMFData:
         if "U" in str(dtype):
             dtype = h5.string_dtype()
         with h5.File(self._file_path, "r+") as file:
-            dset = file.require_dataset(name=path, shape=data.shape, dtype=dtype, exact=True)
+            dset = file.require_dataset(
+                name=path, shape=data.shape, dtype=dtype, exact=True
+            )
             dset[()] = data[()]
 
     def list_feature_matrices(self):
@@ -172,7 +174,7 @@ class NMFData:
         feature_matrix_name: str,
         model: str,
         rank: int,
-        parameters: str | None,
+        parameters: str | None = None,
     ):
         with h5.File(self._file_path, "r+") as file:
             path = os.path.join(
