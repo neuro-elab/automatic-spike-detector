@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import os
 
 from h5py import File, Dataset, Group
@@ -8,6 +9,19 @@ CHANNELS_ATTR = "channels"
 W_DATASET = "W"
 H_DATASET = "H"
 NMF_GROUP = "NMF"
+
+ANNO_TIME = "annotations/time"
+ANNO_TRIG = "annotations/text"
+TRIGGER = "TRIG"
+
+
+def find_triggers(filepath: str) -> list:
+    with File(filepath) as file:
+        if ANNO_TRIG in file and ANNO_TIME in file:
+            df = pd.DataFrame({"annotations": file[ANNO_TRIG], "time": file[time]})
+            df["annotations"] = df["annotations"].str.decode("utf8")
+            return df[df["annotations"].str.startswith(TRIGGER)]["time"].values
+        return np.array([])
 
 
 def list_datasets(recording: File) -> list:

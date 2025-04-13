@@ -11,6 +11,7 @@ from scipy.special import rel_entr
 from sklearn.preprocessing import normalize
 from pathlib import Path
 
+from spidet.preprocess.artifact_detection import ArtifactDetector
 from spidet.save.nmf_data import NMFData
 from spidet.utils import logging_utils
 
@@ -22,6 +23,7 @@ from spidet.spike_detection.nmf import Nmf
 from spidet.spike_detection.thresholding import ThresholdGenerator
 from spidet.utils.times_utils import compute_rescaled_timeline
 from spidet.utils.plotting_utils import plot_w_and_consensus_matrix
+import spidet.utils.h5_utils as h5_utils
 
 
 class SpikeDetectionPipeline:
@@ -52,6 +54,10 @@ class SpikeDetectionPipeline:
         A floating point number :math:`\in [0, 1]`.
         If this parameter is non-zero, nonnegative matrix factorization is run with sparseness constraints.
 
+    version: str, optional, default: "l"
+        If version = 'l', sparseness will be imposed on the columns of :math:`W`, if version = 'r',
+        sparseness will be imposed on the rows of :math:`H`.
+
     bad_times: numpy.ndarray[numpy.dtype[float]], optional
         N x 2 numpy array, designating periods to be zeroed before applying the line-length transformation.
         Each row represents a time period with [start, end]. Values for start and end correspond to the time in seconds
@@ -72,6 +78,7 @@ class SpikeDetectionPipeline:
         file_path: str,
         result_path: str = "nmf.h5",
         sparseness: float = 0.0,
+        version: str = "l",
         bad_times: np.ndarray[np.dtype[float]] = None,
         nmf_runs: int = 100,
         ranks: List[int] = [2, 3, 4, 5],
@@ -96,6 +103,22 @@ class SpikeDetectionPipeline:
         # Configure logger
         logging_utils.add_logger_with_process_name(os.path.dirname(self.results_path))
 
+        # Enable Artifact detection
+        logger.info("Initialize bad times")
+        trigs = h5_utils.find_triggers(self.file_path)
+        artifact_detector = ArtifactDetector()
+        artifacts = artifact_detector.run(
+            file_path=self.file_path,
+            channel_paths=self.channel_paths,
+            trigger_times=trigs,
+            detect_bad_times=False,
+            detect_bad_channels=False,
+            detect_stimulation_artifacts=False,
+        )
+        logger.info(f"Found {artifacts.bad_times.shape[0]} artifacts")
+        self.bad_times = np.vstack([self.bad_times, artifacts.bad_times])
+        self.bad_times = ArtifactDetector.__merge_overlapping_bad_times(self.bad_times)
+
     def feature_matrix_name(self, line_length_window):
         if line_length_window > 100:
             return f"V_LL_{line_length_window/100:1.1f}"
@@ -103,31 +126,17 @@ class SpikeDetectionPipeline:
 
     def model_name(self, h_init: bool, w_init: bool):
         name = "model_"
-        name += f"sparsity{self.sparseness:1.2f}_"
+        if self.sparseness > 0:
+            version_name = "w" if self.version == "l" else "h"
+            name += f"{version_name}_"
+
+        name += f"sparsity_{self.sparseness:1.2f}_"
         if h_init:
             name += "initH_"
         if w_init:
             name += "initW_"
 
         return name[:-1]
-
-    def __create_results_dir(self, results_dir: str):
-        # Create folder to save results
-        file_path = self.file_path
-        filename_for_saving = (
-            file_path[file_path.rfind("/") + 1 :].replace(".", "_").replace(" ", "_")
-        )
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        nmf_version = "NMFSC" if self.sparseness != 0.0 else "NMF"
-        folder_name = "_".join([nmf_version, filename_for_saving, timestamp])
-
-        if results_dir is None:
-            results_dir = os.path.join(Path.home(), folder_name)
-        else:
-            results_dir = os.path.join(results_dir, folder_name)
-
-        os.makedirs(results_dir, exist_ok=True)
-        return results_dir
 
     @staticmethod
     def __compute_cdf(matrix: np.ndarray, bins: np.ndarray):
@@ -190,7 +199,9 @@ class SpikeDetectionPipeline:
         #####################
 
         # Instantiate nmf classifier
-        nmf_classifier = Nmf(rank=rank, sparseness=self.sparseness)
+        nmf_classifier = Nmf(
+            rank=rank, sparseness=self.sparseness, version=self.version
+        )
 
         # Run NMF consensus clustering for specified rank and number of runs (default = 100)
         metrics, consensus, h, w = nmf_classifier.nmf_run(
@@ -355,8 +366,6 @@ class SpikeDetectionPipeline:
             and :py:mod:`~spidet.domain.ActivationFunction`, where each activation function contains
             the corresponding detected events.
         """
-
-        # TODO: Enable Artifact detection
 
         logger.info("Computing line length")
         # Instantiate a LineLength instance

@@ -141,7 +141,7 @@ class NMFData:
 
     def list_feature_matrices(self):
         with h5.File(self._file_path, "r") as file:
-            return file[NMF_GROUP].keys()
+            return list(file[NMF_GROUP].keys())
 
     def set_feature_matrix(
         self,
@@ -196,7 +196,21 @@ class NMFData:
             rank = rank_str(rank)
         path = os.path.join(NMF_GROUP, feature_matrix_name, rank)
         with h5.File(self._file_path, "r") as file:
-            return file[path].keys()
+            return list(file[path].keys())
+
+    def feature_matrix(self, feature_matrix_name: str) -> np.ndarray:
+        fm_path = os.path.join(NMF_GROUP, feature_matrix_name)
+        with h5.File(self._file_path, "r") as file:
+            return file[os.path.join(fm_path, FEATURE_MATRIX_LABEL)][()]
+
+    def nmf(
+        self, feature_matrix_name: str, rank: str, model: str
+    ) -> tuple[np.ndarray, np.np.ndarray]:
+        model_path = os.path.join(NMF_GROUP, feature_matrix_name, rank, model)
+        with h5.File(self._file_path, "r") as file:
+            w = file[os.path.join(model_path, W_LABEL)][()]
+            h = file[os.path.join(model_path, H_LABEL)][()]
+            return w, h
 
     def rank_str(self, rank: int) -> str:
         return f"rank_{rank:02}"
