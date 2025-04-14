@@ -15,12 +15,51 @@ ANNO_TRIG = "annotations/text"
 TRIGGER = "TRIG"
 
 
+def find_bad_times(filepath: str) -> list:
+    with File(filepath, "r") as file:
+        if (
+            file["/time_grades/text"]
+            and file["/time_grades/time"]
+            and file["/time_grades/duration"]
+        ):
+            description = recording["/time_grades/text"]
+            onset = recording["/time_grades/time"]
+            duration = recording["/time_grades/duration"]
+            expert_df = pd.DataFrame(
+                {"Description": description, "Onset": onset, "Duration": duration}
+            )
+            expert_df["Description"] = expert_df["Description"].str.decode("utf8")
+            return get_indices(recording, expert_df, "NOISY")
+
+
+def change_interval(t, a: float, b: float, A: float = 0, B: float = 1):
+    """
+    Map t from interval [A, B] to interval [a, b]
+    """
+    t = (t - A) / (B - A)  # Normalize t to [0, 1]
+    return b * t + a * (1 - t)
+
+
+def get_indices(recording: File, events_df, descriptor):
+    n_samples = get_n_samples(recording)
+    duration = read_recording_duration(recording)
+    events = round(
+        change_interval(events_df.loc[:, "Onset":"Duration"], 0, n_samples, 0, duration)
+    )
+    events["Offset"] = events.loc[:, "Onset"] + events.loc[:, "Duration"]
+    mask = events_df["Description"] == descriptor
+    return events.loc[:, ["Onset", "Offset"]][mask].to_numpy()
+
+
 def find_triggers(filepath: str) -> list:
-    with File(filepath) as file:
+    with File(filepath, "r") as file:
         if ANNO_TRIG in file and ANNO_TIME in file:
             df = pd.DataFrame({"annotations": file[ANNO_TRIG], "time": file[time]})
             df["annotations"] = df["annotations"].str.decode("utf8")
-            return df[df["annotations"].str.startswith(TRIGGER)]["time"].values
+            triggers = df[df["annotations"].str.startswith(TRIGGER)]["time"].values
+            n_samples = get_n_samples(recording)
+            duration = read_recording_duration(recording)
+            return round(change_interval(triggers, 0, n_samples, 0, duration))
         return np.array([])
 
 

@@ -103,6 +103,19 @@ class SpikeDetectionPipeline:
         # Configure logger
         logging_utils.add_logger_with_process_name(os.path.dirname(self.results_path))
 
+        # Initialize bad times to correct indices
+        if self.bad_times:
+            n_samples = get_n_samples(recording)
+            duration = read_recording_duration(recording)
+            self.bad_times = round(
+                change_interval(self.bad_times, 0, n_samples, 0, duration)
+            )
+
+        # Look for potentially missed bad times
+        self.bad_times = np.vstack(
+            [self.bad_times, h5_utils.find_bad_times(self.file_path)]
+        )
+
         # Enable Artifact detection
         logger.info("Initialize bad times")
         trigs = h5_utils.find_triggers(self.file_path)
