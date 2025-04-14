@@ -110,30 +110,12 @@ class SpikeDetectionPipeline:
             self.bad_times = round(
                 change_interval(self.bad_times, 0, n_samples, 0, duration)
             )
-
-        # Look for potentially missed bad times
-        if self.bad_times:
+            # Look for potentially missed bad times
             self.bad_times = np.vstack(
                 [self.bad_times, h5_utils.find_bad_times(self.file_path)]
             )
         else:
-            self.bad_tiems = h5_utils.find_bad_times(self.file_path)
-
-        # Enable Artifact detection
-        logger.info("Initialize bad times")
-        trigs = h5_utils.find_triggers(self.file_path)
-        artifact_detector = ArtifactDetector()
-        artifacts = artifact_detector.run(
-            file_path=self.file_path,
-            channel_paths=self.channel_paths,
-            trigger_times=trigs,
-            detect_bad_times=False,
-            detect_bad_channels=False,
-            detect_stimulation_artifacts=False,
-        )
-        logger.info(f"Found {artifacts.bad_times.shape[0]} artifacts")
-        self.bad_times = np.vstack([self.bad_times, artifacts.bad_times])
-        self.bad_times = ArtifactDetector.__merge_overlapping_bad_times(self.bad_times)
+            self.bad_times = h5_utils.find_bad_times(self.file_path)
 
     def feature_matrix_name(self, line_length_window):
         if line_length_window > 100:
@@ -382,6 +364,25 @@ class SpikeDetectionPipeline:
             and :py:mod:`~spidet.domain.ActivationFunction`, where each activation function contains
             the corresponding detected events.
         """
+        # Enable Artifact detection
+        logger.info("Run Artifact Detection")
+        trigs = h5_utils.find_triggers(self.file_path)
+        artifact_detector = ArtifactDetector()
+        artifacts = artifact_detector.run(
+            file_path=self.file_path,
+            channel_paths=channel_paths,
+            trigger_times=trigs,
+            detect_bad_times=False,
+            detect_bad_channels=False,
+            detect_stimulation_artifacts=False,
+        )
+
+        logger.info(f"Found {artifacts.bad_times.shape[0]} artifacts")
+        if self.bad_times:
+            self.bad_times = np.vstack([self.bad_times, artifacts.bad_times])
+        else:
+            self.bad_times = artifacts.bad_times
+        self.bad_times = ArtifactDetector.__merge_overlapping_bad_times(self.bad_times)
 
         logger.info("Computing line length")
         # Instantiate a LineLength instance

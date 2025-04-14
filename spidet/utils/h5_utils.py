@@ -46,7 +46,7 @@ def change_interval(t, a: float, b: float, A: float = 0, B: float = 1):
 def get_indices(recording: File, events_df, descriptor):
     n_samples = get_n_samples(recording)
     duration = read_recording_duration(recording)
-    events = round(
+    events = np.round(
         change_interval(events_df.loc[:, "Onset":"Duration"], 0, n_samples, 0, duration)
     )
     events["Offset"] = events.loc[:, "Onset"] + events.loc[:, "Duration"]
@@ -64,7 +64,7 @@ def find_triggers(filepath: str) -> list:
             triggers = df[df["annotations"].str.startswith(TRIGGER)]["time"].values
             n_samples = get_n_samples(recording)
             duration = read_recording_duration(recording)
-            return round(change_interval(triggers, 0, n_samples, 0, duration))
+            return np.round(change_interval(triggers, 0, n_samples, 0, duration))
         return np.array([])
 
 
