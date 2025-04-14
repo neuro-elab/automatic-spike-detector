@@ -16,11 +16,11 @@ TRIGGER = "TRIG"
 
 
 def find_bad_times(filepath: str) -> list:
-    with File(filepath, "r") as file:
+    with File(filepath, "r") as recording:
         if (
-            file["/time_grades/text"]
-            and file["/time_grades/time"]
-            and file["/time_grades/duration"]
+            recording["/time_grades/text"]
+            and recording["/time_grades/time"]
+            and recording["/time_grades/duration"]
         ):
             description = recording["/time_grades/text"]
             onset = recording["/time_grades/time"]
@@ -29,7 +29,10 @@ def find_bad_times(filepath: str) -> list:
                 {"Description": description, "Onset": onset, "Duration": duration}
             )
             expert_df["Description"] = expert_df["Description"].str.decode("utf8")
-            return get_indices(recording, expert_df, "NOISY")
+            indices = get_indices(recording, expert_df, "NOISY")
+            if len(indices) > 0:
+                return indices
+            return None
 
 
 def change_interval(t, a: float, b: float, A: float = 0, B: float = 1):

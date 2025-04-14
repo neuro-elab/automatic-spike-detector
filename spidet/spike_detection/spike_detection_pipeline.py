@@ -112,9 +112,12 @@ class SpikeDetectionPipeline:
             )
 
         # Look for potentially missed bad times
-        self.bad_times = np.vstack(
-            [self.bad_times, h5_utils.find_bad_times(self.file_path)]
-        )
+        if self.bad_times:
+            self.bad_times = np.vstack(
+                [self.bad_times, h5_utils.find_bad_times(self.file_path)]
+            )
+        else:
+            self.bad_tiems = h5_utils.find_bad_times(self.file_path)
 
         # Enable Artifact detection
         logger.info("Initialize bad times")
