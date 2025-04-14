@@ -14,7 +14,7 @@ from spidet.utils.times_utils import compute_rescaled_timeline
 
 class ArtifactDetector:
     @staticmethod
-    def __merge_overlapping_bad_times(bad_times: np.ndarray) -> np.ndarray:
+    def merge_overlapping_bad_times(bad_times: np.ndarray) -> np.ndarray:
         logger.debug("Merging potentially overlapping bad times")
         BadTime = namedtuple("BadTime", "type index")
         bad_times_split = []
@@ -325,7 +325,7 @@ class ArtifactDetector:
 
         # Sort and merge potentially overlapping bad time periods
         if bad_times is not None:
-            bad_times = self.__merge_overlapping_bad_times(bad_times)
+            bad_times = self.merge_overlapping_bad_times(bad_times)
 
         return Artifacts(bad_times=bad_times, bad_channels=bad_channels)
 

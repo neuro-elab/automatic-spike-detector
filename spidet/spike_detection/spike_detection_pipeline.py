@@ -378,11 +378,11 @@ class SpikeDetectionPipeline:
         )
 
         logger.info(f"Found {artifacts.bad_times.shape[0]} artifacts")
-        if self.bad_times:
-            self.bad_times = np.vstack([self.bad_times, artifacts.bad_times])
-        else:
+        if np.any(self.bad_times):
             self.bad_times = artifacts.bad_times
-        self.bad_times = ArtifactDetector.__merge_overlapping_bad_times(self.bad_times)
+        else:
+            self.bad_times = np.vstack([self.bad_times, artifacts.bad_times])
+        self.bad_times = ArtifactDetector.merge_overlapping_bad_times(self.bad_times)
 
         logger.info("Computing line length")
         # Instantiate a LineLength instance
