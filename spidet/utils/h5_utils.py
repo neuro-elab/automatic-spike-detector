@@ -55,9 +55,11 @@ def get_indices(recording: File, events_df, descriptor):
 
 
 def find_triggers(filepath: str) -> list:
-    with File(filepath, "r") as file:
-        if ANNO_TRIG in file and ANNO_TIME in file:
-            df = pd.DataFrame({"annotations": file[ANNO_TRIG], "time": file[ANNO_TIME]})
+    with File(filepath, "r") as recording:
+        if ANNO_TRIG in recording and ANNO_TIME in recording:
+            df = pd.DataFrame(
+                {"annotations": recording[ANNO_TRIG], "time": recording[ANNO_TIME]}
+            )
             df["annotations"] = df["annotations"].str.decode("utf8")
             triggers = df[df["annotations"].str.startswith(TRIGGER)]["time"].values
             n_samples = get_n_samples(recording)
