@@ -85,8 +85,10 @@ class SpikeDetectionPipeline:
         line_length_freq: int = 50,
         H: np.ndarray | None = None,
         W: np.ndarray | None = None,
+        subject_id: str | None = None,
     ):
         self.sparseness = sparseness
+        self.version = version
         self.file_path = file_path
         self.results_path: str = result_path
         self.bad_times = bad_times
@@ -94,8 +96,12 @@ class SpikeDetectionPipeline:
         self.ranks = ranks
         self.line_length_freq = line_length_freq
         # Set results data
+        if subject_id is None:
+            subject_id = NMFData.subject_id_from_filepath(self.results_path)
         self.nmf_data: NMFData = NMFData.from_recording(
-            recording_path=self.file_path, filepath=self.results_path
+            recording_path=self.file_path,
+            filepath=self.results_path,
+            subject_id=subject_id,
         )
         self.H = H
         self.W = W
@@ -104,18 +110,6 @@ class SpikeDetectionPipeline:
         logging_utils.add_logger_with_process_name(os.path.dirname(self.results_path))
 
         # Initialize bad times to correct indices
-        if self.bad_times:
-            n_samples = get_n_samples(recording)
-            duration = read_recording_duration(recording)
-            self.bad_times = round(
-                change_interval(self.bad_times, 0, n_samples, 0, duration)
-            )
-            # Look for potentially missed bad times
-            self.bad_times = np.vstack(
-                [self.bad_times, h5_utils.find_bad_times(self.file_path)]
-            )
-        else:
-            self.bad_times = h5_utils.find_bad_times(self.file_path)
 
     def feature_matrix_name(self, line_length_window):
         if line_length_window > 100:
@@ -298,7 +292,39 @@ class SpikeDetectionPipeline:
         #        delimiter=",",
         #    )
 
-        return w_matrices, h_matrices, consensus_matrices
+        return h_matrices, w_matrices, consensus_matrices
+
+    def _detect_bad_times(self):
+        detected_bad_times = h5_utils.find_bad_times(self.file_path)
+        if len(detected_bad_times) == 0:
+            return
+
+        if self.bad_times is not None:
+            self.bad_times = ArtifactDetector.merge_overlapping_bad_times(
+                np.vstack([detected_bad_times, self.bad_times])
+            )
+        else:
+            self.bad_times = detected_bad_times
+
+    def _detect_triggers(self, channel_paths):
+        logger.info("searching triggers...")
+        trigs = h5_utils.find_triggers(self.file_path)
+        logger.info(f"triggers found: {len(trigs)}")
+        if len(trigs) == 0:
+            return
+
+        duration = h5_utils.duration(self.file_path)
+
+        start = np.maximum(0, trigs - 0.1)  # subtract 0.1s before trig
+        end = np.minimum(trigs + 1.0, duration)  # Add one second after trig
+
+        bad_times = np.vstack([start, end])
+
+        if self.bad_times:
+            bad_times = ArtifactDetector.merge_overlapping_bad_times(
+                np.vstack(self.bad_times, bad_times)
+            )
+        self.bad_times = bad_times
 
     def run(
         self,
@@ -364,25 +390,7 @@ class SpikeDetectionPipeline:
             and :py:mod:`~spidet.domain.ActivationFunction`, where each activation function contains
             the corresponding detected events.
         """
-        # Enable Artifact detection
-        logger.info("Run Artifact Detection")
-        trigs = h5_utils.find_triggers(self.file_path)
-        artifact_detector = ArtifactDetector()
-        artifacts = artifact_detector.run(
-            file_path=self.file_path,
-            channel_paths=channel_paths,
-            trigger_times=trigs,
-            detect_bad_times=False,
-            detect_bad_channels=False,
-            detect_stimulation_artifacts=False,
-        )
-
-        logger.info(f"Found {artifacts.bad_times.shape[0]} artifacts")
-        if np.any(self.bad_times):
-            self.bad_times = artifacts.bad_times
-        else:
-            self.bad_times = np.vstack([self.bad_times, artifacts.bad_times])
-        self.bad_times = ArtifactDetector.merge_overlapping_bad_times(self.bad_times)
+        self._detect_triggers(channel_paths=channel_paths)
 
         logger.info("Computing line length")
         # Instantiate a LineLength instance

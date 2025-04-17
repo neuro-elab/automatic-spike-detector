@@ -131,6 +131,11 @@ class Nmf:
                 w_best = np.array(fit.basis())
                 h_best = np.array(fit.coef())
 
+                if self.sparseness != 0.0:
+                    temp = w_best.T
+                    w_best = h_best.T
+                    h_best = temp
+
         consensus /= n_runs
         coph = self.__calculate_cophenetic_corr(consensus)
         instability = 1 - coph

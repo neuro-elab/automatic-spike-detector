@@ -56,11 +56,13 @@ class NMFData:
             self.utility_freq = utility_freq
 
     @staticmethod
-    def from_recording(recording_path, filepath, species="human") -> NMFData:
+    def from_recording(
+        recording_path, filepath, subject_id, species="human"
+    ) -> NMFData:
         with h5.File(recording_path) as file:
             return NMFData(
                 filepath=filepath,
-                subject_id=NMFData.subject_id_from_filepath(recording_path),
+                subject_id=subject_id,
                 species=species,
                 start_timestamp=read_start_timestamp(file),
                 duration=read_recording_duration(file),

@@ -1,5 +1,6 @@
 import multiprocessing
 from typing import List, Tuple
+from spidet.utils.logging_utils import logger
 
 import numpy as np
 from scipy.signal.windows import hann

@@ -29,10 +29,7 @@ def find_bad_times(filepath: str) -> list:
                 {"Description": description, "Onset": onset, "Duration": duration}
             )
             expert_df["Description"] = expert_df["Description"].str.decode("utf8")
-            indices = get_indices(recording, expert_df, "NOISY")
-            if len(indices) > 0:
-                return indices
-            return None
+            return get_indices(recording, expert_df, "NOISY")
 
 
 def change_interval(t, a: float, b: float, A: float = 0, B: float = 1):
@@ -62,9 +59,7 @@ def find_triggers(filepath: str) -> list:
             )
             df["annotations"] = df["annotations"].str.decode("utf8")
             triggers = df[df["annotations"].str.startswith(TRIGGER)]["time"].values
-            n_samples = get_n_samples(recording)
-            duration = read_recording_duration(recording)
-            return np.round(change_interval(triggers, 0, n_samples, 0, duration))
+            return triggers
         return np.array([])
 
 
@@ -126,6 +121,11 @@ def read_recording_duration(recording: File):
     return recording["meta"].attrs["duration"]
 
 
+def duration(filepath: str):
+    with File(filepath, "r") as file:
+        return read_recording_duration(file)
+
+
 def read_start_timestamp(recording: File):
     return int(recording["meta"].attrs["start_timestamp"])
 
@@ -135,7 +135,12 @@ def read_utility_freq(recording: File):
 
 
 def get_n_samples(recording: File):
-    return len(recording[find_channel_paths(recording)[0]])
+    return recording["traces/raw"].attrs["n_samples"]
+
+
+def frequency(filepath: str):
+    with File(filepath, "r") as file:
+        get_frequency(file)
 
 
 def get_frequency(recording: File):
