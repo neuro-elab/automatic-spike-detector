@@ -31,12 +31,14 @@ PROCESSING_LABEL = "processing"
 W_LABEL = "w"
 H_LABEL = "h"
 PARAMETERS_LABEL = "parameters"
+CONSENSUS_MATRIX_LABEL = "consensus_matrix"
 
 
 class NMFData:
     def __init__(
         self,
-        filepath,
+        filepath: str,
+        dataset_id="0",
         subject_id="",
         species="",
         start_timestamp="",
@@ -154,17 +156,15 @@ class NMFData:
         sfreq: int,
         processing: str = "",
     ):
+        grp_path = os.path.join(NMF_GROUP, feature_matrix_name)
+        self._update_dset(os.path.join(grp_path, FEATURE_MATRIX_LABEL), feature_matrix)
+        self._update_dset(
+            os.path.join(grp_path, FEATURE_NAMES_LABEL), np.array(feature_names)
+        )
+        self._update_dset(
+            os.path.join(grp_path, FEATURE_UNITS_LABEL), np.array(feature_units)
+        )
         with h5.File(self._file_path, "r+") as file:
-            grp_path = os.path.join(NMF_GROUP, feature_matrix_name)
-            self._update_dset(
-                os.path.join(grp_path, FEATURE_MATRIX_LABEL), feature_matrix
-            )
-            self._update_dset(
-                os.path.join(grp_path, FEATURE_NAMES_LABEL), np.array(feature_names)
-            )
-            self._update_dset(
-                os.path.join(grp_path, FEATURE_UNITS_LABEL), np.array(feature_units)
-            )
             grp = file[grp_path]
             grp.attrs[SFREQ_LABEL] = sfreq
             grp.attrs[PROCESSING_LABEL] = processing
@@ -178,14 +178,28 @@ class NMFData:
         rank: int,
         parameters: str | None = None,
     ):
+        path = os.path.join(NMF_GROUP, feature_matrix_name, self.rank_str(rank), model)
+        self._update_dset(os.path.join(path, W_LABEL), w)
+        self._update_dset(os.path.join(path, H_LABEL), h)
         with h5.File(self._file_path, "r+") as file:
-            path = os.path.join(
-                NMF_GROUP, feature_matrix_name, self.rank_str(rank), model
-            )
-            self._update_dset(os.path.join(path, W_LABEL), w)
-            self._update_dset(os.path.join(path, H_LABEL), h)
             if parameters:
                 file[path].attrs[PARAMETERS_LABEL] = parameters
+
+    def set_consesus_matrix(
+        self,
+        feature_matrix_name: str,
+        model: str,
+        rank: int,
+        consensus_matrix: np.array,
+    ):
+        path = os.path.join(
+            NMF_GROUP,
+            feature_matrix_name,
+            self.rank_str(rank),
+            model,
+            CONSENSUS_MATRIX_LABEL,
+        )
+        self._update_dset(path, consensus_matrix)
 
     def list_ranks(self, feature_matrix_name: str) -> list:
         with h5.File(self._file_path, "r") as file:
@@ -200,10 +214,20 @@ class NMFData:
         with h5.File(self._file_path, "r") as file:
             return list(file[path].keys())
 
+    def channel_names(self, feature_matrix_name: str) -> list:
+        fnames_path = os.path.join(NMF_GROUP, feature_matrix_name, FEATURE_NAMES_LABEL)
+        with h5.File(self._file_path, "r") as file:
+            return [bytes.decode(name) for name in file[fnames_path][()]]
+
     def feature_matrix(self, feature_matrix_name: str) -> np.ndarray:
         fm_path = os.path.join(NMF_GROUP, feature_matrix_name)
         with h5.File(self._file_path, "r") as file:
             return file[os.path.join(fm_path, FEATURE_MATRIX_LABEL)][()]
+    
+    def sfreq(self, feature_matrix_name: str) -> int:
+        fm_path = os.path.join(NMF_GROUP, feature_matrix_name)
+        with h5.File(self._file_path, "r") as file:
+            return file[fm_path].attrs[SFREQ_LABEL]
 
     def nmf(
         self, feature_matrix_name: str, rank: str, model: str
