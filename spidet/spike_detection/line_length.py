@@ -27,9 +27,8 @@ class LineLength:
     bad_times: numpy.ndarray[numpy.dtype[float]]
         An optional N x 2 numpy array containing periods that must be excluded before applying
         the line-length transformation. Each of th N rows in the array represents a period to be excluded,
-        defined by the start and end indices of the period in the original iEEG data.
-        The defined periods will be set to zero with the transitions being smoothed by applying a hanning window
-        to prevent spurious patterns.
+        defined by the start and end in second since recording start.
+        The defined periods will be set to zero with the transitions being smoothed by use of an hanning window.
 
     dataset_paths: List[str], mandatory when the file is in .h5 format
         A list of paths to the traces to be included within an h5 file. This is only necessary in the case
@@ -49,11 +48,11 @@ class LineLength:
     def __init__(
         self,
         file_path: str,
-        dataset_paths: List[str] = None,
-        exclude: List[str] = None,
-        bipolar_reference: bool = False,
-        leads: List[str] = None,
         bad_times: np.ndarray = None,
+        dataset_paths: List[str] = None,
+        bipolar_reference: bool = False,
+        exclude: List[str] = None,
+        leads: List[str] = None,
     ):
         self.file_path = file_path
         self.dataset_paths = dataset_paths
@@ -68,7 +67,6 @@ class LineLength:
         self,
         data: np.ndarray[np.dtype[float]],
         sfreq: int,
-        orig_sfreq: int,
         window_length: int = 100,
     ) -> np.ndarray:
         """
@@ -84,9 +82,6 @@ class LineLength:
         sfreq : int
             The sampling frequency of the preprocessed iEEG data.
 
-        orig_sfreq : int
-            The sampling frequency of the original iEEG data.
-
         window_length : int, optional, default = 100
             The length of the smoothed transition periods in milliseconds
 
@@ -99,7 +94,7 @@ class LineLength:
         if len(self.bad_times.shape) == 1:
             self.bad_times = self.bad_times[np.newaxis, :]
 
-        self.bad_times = np.rint(self.bad_times * sfreq / orig_sfreq).astype(int)
+        self.bad_times = np.rint(self.bad_times * sfreq).astype(int)
 
         # Create window
         window = 2 * np.rint(window_length / 1000 * sfreq).astype(int)
@@ -138,21 +133,21 @@ class LineLength:
             )
         return hann_mask * data
 
-    def compute_line_length(self, eeg_data: np.ndarray, sfreq: int):
+    def compute_line_length(self, data: np.ndarray, sfreq: int) -> np.ndarray:
         """
         Performs the line-length transformation on the input EEG data..
 
         Parameters
         ----------
-        eeg_data : numpy.ndarray
-            Input EEG data.
+        data : numpy.ndarray
+            Input EEG data of shape (#channels, #samples).
 
         sfreq : int
-            Sampling frequency of the input EEG data.
+            Sampling frequency of the input data.
 
         Returns
         -------
-        numpy.ndarray[Any,
+        numpy.ndarray,
             Line length representation of the input EEG data.
 
         Notes
@@ -170,7 +165,7 @@ class LineLength:
         Clinical Neurophysiology, 125(10), 1985–1994. https://doi.org/https://doi.org/10.1016/j.clinph.2014.02.015
         """
         # shape of the data: number of channels x duration
-        nr_channels, duration = np.shape(eeg_data)
+        nr_channels, samples = data.shape
 
         # window size for line length calculations, default 40 ms
         window = self.line_length_window
@@ -181,7 +176,7 @@ class LineLength:
         # to optimize computation, calculations are performed on intervals built from 40000 evenly spaced
         # discrete time points along the duration of the signal
         time_points = np.round(
-            np.linspace(0, duration - 1, max(2, round(duration / 40000)))
+            np.linspace(0, samples - 1, max(2, round(samples / 40000)))
         ).astype(dtype=int)
         line_length_eeg = np.empty((nr_channels, time_points.take(-1)))
 
@@ -192,7 +187,7 @@ class LineLength:
             if idx == len(time_points) - 2:
                 eeg_interval = np.concatenate(
                     (
-                        eeg_data[:, time_points[idx] : time_points[idx + 1]],
+                        data[:, time_points[idx] : time_points[idx + 1]],
                         np.zeros((nr_channels, w_eff)),
                     ),
                     axis=1,
@@ -200,7 +195,7 @@ class LineLength:
             else:
                 # add a pad to the time dimension of size w_eff
                 eeg_interval = np.array(
-                    eeg_data[:, time_points[idx] : time_points[idx + 1] + w_eff]
+                    data[:, time_points[idx] : time_points[idx + 1] + w_eff]
                 )
 
             # build cuboid containing w_eff number of [nr_channels, interval_length]-planes,
@@ -241,25 +236,31 @@ class LineLength:
         # Extract channel names
         channel_names = [trace.label for trace in traces]
 
+        logger.debug(f"Channels processed by worker: {channel_names}")
+
+        # Extract data sampling freq
+        sfreq = traces[0].sfreq
+
+        # Extract raw data from traces
+        data = np.array([trace.data for trace in traces])
+
+        # Zero out bad times if any
+        if self.bad_times is not None:
+            data = self.dampen_bad_times(data=data, sfreq=sfreq)
+
         # Preprocess the data
         preprocessed = apply_preprocessing_steps(
-            traces=traces,
+            channel_names=channel_names,
+            sfreq=sfreq,
+            data=data,
             notch_freq=notch_freq,
             resampling_freq=resampling_freq,
             bandpass_cutoff_low=bandpass_cutoff_low,
             bandpass_cutoff_high=bandpass_cutoff_high,
         )
 
-        # Zero out bad times if any
-        if self.bad_times is not None:
-            preprocessed = self.dampen_bad_times(
-                data=preprocessed, sfreq=resampling_freq, orig_sfreq=traces[0].sfreq
-            )
-
         # Compute line length
-        line_length = self.compute_line_length(
-            eeg_data=preprocessed, sfreq=resampling_freq
-        )
+        line_length = self.compute_line_length(data=preprocessed, sfreq=resampling_freq)
 
         # Downsample to line_length_freq (default 50 Hz)
         line_length_resampled_data = resample_data(
@@ -338,6 +339,11 @@ class LineLength:
         start_timestamp = None
         labels = []
         line_length_list = []
+
+        if self.bad_times is not None:
+            logger.info(
+                f"A total of {np.diff(self.bad_times).sum():.2f}s will be damped"
+            )
 
         # Sequentially load, preprocess and line-length transform subsets of channels due to memory limitations
         nr_channel_subsets = max(1, len(self.dataset_paths) // 10)
