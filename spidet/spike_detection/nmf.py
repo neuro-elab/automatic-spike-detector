@@ -128,13 +128,13 @@ class Nmf:
                     f"Rank {self.rank}, Run {i + 1}/{n_runs}: Update COEFFICIENTS and BASIS FCTs"
                 )
                 lowest_obj = obj[i]
-                w_best = np.array(fit.basis())
-                h_best = np.array(fit.coef())
 
                 if self.sparseness != 0.0:
-                    temp = w_best.T
-                    w_best = h_best.T
-                    h_best = temp
+                    w_best = np.array(fit.basis())
+                    h_best = np.array(fit.coef())
+                else:
+                    w_best = np.array(fit.coef().T)
+                    h_best = np.array(fit.basis().T)
 
         consensus /= n_runs
         coph = self.__calculate_cophenetic_corr(consensus)
