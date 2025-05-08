@@ -39,6 +39,7 @@ class SpikeDetectionPipeline:
         4.  performing Nonnegative Matrix Factorization to extract the most discriminating metappatterns,
             done by the :py:mod:`~spidet.spike_detection.nmf` module and
         5.  computing periods of abnormal activity by means of the :py:mod:`~spidet.spike_detection.thresholding` module.
+        6.  Storing the results in an .h5 file using the :py:mod:`~spidet.spike_detection.save.nmf_data` module.
 
     Parameters
     ----------
@@ -71,6 +72,15 @@ class SpikeDetectionPipeline:
 
     line_length_freq: int, default: 50
         The sampling frequency of the line-length transformed data in hz.
+
+    H: np.ndarray | None, default: None
+        If given, the algorithm will set it as the initial value for H.
+
+    W: np.ndarray | None, default: None
+        If given, the algorithm will set it as the initial value for W.
+
+    subject_id: str | None, default: None
+        The id of the subject from which the data originates.
     """
 
     def __init__(
@@ -111,18 +121,17 @@ class SpikeDetectionPipeline:
 
         # Initialize bad times to correct indices
 
-    def feature_matrix_name(self, line_length_window):
+    def feature_matrix_name(self, line_length_window, channels):
         if line_length_window > 100:
-            return f"V_LL_{line_length_window/100:1.1f}"
-        return f"V_LL_{line_length_window}ms"
+            return f"V_LL_{line_length_window/100:1.1f}s"
+        return f"V_LL_{line_length_window}ms_c{len(channels)}"
 
     def model_name(self, h_init: bool, w_init: bool):
-        name = "model_"
+        name = "nmf_"
         if self.sparseness > 0:
-            version_name = "w" if self.version == "l" else "h"
-            name += f"{version_name}_"
+            version_name = "W" if self.version == "l" else "H"
+            name += f"s{version_name}_{self.sparseness:1.2f}"
 
-        name += f"sparsity_{self.sparseness:1.2f}_"
         if h_init:
             name += "initH_"
         if w_init:
@@ -213,7 +222,6 @@ class SpikeDetectionPipeline:
     def parallel_processing(
         self,
         preprocessed_data: np.ndarray[np.dtype[float]],
-        channel_names: List[str],
         n_cores: int = 1,
     ) -> Tuple[
         np.ndarray[np.dtype[float]],
@@ -224,9 +232,7 @@ class SpikeDetectionPipeline:
     ]:
         # List of ranks to run NMF for
         nr_ranks = len(self.ranks)
-
-        # Normalize for NMF (preprocessed data needs to be non-negative)
-        data_matrix = normalize(preprocessed_data)
+        data_matrix = preprocessed_data.copy()
 
         # Using all cores except 2 if necessary
         n_cores = min(n_cores, nr_ranks)
@@ -249,7 +255,7 @@ class SpikeDetectionPipeline:
         w_matrices = [w_best for _, _, _, w_best in results]
 
         # Calculate final statistics
-        C, delta_k, delta_y, idx_opt = self.__calculate_statistics(consensus_matrices)
+        C, delta_k, delta_y, _idx_opt = self.__calculate_statistics(consensus_matrices)
 
         # Generate metrics data frame
         metrics_df = pd.DataFrame(metrics)
@@ -257,74 +263,7 @@ class SpikeDetectionPipeline:
         metrics_df["delta_k (CDF)"] = delta_k
         metrics_df["delta_y (KL-div)"] = delta_y
 
-        # Plot and save W and consensus matrices
-        # plot_w_and_consensus_matrix(
-        #    w_matrices=w_matrices,
-        #    consensus_matrices=consensus_matrices,
-        #    experiment_dir=self.results_path,
-        #    channel_names=channel_names,
-        # )
-
-        # Saving metrics as CSV
-        # logger.debug("Saving metrics")
-        # metrics_path = os.path.join(self.results_path, "metrics.csv")
-        # metrics_df.to_csv(metrics_path, index=False)
-
-        # Saving H and W matrices
-        # logger.debug(
-        #    f"Saving LineLength and Consensus, W, H matrices and corresponding event annotations for ranks {rank_list}"
-        # )
-
-        # for idx in range(nr_ranks):
-        #    # Saving Consensus, W and H matrices
-        #    h_matrix = h_matrices[idx]
-        #    w_matrix = w_matrices[idx]
-        #    consensus_matrix = consensus_matrices[idx]
-
-        #    saving_path = os.path.join(self.results_path, f"k={rank_list[idx]}")
-        #    os.makedirs(saving_path, exist_ok=True)
-
-        #    np.savetxt(f"{saving_path}/H_best.csv", h_matrix, delimiter=",")
-        #    np.savetxt(f"{saving_path}/W_best.csv", w_matrix, delimiter=",")
-        #    np.savetxt(
-        #        f"{saving_path}/consensus_matrix.csv",
-        #        consensus_matrix,
-        #        delimiter=",",
-        #    )
-
-        return h_matrices, w_matrices, consensus_matrices
-
-    def _detect_bad_times(self):
-        detected_bad_times = h5_utils.find_bad_times(self.file_path)
-        if len(detected_bad_times) == 0:
-            return
-
-        if self.bad_times is not None:
-            self.bad_times = ArtifactDetector.merge_overlapping_bad_times(
-                np.vstack([detected_bad_times, self.bad_times])
-            )
-        else:
-            self.bad_times = detected_bad_times
-
-    def _detect_triggers(self, channel_paths):
-        logger.info("searching triggers...")
-        trigs = h5_utils.find_triggers(self.file_path)
-        logger.info(f"triggers found: {len(trigs)}")
-        if len(trigs) == 0:
-            return
-
-        duration = h5_utils.duration(self.file_path)
-
-        start = np.maximum(0, trigs - 0.1)  # subtract 0.1s before trig
-        end = np.minimum(trigs + 1.0, duration)  # Add one second after trig
-
-        bad_times = np.vstack([start, end])
-
-        if self.bad_times:
-            bad_times = ArtifactDetector.merge_overlapping_bad_times(
-                np.vstack(self.bad_times, bad_times)
-            )
-        self.bad_times = bad_times
+        return h_matrices, w_matrices, consensus_matrices, metrics_df
 
     def run(
         self,
@@ -390,8 +329,6 @@ class SpikeDetectionPipeline:
             and :py:mod:`~spidet.domain.ActivationFunction`, where each activation function contains
             the corresponding detected events.
         """
-        self._detect_triggers(channel_paths=channel_paths)
-
         logger.info("Computing line length")
         # Instantiate a LineLength instance
         line_length = LineLength(
@@ -418,8 +355,13 @@ class SpikeDetectionPipeline:
             n_cores=n_cores,
         )
 
+        # Normalize line length data
+        line_length_matrix = normalize(line_length_matrix)
+
         # Save feature matrix (line length)
-        feature_matrix_name = self.feature_matrix_name(line_length_window)
+        feature_matrix_name = self.feature_matrix_name(
+            line_length_window, channel_names
+        )
         self.nmf_data.set_feature_matrix(
             feature_matrix_name=feature_matrix_name,
             feature_matrix=line_length_matrix,
@@ -433,10 +375,10 @@ class SpikeDetectionPipeline:
         (
             h_matrices,
             w_matrices,
-            _consensus_matrices,
+            consensus_matrices,
+            metrics,
         ) = self.parallel_processing(
             preprocessed_data=line_length_matrix,
-            channel_names=channel_names,
             n_cores=n_cores,
         )
 
@@ -447,7 +389,9 @@ class SpikeDetectionPipeline:
         h_init = self.H != None
         w_init = self.W != None
 
-        for rank, w, h in zip(self.ranks, w_matrices, h_matrices):
+        for rank, w, h, cm in zip(
+            self.ranks, w_matrices, h_matrices, consensus_matrices
+        ):
             model = self.model_name(h_init, w_init)
             self.nmf_data.set_nmf(
                 w=w,
@@ -455,50 +399,6 @@ class SpikeDetectionPipeline:
                 feature_matrix_name=feature_matrix_name,
                 model=model,
                 rank=rank,
+                consensus_matrix=cm,
+                metrics=metrics[metrics["Rank"] == rank],
             )
-
-        ## Create unique id prefix
-        # filename = self.file_path[self.file_path.rfind("/") + 1 :]
-        # unique_id_prefix = filename[: filename.rfind(".")]
-
-        # Compute times for H x-axis
-        # times = compute_rescaled_timeline(
-        #    start_timestamp=start_timestamp,
-        #    length=h_opt.shape[1],
-        #    sfreq=self.line_length_freq,
-        # )
-
-        # Create return objects
-        # basis_functions: List[BasisFunction] = []
-        # activation_functions: List[ActivationFunction] = []
-
-        # for idx, (bf, sdf, spikes_idx, threshold_idx, assignments_idx) in enumerate(
-        #    zip(w_opt.T, h_opt, spikes_opt, thresholds_opt, assignments_opt)
-        # ):
-        #    # Create BasisFunction
-        #    label_bf = f"W{idx + 1}"
-        #    unique_id_bf = f"{unique_id_prefix}_{label_bf}"
-        #    basis_fct = BasisFunction(
-        #        label=label_bf,
-        #        unique_id=unique_id_bf,
-        #        channel_names=channel_names,
-        #        data_array=bf,
-        #    )
-
-        #    # Create ActivationFunction
-        #    label_af = f"H{idx + 1}"
-        #    unique_id_af = f"{unique_id_prefix}_{label_af}"
-        #    activation_fct = ActivationFunction(
-        #        label=label_af,
-        #        unique_id=unique_id_af,
-        #        times=times,
-        #        data_array=sdf,
-        #        detected_events_on=spikes_opt.get(spikes_idx)["events_on"],
-        #        detected_events_off=spikes_opt.get(spikes_idx)["events_off"],
-        #        event_threshold=thresholds_opt.get(threshold_idx),
-        #    )
-
-        #    basis_functions.append(basis_fct)
-        #    activation_functions.append(activation_fct)
-
-        # return basis_functions, activation_functions

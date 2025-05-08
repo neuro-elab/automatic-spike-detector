@@ -16,6 +16,19 @@ TRIGGER = "TRIG"
 
 
 def find_bad_times(filepath: str) -> list:
+    """Searches for bad times within the h5 data file at filepath
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the h5 data file
+
+    Returns
+    -------
+    list
+        Intervals [start, stop] of bad times, in seconds since recording start.
+
+    """
     with File(filepath, "r") as recording:
         if (
             recording["/time_grades/text"]
@@ -29,7 +42,9 @@ def find_bad_times(filepath: str) -> list:
                 {"Description": description, "Onset": onset, "Duration": duration}
             )
             expert_df["Description"] = expert_df["Description"].str.decode("utf8")
-            return get_indices(recording, expert_df, "NOISY")
+            expert_df["Offset"] = events.loc[:, "Onset"] + events.loc[:, "Duration"]
+            mask = expert_df["Description"] == "NOISY"
+            return expert_df.loc[:, ["Onset", "Offset"]][mask].to_numpy()
 
 
 def change_interval(t, a: float, b: float, A: float = 0, B: float = 1):
@@ -40,26 +55,77 @@ def change_interval(t, a: float, b: float, A: float = 0, B: float = 1):
     return b * t + a * (1 - t)
 
 
-def get_indices(recording: File, events_df, descriptor):
-    n_samples = get_n_samples(recording)
-    duration = read_recording_duration(recording)
-    events = np.round(
-        change_interval(events_df.loc[:, "Onset":"Duration"], 0, n_samples, 0, duration)
-    )
-    events["Offset"] = events.loc[:, "Onset"] + events.loc[:, "Duration"]
-    mask = events_df["Description"] == descriptor
-    return events.loc[:, ["Onset", "Offset"]][mask].to_numpy()
+def detect_triggers(
+    filepath: str,
+    trig_path: str = ANNO_TRIG,
+    times_path: str = ANNO_TIME,
+    prefix=TRIGGER,
+    pad_left=0.1,
+    pad_right=1.0,
+) -> np.ndarray:
+    """Looks for triggers indicating stimulation events within a file describing an
+    EEG Data recording and generates bad times based on it.
+
+    Parameters
+    ----------
+    filepath : str
+        H5 data file.
+    trig_path : str
+        Path to dataset storing event kind
+    times_path : str
+        Path to dataset storing event time
+        Times are expected to be in seconds and relative to recording start.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (N, 2).
+        Each row corresponds to an intervals: [trigger - pad_left, trigger + pad_right].
+        for each trigger found.
+
+    """
+    trigs = find_values(filepath, trig_path, times_path, prefix)
+    duration = duration(filepath)
+
+    start = np.maximum(0, trigs - 0.1)  # subtract 0.1s before trig
+    end = np.minimum(trigs + 1.0, duration)  # Add one second after trig
+
+    return np.vstack((start, end)).T
 
 
-def find_triggers(filepath: str) -> list:
+def find_values(
+    filepath: str, description_path: str, value_path: str, prefix: str
+) -> np.ndarray:
+    """Collect all values in the given h5 file from the given value_path where corresponding (index-wise)
+    values of the description path are prefixed with the given prefix.
+    description_path and value_path are expected to point to Datasets of the same length.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the h5 file
+    description_path : str
+        Path within the h5 file to a dataset describing the dataset at value_path
+    value_path : str
+        Path within the h5 file to a dataset
+    prefix : str
+        Prefix indicating the description in description_path
+
+    Returns
+    -------
+    np.ndarray
+        All the values from the dataset at value_path with the same index as all
+        descriptions from the dataset at description_path where the description is starting
+        with prefix.
+
+    """
     with File(filepath, "r") as recording:
-        if ANNO_TRIG in recording and ANNO_TIME in recording:
+        if trig_path in recording and times_path in recording:
             df = pd.DataFrame(
-                {"annotations": recording[ANNO_TRIG], "time": recording[ANNO_TIME]}
+                {"descr": recording[description_path], "value": recording[value_path]}
             )
-            df["annotations"] = df["annotations"].str.decode("utf8")
-            triggers = df[df["annotations"].str.startswith(TRIGGER)]["time"].values
-            return triggers
+            df["descr"] = df["descr"].str.decode("utf8")
+            return df[df["descr"].str.startswith(prefix)]["value"].values
         return np.array([])
 
 

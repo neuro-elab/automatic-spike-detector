@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import h5py as h5
 import numpy as np
+import pandas as pd
 import os
 import re
 from datetime import datetime
@@ -176,6 +177,8 @@ class NMFData:
         feature_matrix_name: str,
         model: str,
         rank: int,
+        consensus_matrix: np.ndarray | None = None,
+        metrics: pd.DataFrame | None = None,
         parameters: str | None = None,
     ):
         path = os.path.join(NMF_GROUP, feature_matrix_name, self.rank_str(rank), model)
@@ -223,7 +226,7 @@ class NMFData:
         fm_path = os.path.join(NMF_GROUP, feature_matrix_name)
         with h5.File(self._file_path, "r") as file:
             return file[os.path.join(fm_path, FEATURE_MATRIX_LABEL)][()]
-    
+
     def sfreq(self, feature_matrix_name: str) -> int:
         fm_path = os.path.join(NMF_GROUP, feature_matrix_name)
         with h5.File(self._file_path, "r") as file:
