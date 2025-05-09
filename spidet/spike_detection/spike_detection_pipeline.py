@@ -7,7 +7,6 @@ from typing import Tuple, List, Dict
 
 import h5py
 import numpy as np
-from numpy.core.multiarray import ndarray
 import pandas as pd
 from loguru import logger
 from scipy.special import rel_entr
@@ -85,9 +84,6 @@ class SpikeDetectionPipeline:
     dataset_id: str, default: "id0"
         The id of the dataset under which the results will be stored in the h5 file.
 
-    load_line_length_if_available: bool, default: True
-        If true, checks whether there is a line length feature matrix available with the
-        current configuration and if available, loads it instead of computing.
     """
 
     def __init__(
@@ -104,7 +100,6 @@ class SpikeDetectionPipeline:
         W: np.ndarray | None = None,
         subject_id: str | None = None,
         dataset_id: str = "id0",
-        load_line_length_if_available: bool = True,
     ):
         self.sparseness = sparseness
         self.version = version
@@ -114,7 +109,6 @@ class SpikeDetectionPipeline:
         self.nmf_runs = nmf_runs
         self.ranks = ranks
         self.line_length_freq = line_length_freq
-        self.load_line_length_if_available = load_line_length_if_available
         # Set results data
         if subject_id is None:
             filename = os.path.basename(file_path)
@@ -298,6 +292,7 @@ class SpikeDetectionPipeline:
         line_length_freq: int = 50,
         line_length_window: int = 40,
         n_cores: int = 1,
+        load_line_length_if_available: bool = True,
     ) -> Tuple[List[BasisFunction], List[ActivationFunction]]:
         """
         This method triggers a complete run of the spike detection pipline with the arguments passed
@@ -342,6 +337,10 @@ class SpikeDetectionPipeline:
         n_cores, default = 1
             Number of cores to use for computation.
 
+        load_line_length_if_available: bool, default: True
+            If true, checks whether there is a line length feature matrix available with the
+            current configuration and if available, loads it instead of computing.
+
         Returns
         -------
         Tuple[List[BasisFunction], List[ActivationFunction]]
@@ -351,7 +350,7 @@ class SpikeDetectionPipeline:
         """
         fm_name = self.feature_matrix_name(line_length_window, len(channel_paths))
         fm_group = self.nmf_dataset.feature_matrix(fm_name)
-        if self.load_line_length_if_available and fm_group.has_dset(
+        if load_line_length_if_available and fm_group.has_dset(
             fm_group._feature_matrix_label
         ):
             line_length_matrix = self._load_line_length(fm_group=fm_group)
