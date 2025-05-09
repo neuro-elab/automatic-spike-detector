@@ -2,244 +2,271 @@ from __future__ import annotations
 
 import h5py as h5
 import numpy as np
-import pandas as pd
 import os
-import re
-from datetime import datetime
-
-from spidet.utils.h5_utils import (
-    read_recording_duration,
-    read_start_timestamp,
-    read_utility_freq,
-)
-
-META_GROUP = "meta"
-NMF_GROUP = "nmf"
-
-CREATION_DATE_LABEL = "creation_date"
-SUBJECT_ID_LABEL = "subject_id"
-SPECIES_LABEL = "species"
-START_TIMESTAMP_LABEL = "start_timestamp"
-DURATION_LABEL = "duration"
-UTILITY_FREQ_LABEL = "utility_freq"
-
-FEATURE_MATRIX_LABEL = "feature_matrix"
-FEATURE_NAMES_LABEL = "feature_names"
-FEATURE_UNITS_LABEL = "feature_units"
-SFREQ_LABEL = "sfreq"
-PROCESSING_LABEL = "processing"
-
-W_LABEL = "w"
-H_LABEL = "h"
-PARAMETERS_LABEL = "parameters"
-CONSENSUS_MATRIX_LABEL = "consensus_matrix"
 
 
-class NMFData:
-    def __init__(
-        self,
-        filepath: str,
-        dataset_id="0",
-        subject_id="",
-        species="",
-        start_timestamp="",
-        duration="",
-        utility_freq=0,
-    ) -> None:
-        assert os.path.exists(filepath) or os.access(os.path.dirname(filepath), os.W_OK)
+class H5Directory:
+    def __init__(self, name: str, parent: H5FileEntity | None) -> None:
+        self.name = name
+        self._parent = parent
 
-        self._file_path = filepath
+        if self._parent:
+            self._filepath = self._parent._filepath
 
-        if not os.path.exists(filepath):
-            self._create_file()
-            self.subject_id = subject_id
-            self.species = species
-            self.start_timestamp = start_timestamp
-            self.duration = duration
-            self.utility_freq = utility_freq
+        with h5.File(self._filepath, "r+") as file:
+            file.require_group(self.path())
 
-    @staticmethod
-    def from_recording(
-        recording_path, filepath, subject_id, species="human"
-    ) -> NMFData:
-        with h5.File(recording_path) as file:
-            return NMFData(
-                filepath=filepath,
-                subject_id=subject_id,
-                species=species,
-                start_timestamp=read_start_timestamp(file),
-                duration=read_recording_duration(file),
-                utility_freq=read_utility_freq(file),
-            )
+    name: str
+    _parent: H5FileEntity | None
+    _filepath: str
 
-    @staticmethod
-    def subject_id_from_filepath(filepath):
-        filename = os.path.basename(filepath)
-        return re.match(r"[a-zA-Z]+\d+", filename)[0]
+    def path(self):
+        if self._parent:
+            return os.path.join(self._parent.path(), self.name)
+        return self.name
 
-    @property
-    def subject_id(self):
-        with h5.File(self._file_path, "r") as file:
-            return file[META_GROUP].attrs[SUBJECT_ID_LABEL]
+    def attributes(self):
+        with h5.File(self._filepath, "r") as file:
+            return file[self.path()].attrs.keys()
 
-    @subject_id.setter
-    def subject_id(self, value):
-        with h5.File(self._file_path, "r+") as file:
-            file[META_GROUP].attrs[SUBJECT_ID_LABEL] = value
+    def children(self):
+        with h5.File(self._filepath, "r") as file:
+            return list(file[self.path()].keys())
 
-    @property
-    def species(self):
-        with h5.File(self._file_path, "r") as file:
-            return file[META_GROUP].attrs[SPECIES_LABEL]
+    def write_attr(self, name: str, value):
+        with h5.File(self._filepath, "r+") as file:
+            file[self.path()].attrs[name] = value
 
-    @species.setter
-    def species(self, value):
-        with h5.File(self._file_path, "r+") as file:
-            file[META_GROUP].attrs[SPECIES_LABEL] = value
+    def load_attr(self, name: str):
+        with h5.File(self._filepath, "r") as file:
+            return file[self.path()].attrs[name]
 
-    @property
-    def start_timestamp(self):
-        with h5.File(self._file_path, "r") as file:
-            return file[META_GROUP].attrs[START_TIMESTAMP_LABEL]
-
-    @start_timestamp.setter
-    def start_timestamp(self, value):
-        with h5.File(self._file_path, "r+") as file:
-            file[META_GROUP].attrs[START_TIMESTAMP_LABEL] = value
-
-    @property
-    def duration(self):
-        with h5.File(self._file_path, "r") as file:
-            return file[META_GROUP].attrs[DURATION_LABEL]
-
-    @duration.setter
-    def duration(self, value):
-        with h5.File(self._file_path, "r+") as file:
-            file[META_GROUP].attrs[DURATION_LABEL] = value
-
-    @property
-    def utility_freq(self):
-        with h5.File(self._file_path, "r") as file:
-            return file[META_GROUP].attrs[UTILITY_FREQ_LABEL]
-
-    @utility_freq.setter
-    def utility_freq(self, value):
-        with h5.File(self._file_path, "r+") as file:
-            file[META_GROUP].attrs[UTILITY_FREQ_LABEL] = value
-
-    def _create_file(self):
-        with h5.File(self._file_path, "x") as file:
-            file.create_group(NMF_GROUP)
-            meta = file.create_group(META_GROUP)
-            meta.attrs[CREATION_DATE_LABEL] = datetime.now().strftime("%Y-%m-%d")
-
-    def _update_dset(self, path: str, data: np.ndarray):
-        dtype = data.dtype
-        # check if dtype is unicode; if so, use dtype object to conform to h5py
+    def write_dset(self, name: str, values: np.ndarray):
+        dtype = values.dtype
         if "U" in str(dtype):
             dtype = h5.string_dtype()
-        with h5.File(self._file_path, "r+") as file:
-            dset = file.require_dataset(
-                name=path, shape=data.shape, dtype=dtype, exact=True
-            )
-            dset[()] = data[()]
 
-    def list_feature_matrices(self):
-        with h5.File(self._file_path, "r") as file:
-            return list(file[NMF_GROUP].keys())
+        with h5.File(self._filepath, "r+") as file:
+            path = os.path.join(self.path(), name)
+            dset = file.require_dataset(name=path, shape=values.shape, dtype=dtype)
+            dset[()] = values[()]
 
-    def set_feature_matrix(
-        self,
-        feature_matrix_name: str,
-        feature_matrix: np.ndarray,
-        feature_names: list,
-        feature_units: list,
-        sfreq: int,
-        processing: str = "",
-    ):
-        grp_path = os.path.join(NMF_GROUP, feature_matrix_name)
-        self._update_dset(os.path.join(grp_path, FEATURE_MATRIX_LABEL), feature_matrix)
-        self._update_dset(
-            os.path.join(grp_path, FEATURE_NAMES_LABEL), np.array(feature_names)
-        )
-        self._update_dset(
-            os.path.join(grp_path, FEATURE_UNITS_LABEL), np.array(feature_units)
-        )
-        with h5.File(self._file_path, "r+") as file:
-            grp = file[grp_path]
-            grp.attrs[SFREQ_LABEL] = sfreq
-            grp.attrs[PROCESSING_LABEL] = processing
+    def load_dset(self, name, data_range: Tuple | None = None):
+        with h5.File(self._filepath, "r") as file:
+            path = os.path.join(self.path(), name)
+            if data_range:
+                start, end = data_range
+                return file[path][start:end]
+            return file[path][()]
 
-    def set_nmf(
-        self,
-        w,
-        h,
-        feature_matrix_name: str,
-        model: str,
-        rank: int,
-        consensus_matrix: np.ndarray | None = None,
-        metrics: pd.DataFrame | None = None,
-        parameters: str | None = None,
-    ):
-        path = os.path.join(NMF_GROUP, feature_matrix_name, self.rank_str(rank), model)
-        self._update_dset(os.path.join(path, W_LABEL), w)
-        self._update_dset(os.path.join(path, H_LABEL), h)
-        with h5.File(self._file_path, "r+") as file:
-            if parameters:
-                file[path].attrs[PARAMETERS_LABEL] = parameters
+    def has_dset(self, name: str):
+        if name in self.children():
+            with h5.File(self._filepath, "r") as file:
+                return isinstance(file[self.path()][name], h5.Dataset)
+        return False
 
-    def set_consesus_matrix(
-        self,
-        feature_matrix_name: str,
-        model: str,
-        rank: int,
-        consensus_matrix: np.array,
-    ):
-        path = os.path.join(
-            NMF_GROUP,
-            feature_matrix_name,
-            self.rank_str(rank),
-            model,
-            CONSENSUS_MATRIX_LABEL,
-        )
-        self._update_dset(path, consensus_matrix)
 
-    def list_ranks(self, feature_matrix_name: str) -> list:
-        with h5.File(self._file_path, "r") as file:
-            keys = file[os.path.join(NMF_GROUP, feature_matrix_name)].keys()
-            ranks = [rank for rank in keys if "rank" in rank]
-            return ranks
+class NMFModel(H5Directory):
+    _w_label = "w"
+    _h_label = "h"
+    _consensus_matrix_label = "consensus_matrix"
 
-    def list_models(self, feature_matrix_name: str, rank: str | int) -> list:
-        if isinstance(rank, int):
-            rank = rank_str(rank)
-        path = os.path.join(NMF_GROUP, feature_matrix_name, rank)
-        with h5.File(self._file_path, "r") as file:
-            return list(file[path].keys())
+    _parameters_label = "parameters"
 
-    def channel_names(self, feature_matrix_name: str) -> list:
-        fnames_path = os.path.join(NMF_GROUP, feature_matrix_name, FEATURE_NAMES_LABEL)
-        with h5.File(self._file_path, "r") as file:
-            return [bytes.decode(name) for name in file[fnames_path][()]]
+    @property
+    def parameters(self):
+        return self.load_attr(self._parameters_label)
 
-    def feature_matrix(self, feature_matrix_name: str) -> np.ndarray:
-        fm_path = os.path.join(NMF_GROUP, feature_matrix_name)
-        with h5.File(self._file_path, "r") as file:
-            return file[os.path.join(fm_path, FEATURE_MATRIX_LABEL)][()]
+    @parameters.setter
+    def parameters(self, parameters: str) -> None:
+        self.write_attr(self._parameters_label, parameters)
 
-    def sfreq(self, feature_matrix_name: str) -> int:
-        fm_path = os.path.join(NMF_GROUP, feature_matrix_name)
-        with h5.File(self._file_path, "r") as file:
-            return file[fm_path].attrs[SFREQ_LABEL]
+    def metrics(self):
+        return [child for child in self.children() if not parameters_label in child]
 
-    def nmf(
-        self, feature_matrix_name: str, rank: str, model: str
-    ) -> tuple[np.ndarray, np.np.ndarray]:
-        model_path = os.path.join(NMF_GROUP, feature_matrix_name, rank, model)
-        with h5.File(self._file_path, "r") as file:
-            w = file[os.path.join(model_path, W_LABEL)][()]
-            h = file[os.path.join(model_path, H_LABEL)][()]
-            return w, h
+    @property
+    def h(self) -> np.ndarray:
+        return self.load_dset(self._h_label)
 
-    def rank_str(self, rank: int) -> str:
-        return f"rank_{rank:02}"
+    @h.setter
+    def h(self, h: np.ndarray) -> None:
+        self.write_dset(self._h_label, h)
+
+    @property
+    def w(self) -> np.ndarray:
+        return self.load_dset(self._w_label)
+
+    @w.setter
+    def w(self, w: np.ndarray) -> None:
+        self.write_dset(self._w_label, w)
+
+    @property
+    def consensus_matrix(self) -> np.ndarray:
+        return self.load_dset(self._consensus_matrix_label)
+
+    @consensus_matrix.setter
+    def consensus_matrix(self, consensus_matrix: np.ndarray) -> None:
+        self.write_dset(self._consensus_matrix_label, consensus_matrix)
+
+
+class RankGroup(H5Directory):
+    def models(self) -> list:
+        return self.children()
+
+    def model(self, name) -> NMFModel:
+        return NMFModel(name, self)
+
+    @classmethod
+    def rank_from_value(cls, value: int):
+        return f"rank_{value:02}"
+
+
+class FeatureMatrixGroup(H5Directory):
+    _feature_matrix_label = "feature_matrix"
+    _feature_names_label = "feature_names"
+    _feature_units_label = "feature_units"
+    _sfreq_label = "sfreq"
+    _processing_label = "processing"
+
+    @property
+    def feature_matrix(self) -> np.ndarray:
+        return self.load_dset(self._feature_matrix_label)
+
+    @feature_matrix.setter
+    def feature_matrix(self, feature_matrix: np.ndarray) -> None:
+        self.write_dset(self._feature_matrix_label, feature_matrix)
+
+    @property
+    def feature_names(self) -> np.ndarray:
+        return [
+            bytes.decode(name) for name in self.load_dset(self._feature_names_label)
+        ]
+
+    @feature_names.setter
+    def feature_names(self, feature_names: list) -> None:
+        self.write_dset(self._feature_names_label, np.array(feature_names))
+
+    @property
+    def feature_units(self) -> np.ndarray:
+        return [
+            bytes.decode(name) for name in self.load_dset(self._feature_units_label)
+        ]
+
+    @feature_units.setter
+    def feature_units(self, feature_units: list) -> None:
+        self.write_dset(self._feature_units_label, np.array(feature_units))
+
+    @property
+    def sfreq(self) -> int:
+        return self.load_attr(self._sfreq_label)
+
+    @sfreq.setter
+    def sfreq(self, sfreq: int) -> None:
+        self.write_attr(self._sfreq_label, sfreq)
+
+    @property
+    def processing(self) -> int:
+        return self.load_attr(self._processing_label)
+
+    @processing.setter
+    def processing(self, processing: int) -> None:
+        self.write_attr(self._processing_label, processing)
+
+    def models_by_rank(self, rank: int):
+        return RankGroup(RankGroup.rank_from_value(rank), self).list_models()
+
+    def by_rank(self, rank: str):
+        return RankGroup(rank, self)
+
+    def by_value(self, value: int):
+        return RankGroup(RankGroup.rank_from_value(value), self)
+
+    def ranks(self):
+        [child for child in self.children() if rank in child]
+
+
+class MetaGroup(H5Directory):
+    _creation_date_label = "creation_date"
+    _subject_id_label = "subject_id"
+    _species_label = "species"
+    _start_timestamp_label = "start_timestamp"
+    _duration_label = "duration"
+    _utility_freq_label = "utility_freq"
+
+    @property
+    def creation_date(self) -> str:
+        return self.load_attr(self._creation_date_label)
+
+    @creation_date.setter
+    def creation_date(self, creation_date: str) -> None:
+        self.write_attr(self._creation_date_label, creation_date)
+
+    @property
+    def subject_id(self) -> str:
+        return self.load_attr(self._subject_id_label)
+
+    @subject_id.setter
+    def subject_id(self, subject_id: str) -> None:
+        self.write_attr(self._subject_id_label, subject_id)
+
+    @property
+    def species(self) -> str:
+        return self.load_attr(self._species_label)
+
+    @species.setter
+    def species(self, species: str) -> None:
+        self.write_attr(self._species_label, species)
+
+    @property
+    def start_timestamp(self) -> int:
+        return self.load_attr(self._start_timestamp_label)
+
+    @start_timestamp.setter
+    def start_timestamp(self, start_timestamp: int) -> None:
+        self.write_attr(self._start_timestamp_label, start_timestamp)
+
+    @property
+    def duration(self) -> int:
+        return self.load_attr(self._duration_label)
+
+    @duration.setter
+    def duration(self, duration: int) -> None:
+        self.write_attr(self._duration_label, duration)
+
+    @property
+    def utility_freq(self) -> int:
+        return self.load_attr(self._utility_freq_label)
+
+    @utility_freq.setter
+    def utility_freq(self, utility_freq: int) -> None:
+        self.write_attr(self._utility_freq_label, utility_freq)
+
+
+class NMFDataset(H5Directory):
+    _meta_label = "meta"
+
+    def meta(self) -> MetaGroup:
+        return MetaGroup(self._meta_label, self)
+
+    def feature_matrices(self) -> list:
+        return [child for child in self.children() if "meta" not in child]
+
+    def feature_matrix(self, name) -> FeatureMatrixGroup:
+        return FeatureMatrixGroup(name, self)
+
+
+class NMFRoot(H5Directory):
+    _root = "nmf"
+
+    def __init__(self, filepath) -> None:
+        self._filepath = filepath
+        with h5.File(self._filepath, "a") as file:
+            file.require_group(self._root)
+
+        super().__init__(self._root, None)
+
+    def datasets(self) -> list:
+        return self.children()
+
+    def dataset(self, name: str):
+        return NMFDataset(name, self)
