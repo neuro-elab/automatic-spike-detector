@@ -182,7 +182,7 @@ class FeatureMatrixGroup(H5Directory):
         return RankGroup(RankGroup.rank_from_value(value), self)
 
     def ranks(self):
-        [child for child in self.children() if rank in child]
+        return [child for child in self.children() if "rank" in child]
 
 
 class MetaGroup(H5Directory):
