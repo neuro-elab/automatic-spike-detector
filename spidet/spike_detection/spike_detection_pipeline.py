@@ -1,28 +1,28 @@
 import logging
 import multiprocessing
 import os
-from datetime import datetime
+import re
+import datetime as dt
 from typing import Tuple, List, Dict
 
+import h5py
 import numpy as np
+from numpy.core.multiarray import ndarray
 import pandas as pd
 from loguru import logger
 from scipy.special import rel_entr
 from sklearn.preprocessing import normalize
-from pathlib import Path
 
-from spidet.preprocess.artifact_detection import ArtifactDetector
-from spidet.save.nmf_data import NMFData
+from spidet.save.nmf_data import (
+    FeatureMatrixGroup,
+    NMFRoot,
+)
 from spidet.utils import logging_utils
 
 from spidet.domain.BasisFunction import BasisFunction
 from spidet.domain.ActivationFunction import ActivationFunction
-from spidet.spike_detection.clustering import BasisFunctionClusterer
 from spidet.spike_detection.line_length import LineLength
 from spidet.spike_detection.nmf import Nmf
-from spidet.spike_detection.thresholding import ThresholdGenerator
-from spidet.utils.times_utils import compute_rescaled_timeline
-from spidet.utils.plotting_utils import plot_w_and_consensus_matrix
 import spidet.utils.h5_utils as h5_utils
 
 
@@ -81,6 +81,13 @@ class SpikeDetectionPipeline:
 
     subject_id: str | None, default: None
         The id of the subject from which the data originates.
+
+    dataset_id: str, default: "id0"
+        The id of the dataset under which the results will be stored in the h5 file.
+
+    load_line_length_if_available: bool, default: True
+        If true, checks whether there is a line length feature matrix available with the
+        current configuration and if available, loads it instead of computing.
     """
 
     def __init__(
@@ -96,6 +103,8 @@ class SpikeDetectionPipeline:
         H: np.ndarray | None = None,
         W: np.ndarray | None = None,
         subject_id: str | None = None,
+        dataset_id: str = "id0",
+        load_line_length_if_available: bool = True,
     ):
         self.sparseness = sparseness
         self.version = version
@@ -105,14 +114,25 @@ class SpikeDetectionPipeline:
         self.nmf_runs = nmf_runs
         self.ranks = ranks
         self.line_length_freq = line_length_freq
+        self.load_line_length_if_available = load_line_length_if_available
         # Set results data
         if subject_id is None:
-            subject_id = NMFData.subject_id_from_filepath(self.results_path)
-        self.nmf_data: NMFData = NMFData.from_recording(
-            recording_path=self.file_path,
-            filepath=self.results_path,
-            subject_id=subject_id,
+            filename = os.path.basename(file_path)
+            self.subject_id = re.match(r"[a-zA-Z]+\d+", filename)[0]
+        else:
+            self.subject_id = subject_id
+
+        self.nmf_dataset = NMFRoot(filepath=self.results_path).dataset(dataset_id)
+        self.meta = self.nmf_dataset.meta()
+        self.meta.creation_date = (
+            dt.datetime.now().replace(tzinfo=dt.timezone.utc).timestamp()
         )
+        self.meta.subject_id = self.subject_id
+        self.meta.species = "human"
+        with h5py.File(file_path) as file:
+            self.meta.start_timestamp = h5_utils.read_start_timestamp(file)
+            self.meta.duration = h5_utils.read_recording_duration(file)
+            self.meta.utility_freq = h5_utils.read_utility_freq(file)
         self.H = H
         self.W = W
 
@@ -121,10 +141,10 @@ class SpikeDetectionPipeline:
 
         # Initialize bad times to correct indices
 
-    def feature_matrix_name(self, line_length_window, channels):
+    def feature_matrix_name(self, line_length_window, n_channels):
         if line_length_window > 100:
             return f"V_LL_{line_length_window/100:1.1f}s"
-        return f"V_LL_{line_length_window}ms_c{len(channels)}"
+        return f"V_LL_{line_length_window}ms_c{n_channels}"
 
     def model_name(self, h_init: bool, w_init: bool):
         name = "nmf_"
@@ -329,47 +349,31 @@ class SpikeDetectionPipeline:
             and :py:mod:`~spidet.domain.ActivationFunction`, where each activation function contains
             the corresponding detected events.
         """
-        logger.info("Computing line length")
-        # Instantiate a LineLength instance
-        line_length = LineLength(
-            file_path=self.file_path,
-            dataset_paths=channel_paths,
-            exclude=exclude,
-            bipolar_reference=bipolar_reference,
-            leads=leads,
-            bad_times=self.bad_times,
-        )
-
-        # Perform line length steps to compute line length
-        (
-            start_timestamp,
-            channel_names,
-            line_length_matrix,
-        ) = line_length.apply_parallel_line_length_pipeline(
-            notch_freq=notch_freq,
-            resampling_freq=resampling_freq,
-            bandpass_cutoff_low=bandpass_cutoff_low,
-            bandpass_cutoff_high=bandpass_cutoff_high,
-            line_length_freq=line_length_freq,
-            line_length_window=line_length_window,
-            n_cores=n_cores,
-        )
-
-        # Normalize line length data
-        line_length_matrix = normalize(line_length_matrix)
-
-        # Save feature matrix (line length)
-        feature_matrix_name = self.feature_matrix_name(
-            line_length_window, channel_names
-        )
-        self.nmf_data.set_feature_matrix(
-            feature_matrix_name=feature_matrix_name,
-            feature_matrix=line_length_matrix,
-            feature_names=channel_names,
-            feature_units=["uV" for _ in channel_names],
-            sfreq=self.line_length_freq,
-            processing="Butterworth [forward, backward, 0.1 - 200Hz], Notch [line noise and harmonics], rescaled median [20 uV], resampled [500 Hz]",
-        )
+        fm_name = self.feature_matrix_name(line_length_window, len(channel_paths))
+        fm_group = self.nmf_dataset.feature_matrix(fm_name)
+        if self.load_line_length_if_available and fm_group.has_dset(
+            fm_group._feature_matrix_label
+        ):
+            line_length_matrix = self._load_line_length(fm_group=fm_group)
+        else:
+            channel_names, line_length_matrix = self._compute_line_length(
+                channel_paths=channel_paths,
+                exclude=exclude,
+                bipolar_reference=bipolar_reference,
+                leads=leads,
+                notch_freq=notch_freq,
+                resampling_freq=resampling_freq,
+                bandpass_cutoff_low=bandpass_cutoff_low,
+                bandpass_cutoff_high=bandpass_cutoff_high,
+                line_length_freq=line_length_freq,
+                line_length_window=line_length_window,
+                n_cores=n_cores,
+            )
+            self._save_line_length(
+                fm_group=fm_group,
+                channel_names=channel_names,
+                line_length_matrix=line_length_matrix,
+            )
 
         # Run parallelized NMF
         (
@@ -392,13 +396,72 @@ class SpikeDetectionPipeline:
         for rank, w, h, cm in zip(
             self.ranks, w_matrices, h_matrices, consensus_matrices
         ):
-            model = self.model_name(h_init, w_init)
-            self.nmf_data.set_nmf(
-                w=w,
-                h=h,
-                feature_matrix_name=feature_matrix_name,
-                model=model,
-                rank=rank,
-                consensus_matrix=cm,
-                metrics=metrics[metrics["Rank"] == rank],
-            )
+            model = fm_group.by_value(rank).model(self.model_name(h_init, w_init))
+            model.w = w
+            model.h = h
+            model.consensus_matrix = cm
+            metrics = metrics[metrics["Rank"] == rank]
+
+            for name in metrics:
+                model.write_attr(name, metrics[name])
+
+    def _compute_line_length(
+        self,
+        channel_paths,
+        exclude,
+        bipolar_reference,
+        leads,
+        notch_freq,
+        resampling_freq,
+        bandpass_cutoff_low,
+        bandpass_cutoff_high,
+        line_length_freq,
+        line_length_window,
+        n_cores,
+    ):
+        # Instantiate a LineLength instance
+        line_length = LineLength(
+            file_path=self.file_path,
+            dataset_paths=channel_paths,
+            exclude=exclude,
+            bipolar_reference=bipolar_reference,
+            leads=leads,
+            bad_times=self.bad_times,
+        )
+
+        logger.info("Computing line length")
+        # Perform line length steps to compute line length
+        (
+            _,
+            channel_names,
+            line_length_matrix,
+        ) = line_length.apply_parallel_line_length_pipeline(
+            notch_freq=notch_freq,
+            resampling_freq=resampling_freq,
+            bandpass_cutoff_low=bandpass_cutoff_low,
+            bandpass_cutoff_high=bandpass_cutoff_high,
+            line_length_freq=line_length_freq,
+            line_length_window=line_length_window,
+            n_cores=n_cores,
+        )
+        # Normalize line length data
+        line_length_matrix = normalize(line_length_matrix)
+
+        return channel_names, line_length_matrix
+
+    def _load_line_length(self, fm_group: FeatureMatrixGroup) -> (list, np.ndarray):
+        logger.info("Loading precomputed line length")
+        return fm_group.feature_matrix
+
+    def _save_line_length(
+        self,
+        fm_group: FeatureMatrixGroup,
+        channel_names: list,
+        line_length_matrix: np.ndarray,
+    ) -> None:
+        # Save feature matrix (line length)
+        fm_group.feature_matrix = line_length_matrix
+        fm_group.feature_names = channel_names
+        fm_group.feature_units = ["uV" for _ in channel_names]
+        fm_group.sfreq = self.line_length_freq
+        fm_group.processing = "Butterworth [forward, backward, 0.1 - 200Hz], Notch [line noise and harmonics], rescaled median [20 uV], resampled [500 Hz]"
