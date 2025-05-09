@@ -85,10 +85,10 @@ def detect_triggers(
 
     """
     trigs = find_values(filepath, trig_path, times_path, prefix)
-    duration = duration(filepath)
+    dur = duration(filepath)
 
-    start = np.maximum(0, trigs - 0.1)  # subtract 0.1s before trig
-    end = np.minimum(trigs + 1.0, duration)  # Add one second after trig
+    start = np.maximum(0, trigs - pad_left)  # subtract 0.1s before trig
+    end = np.minimum(trigs + pad_right, dur)  # Add one second after trig
 
     return np.vstack((start, end)).T
 
@@ -120,7 +120,7 @@ def find_values(
 
     """
     with File(filepath, "r") as recording:
-        if trig_path in recording and times_path in recording:
+        if description_path in recording and value_path in recording:
             df = pd.DataFrame(
                 {"descr": recording[description_path], "value": recording[value_path]}
             )
