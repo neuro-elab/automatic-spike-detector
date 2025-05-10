@@ -111,7 +111,7 @@ class NMFModel(H5Directory):
 
 class RankGroup(H5Directory):
     def models(self) -> list:
-        return self.children()
+        return [self.model(child) for child in self.children()]
 
     def model(self, name) -> NMFModel:
         return NMFModel(name, self)
@@ -182,7 +182,7 @@ class FeatureMatrixGroup(H5Directory):
         return RankGroup(RankGroup.rank_from_value(value), self)
 
     def ranks(self):
-        return [child for child in self.children() if "rank" in child]
+        return [RankGroup(child, self) for child in self.children() if "rank" in child]
 
 
 class MetaGroup(H5Directory):
@@ -249,7 +249,11 @@ class NMFDataset(H5Directory):
         return MetaGroup(self._meta_label, self)
 
     def feature_matrices(self) -> list:
-        return [child for child in self.children() if "meta" not in child]
+        return [
+            self.feature_matrix(child)
+            for child in self.children()
+            if "meta" not in child
+        ]
 
     def feature_matrix(self, name) -> FeatureMatrixGroup:
         return FeatureMatrixGroup(name, self)
@@ -266,7 +270,7 @@ class NMFRoot(H5Directory):
         super().__init__(self._root, None)
 
     def datasets(self) -> list:
-        return self.children()
+        return [self.dataset(child) for child in self.children()]
 
     def dataset(self, name: str):
         return NMFDataset(name, self)
