@@ -398,11 +398,12 @@ class SpikeDetectionPipeline:
             model = fm_group.by_value(rank).model(self.model_name(h_init, w_init))
             model.w = w
             model.h = h
-            model.consensus_matrix = cm
             metrics = metrics[metrics["Rank"] == rank]
 
+            metrics_folder = model.metrics()
+            metrics_folder.write_metric("consensus_matrix", cm)
             for name in metrics:
-                model.write_attr(name, metrics[name])
+                metrics_folder.write_metric(name, metrics[name].values[0])
 
     def _compute_line_length(
         self,

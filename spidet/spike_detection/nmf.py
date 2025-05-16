@@ -96,8 +96,24 @@ class Nmf:
         h_best = None
         w_best = None
 
+        rows, cols = V.shape
+
         if self.sparseness == 0.0:
-            seed = "random_vcol" if H == None and W == None else None
+            seed = None
+            # Flip H and W if they are set, otherwise set seed to random_vcol
+            if H is not None and W is not None:
+                temp = W.T
+                W = H.T
+                H = temp
+            elif H is not None:
+                W = H.T
+                H = None
+            elif W is not None:
+                H = W.T
+                W = None
+            else:
+                seed = "random_vcol"
+
             nmf = nimfa.Nmf(
                 data_matrix.T, seed=seed, rank=self.rank, W=W, H=H, max_iter=10
             )

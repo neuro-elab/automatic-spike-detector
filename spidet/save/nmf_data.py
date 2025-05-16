@@ -66,12 +66,37 @@ class H5Directory:
         return False
 
 
+class NMFMetrics(H5Directory):
+    def write_metric(self, name, contents) -> None:
+        if not hasattr(contents, "__len__"):
+            self.write_attr(name, contents)
+            return
+
+        if not isinstance(contents, np.ndarray):
+            contents = np.array(contents)
+
+        self.write_dset(name, contents)
+
+    def list_metrics(self):
+        children = self.children()
+        attrs = self.attributes()
+        return children + attrs
+
+    def load_metric(self, name):
+        if name in self.children():
+            return self.load_dset(name)
+        if name in self.attributes():
+            return self.load_attr(name)
+        else:
+            print(f"No metric found with name {name}")
+            return -1
+
+
 class NMFModel(H5Directory):
     _w_label = "w"
     _h_label = "h"
-    _consensus_matrix_label = "consensus_matrix"
-
     _parameters_label = "parameters"
+    _metrics_label = "metrics"
 
     @property
     def parameters(self):
@@ -80,9 +105,6 @@ class NMFModel(H5Directory):
     @parameters.setter
     def parameters(self, parameters: str) -> None:
         self.write_attr(self._parameters_label, parameters)
-
-    def metrics(self):
-        return [child for child in self.children() if not parameters_label in child]
 
     @property
     def h(self) -> np.ndarray:
@@ -100,13 +122,8 @@ class NMFModel(H5Directory):
     def w(self, w: np.ndarray) -> None:
         self.write_dset(self._w_label, w)
 
-    @property
-    def consensus_matrix(self) -> np.ndarray:
-        return self.load_dset(self._consensus_matrix_label)
-
-    @consensus_matrix.setter
-    def consensus_matrix(self, consensus_matrix: np.ndarray) -> None:
-        self.write_dset(self._consensus_matrix_label, consensus_matrix)
+    def metrics(self) -> NMFMetrics:
+        return NMFMetrics(self._metrics_label, self)
 
 
 class RankGroup(H5Directory):
