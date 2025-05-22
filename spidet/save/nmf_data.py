@@ -27,7 +27,7 @@ class H5Directory:
 
     def attributes(self):
         with h5.File(self._filepath, "r") as file:
-            return file[self.path()].attrs.keys()
+            return list(file[self.path()].attrs.keys())
 
     def children(self):
         with h5.File(self._filepath, "r") as file:
