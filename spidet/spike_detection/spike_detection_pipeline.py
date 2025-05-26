@@ -253,7 +253,7 @@ class SpikeDetectionPipeline:
 
         logger.info(
             f"Running NMF on {n_cores if nr_ranks > n_cores else nr_ranks} cores "
-            f"for ranks {self.ranks} and {self.nmf_runs} runs each"
+            f"for ranks {self.ranks}, sparsity {self.sparseness} with model {self.version}, {self.nmf_runs} runs each"
         )
 
         with multiprocessing.Pool(processes=n_cores) as pool:
@@ -398,12 +398,12 @@ class SpikeDetectionPipeline:
             model = fm_group.by_value(rank).model(self.model_name(h_init, w_init))
             model.w = w
             model.h = h
-            metrics = metrics[metrics["Rank"] == rank]
+            metrics_for_rank = metrics[metrics["Rank"] == rank]
 
             metrics_folder = model.metrics()
             metrics_folder.write_metric("consensus_matrix", cm)
-            for name in metrics:
-                metrics_folder.write_metric(name, metrics[name].values[0])
+            for name in metrics_for_rank:
+                metrics_folder.write_metric(name, metrics_for_rank[name].values[0])
 
     def _compute_line_length(
         self,
