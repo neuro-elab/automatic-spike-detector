@@ -33,12 +33,12 @@ class Nmfsc:
         The number of complete nmf runs performed, each run includes a new initialization of the :math:`W`
         and :math:`H` matrices.
 
-    version: str, optional, default = 'l'
-        If version = 'l', sparseness will be imposed on the columns of :math:`W`, if version = 'r',
+    version: str, optional, default = 'w'
+        If version = 'w', sparseness will be imposed on the columns of :math:`W`, if version = 'h',
         sparseness will be imposed on the rows of :math:`H`.
 
     sparseness: float, optional, default = 0.25
-        The sparseness imposed on each column of :math:`W`, in case of version = 'l', or each row of :math:`H`, in case of version = 'r'.
+        The sparseness imposed on each column of :math:`W`, in case of version = 'w', or each row of :math:`H`, in case of version = 'h'.
 
     References
     ----------
@@ -56,7 +56,7 @@ class Nmfsc:
         max_iter=10,
         min_residuals=1e-4,
         n_runs=1,
-        version="l",
+        version="w",
         sparseness=0.25,
     ):
         self.V = np.asmatrix(V)
@@ -179,7 +179,7 @@ class Nmfsc:
             self.__initialize_matrices()
 
             # Make initial matrices have correct sparseness
-            if self.version == "l":
+            if self.version == "w":
                 self.L1a = (
                     np.sqrt(self.V.shape[0])
                     - (np.sqrt(self.V.shape[0]) - 1) * self.sparseness
@@ -193,7 +193,7 @@ class Nmfsc:
                         self.L1a,
                         1,
                     )
-            if self.version == "r":
+            if self.version == "h":
                 self.L1s = (
                     np.sqrt(self.V.shape[1])
                     - (np.sqrt(self.V.shape[1]) - 1) * self.sparseness
@@ -276,7 +276,7 @@ class Nmfsc:
         Performs the update steps on :math:`W` and :math:`H`.
         """
         # Update H
-        if self.version == "r":
+        if self.version == "h":
             # Gradient for H
             dH = dot(self.W.T, dot(self.W, self.H) - self.V)
 
@@ -327,7 +327,7 @@ class Nmfsc:
             self.W = multiply(self.W, repmat(norms.T, self.V.shape[0], 1))
 
         # Update W
-        if self.version == "l":
+        if self.version == "w":
             # Gradient for W
             dW = dot(dot(self.W, self.H) - self.V, self.H.T)
 

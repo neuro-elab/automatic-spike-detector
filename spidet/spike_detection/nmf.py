@@ -20,16 +20,20 @@ class Nmf:
 
     sparseness: float, optional, default = 0.0
         The sparseness parameter used in case NMF is run with sparseness constraints.
+
+    version: str, optional, default = None
+        Determines on which matrix sparseness is imposed. Can be 'w' for sparseness imposed on W or 'h'
+        for sparseness imposed on H
     """
 
     def __init__(self, rank: int, sparseness: float = 0.0, version: str = None):
         assert sparseness >= 0.0
         assert rank > 0
-        assert version == None or version == "l" or version == "r"
+        assert version == None or version.lower() == "w" or version.lower() == "h"
 
         self.rank = rank
         self.sparseness = float(sparseness)
-        self.version = version
+        self.version = version.lower()
 
     @staticmethod
     def __calculate_cophenetic_corr(consensus_matrix: np.ndarray) -> np.ndarray:

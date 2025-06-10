@@ -54,8 +54,8 @@ class SpikeDetectionPipeline:
         A floating point number :math:`\in [0, 1]`.
         If this parameter is non-zero, nonnegative matrix factorization is run with sparseness constraints.
 
-    version: str, optional, default: "l"
-        If version = 'l', sparseness will be imposed on the columns of :math:`W`, if version = 'r',
+    version: str, optional, default: "w"
+        If version = 'w', sparseness will be imposed on the columns of :math:`W`, if version = 'h',
         sparseness will be imposed on the rows of :math:`H`.
 
     bad_times: numpy.ndarray[numpy.dtype[float]], optional
@@ -91,7 +91,7 @@ class SpikeDetectionPipeline:
         file_path: str,
         result_path: str = "nmf.h5",
         sparseness: float = 0.0,
-        version: str = "l",
+        version: str = "w",
         bad_times: np.ndarray[np.dtype[float]] = None,
         nmf_runs: int = 100,
         ranks: List[int] = [2, 3, 4, 5],
@@ -143,8 +143,7 @@ class SpikeDetectionPipeline:
     def model_name(self, h_init: bool, w_init: bool):
         name = "nmf_"
         if self.sparseness > 0:
-            version_name = "W" if self.version == "l" else "H"
-            name += f"s{version_name}_{self.sparseness:1.2f}"
+            name += f"s{self.version}_{self.sparseness:1.2f}"
 
         if h_init:
             name += "initH_"
